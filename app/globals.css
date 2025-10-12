@@ -1,0 +1,411 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Updated theme colors to match DEUS character: red-orange primary, golden yellow secondary */
+  --background: oklch(0.05 0 0);
+  --foreground: oklch(0.98 0 0);
+  --card: oklch(0.08 0 0);
+  --card-foreground: oklch(0.98 0 0);
+  --popover: oklch(0.08 0 0);
+  --popover-foreground: oklch(0.98 0 0);
+  --primary: oklch(0.62 0.22 35); /* Red-orange like DEUS body */
+  --primary-foreground: oklch(0.98 0 0);
+  --secondary: oklch(0.15 0 0);
+  --secondary-foreground: oklch(0.98 0 0);
+  --muted: oklch(0.12 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  --accent: oklch(0.15 0 0);
+  --accent-foreground: oklch(0.98 0 0);
+  --destructive: oklch(0.628 0.258 29.234);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(0.2 0 0);
+  --input: oklch(0.15 0 0);
+  --ring: oklch(0.62 0.22 35); /* Red-orange ring */
+  --chart-1: oklch(0.62 0.22 35); /* Red-orange */
+  --chart-2: oklch(0.75 0.18 75); /* Golden yellow */
+  --chart-3: oklch(0.68 0.2 45); /* Orange */
+  --chart-4: oklch(0.8 0.15 85); /* Light gold */
+  --chart-5: oklch(0.58 0.24 25); /* Deep red */
+  --gold: oklch(0.75 0.18 75); /* Golden yellow accent */
+  --radius: 0.75rem;
+  --sidebar: oklch(0.08 0 0);
+  --sidebar-foreground: oklch(0.98 0 0);
+  --sidebar-primary: oklch(0.62 0.22 35);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.15 0 0);
+  --sidebar-accent-foreground: oklch(0.98 0 0);
+  --sidebar-border: oklch(0.2 0 0);
+  --sidebar-ring: oklch(0.62 0.22 35);
+}
+
+@theme inline {
+  /* Updated font variables to use Inter and JetBrains Mono */
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-jetbrains-mono);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-gold: var(--gold);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  /* Ensure html element has black background to prevent white showing on overscroll */
+  html {
+    background: #000000;
+    min-height: 100vh;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    background: #000000;
+    min-height: 100vh;
+    -webkit-tap-highlight-color: transparent;
+    /* Add overscroll behavior to prevent white background on iOS */
+    overscroll-behavior: none;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Updated glass effects to use DEUS red-orange accent color */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glass-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(235, 90, 60, 0.3); /* Red-orange border on hover */
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(235, 90, 60, 0.2);
+    transform: translateY(-2px);
+  }
+}
+
+@layer utilities {
+  .neumorphism {
+    background: rgba(255, 255, 255, 0.04);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .neumorphism-inset {
+    background: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Updated glow effects to use DEUS red-orange and golden colors */
+  .neon-glow {
+    box-shadow: 0 0 20px rgba(235, 90, 60, 0.4), 0 0 40px rgba(235, 90, 60, 0.2);
+  }
+
+  .neon-text {
+    text-shadow: 0 0 10px rgba(235, 90, 60, 0.6), 0 0 20px rgba(235, 90, 60, 0.4);
+  }
+
+  /* Added golden glow effects for secondary accent */
+  .gold-glow {
+    box-shadow: 0 0 20px rgba(218, 165, 32, 0.4), 0 0 40px rgba(218, 165, 32, 0.2);
+  }
+
+  .gold-text {
+    text-shadow: 0 0 10px rgba(218, 165, 32, 0.6), 0 0 20px rgba(218, 165, 32, 0.4);
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(235, 90, 60, 0.5); /* Red-orange scrollbar */
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(235, 90, 60, 0.7);
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slide-in-right {
+    from {
+      opacity: 0;
+      transform: translateX(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes marquee {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 20px rgba(235, 90, 60, 0.4), 0 0 40px rgba(235, 90, 60, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 30px rgba(235, 90, 60, 0.6), 0 0 60px rgba(235, 90, 60, 0.3);
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-marquee {
+    animation: marquee 30s linear infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 1000px 100%;
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  .hover-glow {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 30px rgba(235, 90, 60, 0.4), 0 0 60px rgba(235, 90, 60, 0.2);
+  }
+
+  /* Updated premium button to use DEUS red-orange gradient */
+  .btn-premium {
+    background: linear-gradient(135deg, rgba(235, 90, 60, 0.9) 0%, rgba(245, 110, 80, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(235, 90, 60, 0.4);
+    box-shadow: 0 8px 32px rgba(235, 90, 60, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-premium:hover {
+    background: linear-gradient(135deg, rgba(235, 90, 60, 1) 0%, rgba(245, 110, 80, 1) 100%);
+    box-shadow: 0 12px 40px rgba(235, 90, 60, 0.5), 0 0 20px rgba(235, 90, 60, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1)
+      inset;
+    transform: translateY(-2px);
+  }
+
+  .btn-premium:active {
+    transform: translateY(0px);
+    box-shadow: 0 4px 16px rgba(235, 90, 60, 0.4);
+  }
+
+  /* Added golden button variant for secondary actions */
+  .btn-gold {
+    background: linear-gradient(135deg, rgba(218, 165, 32, 0.9) 0%, rgba(238, 185, 52, 0.9) 100%);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(218, 165, 32, 0.4);
+    box-shadow: 0 8px 32px rgba(218, 165, 32, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .btn-gold:hover {
+    background: linear-gradient(135deg, rgba(218, 165, 32, 1) 0%, rgba(238, 185, 52, 1) 100%);
+    box-shadow: 0 12px 40px rgba(218, 165, 32, 0.5), 0 0 20px rgba(218, 165, 32, 0.4), 0 0 0 1px
+      rgba(255, 255, 255, 0.1) inset;
+    transform: translateY(-2px);
+  }
+
+  .btn-gold:active {
+    transform: translateY(0px);
+    box-shadow: 0 4px 16px rgba(218, 165, 32, 0.4);
+  }
+
+  /* Updated progress bar to use DEUS red-orange gradient */
+  .progress-enhanced {
+    background: linear-gradient(
+      90deg,
+      rgba(235, 90, 60, 0.9) 0%,
+      rgba(245, 110, 80, 0.9) 50%,
+      rgba(235, 90, 60, 0.9) 100%
+    );
+    box-shadow: 0 0 15px rgba(235, 90, 60, 0.5);
+    border-radius: 6px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Added skeleton loading animation for premium loading states */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Added smooth transitions for all interactive elements */
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  button:active,
+  a:active {
+    transform: scale(0.98);
+  }
+
+  .safe-area-pb {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-pt {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+}

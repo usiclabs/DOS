@@ -1,0 +1,383 @@
+"use client"
+
+import { useState } from "react"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { TrendingUp, TrendingDown, Minus, Plus, ExternalLink, AlertTriangle, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { managePosition, collectFees } from "@/lib/transactions"
+
+interface LPPosition {
+  id: string
+  tokenId?: number // For Uniswap V3 NFT positions
+  poolId: string
+  pairAddress: string
+  baseToken: {
+    address: string
+    symbol: string
+    name: string
+    amount: number
+    value: number
+  }
+  quoteToken: {
+    address: string
+    symbol: string
+    name: string
+    amount: number
+    value: number
+  }
+  dexId: string
+  poolType: "v3" | "xlp" | "v2"
+  isDeusPool: boolean
+  feeTier: string
+  liquidityTokens: number
+  totalValue: number
+  initialValue: number
+  currentApr: number
+  feesEarned: number
+  impermanentLoss: number
+  netPnl: number
+  poolShare: number
+  entryDate: string
+  lastUpdated: string
+  tickLower?: number // For V3 positions
+  tickUpper?: number // For V3 positions
+  inRange?: boolean // For V3 positions
+}
+
+interface PositionCardProps {
+  position: LPPosition
+  onUpdate?: () => void
+}
+
+export function PositionCard({ position, onUpdate }: PositionCardProps) {
+  const { toast } = useToast()
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [withdrawPercentage, setWithdrawPercentage] = useState("100")
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
+  const [isCollectingFees, setIsCollectingFees] = useState(false)
+  const [transactionHash, setTransactionHash] = useState<string>("")
+
+  const formatNumber = (num: number) => {
+    if (num >= 1e6) return `$${(num / 1e6).toFixed(1)}M`
+    if (num >= 1e3) return `$${(num / 1e3).toFixed(1)}K`
+    return `$${num.toFixed(2)}`
+  }
+
+  const formatPercent = (num: number) => {
+    return `${num >= 0 ? "+" : ""}${num.toFixed(2)}%`
+  }
+
+  const formatDate = (isoString: string) => {
+    return new Date(isoString).toLocaleDateString()
+  }
+
+  const pnlPercentage = (position.netPnl / position.initialValue) * 100
+  const isProfitable = position.netPnl >= 0
+
+  const handleWithdraw = async () => {
+    if (!position.tokenId) {
+      toast.error("Position token ID not available")
+      return
+    }
+
+    setIsWithdrawing(true)
+    setTransactionHash("")
+
+    try {
+      console.log("[v0] Starting withdrawal for position:", position.tokenId)
+
+      const liquidityToRemove = Math.floor(
+        position.liquidityTokens * (Number.parseInt(withdrawPercentage) / 100),
+      ).toString(16)
+
+      const result = await managePosition(position.tokenId, "withdraw", {
+        liquidityPercentage: Number.parseInt(withdrawPercentage),
+        liquidityAmount: liquidityToRemove,
+      })
+
+      if (result.success) {
+        setTransactionHash(result.hash)
+        toast.success(`Successfully withdrew ${withdrawPercentage}% of position`)
+        setShowWithdrawModal(false)
+
+        setTimeout(() => {
+          onUpdate?.()
+        }, 3000)
+      } else {
+        toast.error(result.error || "Failed to withdraw liquidity")
+      }
+    } catch (error: any) {
+      console.error("[v0] Withdrawal error:", error)
+      toast.error(error.message || "Failed to withdraw liquidity")
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
+
+  const handleCollectFees = async () => {
+    if (!position.tokenId) {
+      toast.error("Position token ID not available")
+      return
+    }
+
+    if (position.feesEarned <= 0) {
+      toast.info("No fees available to collect")
+      return
+    }
+
+    setIsCollectingFees(true)
+
+    try {
+      console.log("[v0] Collecting fees for position:", position.tokenId)
+
+      const result = await collectFees(position.tokenId)
+
+      if (result.success) {
+        setTransactionHash(result.hash)
+        toast.success("Fees collected successfully!")
+
+        setTimeout(() => {
+          onUpdate?.()
+        }, 3000)
+      } else {
+        toast.error(result.error || "Failed to collect fees")
+      }
+    } catch (error: any) {
+      console.error("[v0] Fee collection error:", error)
+      toast.error(error.message || "Failed to collect fees")
+    } finally {
+      setIsCollectingFees(false)
+    }
+  }
+
+  return (
+    <>
+      <Card className="bg-card border-border shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] border-0 hover:bg-white/5 transition-colors">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg">
+              {position.baseToken.symbol}/{position.quoteToken.symbol}
+            </CardTitle>
+            <div className="flex items-center space-x-2">
+              <Badge variant={position.isDeusPool ? "default" : "secondary"} className="text-xs">
+                {position.isDeusPool ? "DEUS" : position.dexId}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {position.feeTier}
+              </Badge>
+              {position.poolType === "v3" && (
+                <Badge variant={position.inRange ? "default" : "destructive"} className="text-xs">
+                  {position.inRange ? "In Range" : "Out of Range"}
+                </Badge>
+              )}
+            </div>
+          </div>
+          <CardDescription>
+            Pool Type: {position.poolType.toUpperCase()} • Entry: {formatDate(position.entryDate)}
+            {position.tokenId && ` • Token ID: ${position.tokenId}`}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">Total Value</div>
+              <div className="text-xl font-bold">{formatNumber(position.totalValue)}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Net P&L</div>
+              <div
+                className={`text-xl font-bold flex items-center ${isProfitable ? "text-green-400" : "text-red-400"}`}
+              >
+                {isProfitable ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
+                {formatNumber(Math.abs(position.netPnl))} ({formatPercent(pnlPercentage)})
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Position Breakdown</div>
+            <div className="space-y-1">
+              <div className="flex justify-between text-sm">
+                <span>{position.baseToken.symbol}</span>
+                <span>
+                  {position.baseToken.amount.toFixed(4)} ({formatNumber(position.baseToken.value)})
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>{position.quoteToken.symbol}</span>
+                <span>
+                  {position.quoteToken.amount.toFixed(4)} ({formatNumber(position.quoteToken.value)})
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <div className="text-muted-foreground">Current APR</div>
+              <div className="font-medium text-accent">{position.currentApr.toFixed(1)}%</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Fees Earned</div>
+              <div className="font-medium text-green-400">{formatNumber(position.feesEarned)}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Pool Share</div>
+              <div className="font-medium">{(position.poolShare * 100).toFixed(3)}%</div>
+            </div>
+          </div>
+
+          {position.impermanentLoss > 0 && (
+            <div className="flex items-center space-x-2 p-2 rounded bg-yellow-500/10 border border-yellow-500/20">
+              <AlertTriangle className="h-4 w-4 text-yellow-400" />
+              <div className="text-sm">
+                <span className="text-yellow-400">IL:</span> -{formatNumber(position.impermanentLoss)} (-
+                {((position.impermanentLoss / position.totalValue) * 100).toFixed(2)}%)
+              </div>
+            </div>
+          )}
+
+          <div className="flex space-x-2 pt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 bg-transparent"
+              onClick={() => setShowWithdrawModal(true)}
+              disabled={isWithdrawing || isCollectingFees}
+            >
+              {isWithdrawing ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Minus className="h-4 w-4 mr-1" />}
+              {isWithdrawing ? "Withdrawing..." : "Withdraw"}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 bg-transparent"
+              onClick={handleCollectFees}
+              disabled={isWithdrawing || isCollectingFees || position.feesEarned <= 0}
+            >
+              {isCollectingFees ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+              {isCollectingFees ? "Collecting..." : "Collect Fees"}
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.open(`https://basescan.org/address/${position.pairAddress}`, "_blank")}
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {transactionHash && (
+            <div className="text-xs text-muted-foreground">
+              <span>Transaction: </span>
+              <a
+                href={`https://basescan.org/tx/${transactionHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
+                {transactionHash.slice(0, 10)}...{transactionHash.slice(-8)}
+              </a>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+        <DialogContent className="bg-card border-border shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] border-0">
+          <DialogHeader>
+            <DialogTitle>Withdraw Liquidity</DialogTitle>
+            <DialogDescription>
+              Remove liquidity from {position.baseToken.symbol}/{position.quoteToken.symbol} pool
+              <br />
+              <span className="text-yellow-400 text-xs">⚠️ This will incur gas fees on the Base network</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Withdrawal Percentage</Label>
+              <div className="flex space-x-2">
+                {["25", "50", "75", "100"].map((percent) => (
+                  <Button
+                    key={percent}
+                    variant={withdrawPercentage === percent ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setWithdrawPercentage(percent)}
+                  >
+                    {percent}%
+                  </Button>
+                ))}
+              </div>
+              <Input
+                type="number"
+                min="1"
+                max="100"
+                value={withdrawPercentage}
+                onChange={(e) => setWithdrawPercentage(e.target.value)}
+                placeholder="Custom percentage"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm font-medium">You will receive:</div>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span>{position.baseToken.symbol}</span>
+                  <span>{(position.baseToken.amount * (Number(withdrawPercentage) / 100)).toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{position.quoteToken.symbol}</span>
+                  <span>{(position.quoteToken.amount * (Number(withdrawPercentage) / 100)).toFixed(4)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-medium">
+                  <span>Total Value</span>
+                  <span>{formatNumber(position.totalValue * (Number(withdrawPercentage) / 100))}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowWithdrawModal(false)}
+                className="flex-1"
+                disabled={isWithdrawing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleWithdraw}
+                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                disabled={isWithdrawing || !position.tokenId}
+              >
+                {isWithdrawing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Withdrawing...
+                  </>
+                ) : (
+                  "Withdraw"
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
