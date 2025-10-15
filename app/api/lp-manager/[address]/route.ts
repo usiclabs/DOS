@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
+import { rpcCall } from "@/lib/rpc-config"
 
 interface LPPosition {
   id: string
@@ -46,9 +47,9 @@ interface LPManagerResponse {
   positionCount: number
 }
 
-const DEUS_TOKEN_ADDRESS = "0xDE5ed76E7c05eC5e4572CfC88d1ACEA165109E44"
+const DEUS_TOKEN_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e" // Fixed DEUS token address
 const UNISWAP_V3_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1"
-const UNISWAP_V2_FACTORY = "0x8909Dc15e40173Ff4699343b6eB8132c65e18eC6"
+const UNISWAP_V3_FACTORY = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
 
 const TOKEN_METADATA: Record<string, { symbol: string; name: string; decimals: number }> = {
   "0x4200000000000000000000000000000000000006": { symbol: "WETH", name: "Wrapped Ether", decimals: 18 },
@@ -57,26 +58,80 @@ const TOKEN_METADATA: Record<string, { symbol: string; name: string; decimals: n
   [DEUS_TOKEN_ADDRESS]: { symbol: "DEUS", name: "DEUS Finance", decimals: 18 },
 }
 
+async function getTokenMetadata(tokenAddress: string): Promise<{ symbol: string; name: string; decimals: number }> {
+  try {
+    // Check cache first
+    if (TOKEN_METADATA[tokenAddress.toLowerCase()]) {
+      return TOKEN_METADATA[tokenAddress.toLowerCase()]
+    }
+
+    console.log("[v0] Fetching token metadata for:", tokenAddress)
+
+    // Fetch symbol, name, and decimals in parallel using BlastAPI
+    const [symbolResult, nameResult, decimalsResult] = await Promise.all([
+      rpcCall("eth_call", [{ to: tokenAddress, data: "0x95d89b41" }, "latest"]).catch(() => "0x"), // symbol()
+      rpcCall("eth_call", [{ to: tokenAddress, data: "0x06fdde03" }, "latest"]).catch(() => "0x"), // name()
+      rpcCall("eth_call", [{ to: tokenAddress, data: "0x313ce567" }, "latest"]).catch(() => "0x12"), // decimals()
+    ])
+
+    // Parse results
+    const symbol = symbolResult !== "0x" ? parseString(symbolResult) : "UNKNOWN"
+    const name = nameResult !== "0x" ? parseString(nameResult) : "Unknown Token"
+    const decimals = decimalsResult !== "0x" ? Number.parseInt(decimalsResult, 16) : 18
+
+    return { symbol, name, decimals }
+  } catch (error) {
+    console.error("[v0] Error fetching token metadata:", error)
+    return { symbol: "UNKNOWN", name: "Unknown Token", decimals: 18 }
+  }
+}
+
+function parseString(hex: string): string {
+  try {
+    const cleanHex = hex.slice(2)
+    const length = Number.parseInt(cleanHex.slice(64, 128), 16)
+    const data = cleanHex.slice(128, 128 + length * 2)
+    return Buffer.from(data, "hex").toString("utf8").replace(/\0/g, "")
+  } catch {
+    return "UNKNOWN"
+  }
+}
+
 async function getTokenPrice(tokenAddress: string): Promise<number> {
   try {
     if (tokenAddress.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()) {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_VERCEL_URL || "http://localhost:3000"}/api/deus/ticker`, {
+      const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
+        ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+        : "http://localhost:3000"
+      const response = await fetch(`${baseUrl}/api/deus/ticker`, {
         headers: { "Content-Type": "application/json" },
       })
       const data = await response.json()
-      return data.price || 0.00006058
+      return data.priceUsd || 0.00004877 // Use priceUsd field
     }
 
-    const mockPrices: Record<string, number> = {
-      "0x4200000000000000000000000000000000000006": 3200,
-      "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": 1.0,
-      "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb": 1.0,
+    if (tokenAddress.toLowerCase() === "0x4200000000000000000000000000000000000006") {
+      // WETH - fetch ETH price
+      const response = await fetch(
+        "https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006",
+      )
+      const data = await response.json()
+      if (data.pairs && data.pairs.length > 0) {
+        return Number.parseFloat(data.pairs[0].priceUsd) || 3200
+      }
     }
 
-    return mockPrices[tokenAddress.toLowerCase()] || 0
+    // Default prices for common tokens
+    const defaultPrices: Record<string, number> = {
+      "0x4200000000000000000000000000000000000006": 3200, // WETH
+      "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 1.0, // USDC
+      "0x50c5725949a6f0c72e6c4a641f24049a917db0cb": 1.0, // DAI
+    }
+
+    return defaultPrices[tokenAddress.toLowerCase()] || 0
   } catch (error) {
     console.error("[v0] Error fetching token price:", error)
-    return tokenAddress.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ? 0.00006058 : 0
+    return tokenAddress.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ? 0.00004877 : 0
   }
 }
 
@@ -84,87 +139,218 @@ async function fetchV3Positions(address: string): Promise<LPPosition[]> {
   try {
     console.log("[v0] Fetching V3 positions for:", address)
 
-    const alchemyUrl = `https://base-mainnet.g.alchemy.com/nft/v3/${process.env.ALCHEMY_API_KEY}/getNFTsForOwner`
-    const response = await fetch(
-      `${alchemyUrl}?owner=${address}&contractAddresses[]=${UNISWAP_V3_POSITION_MANAGER}&withMetadata=true`,
-    )
+    // Step 1: Get balance of position NFTs
+    const balanceData = await rpcCall("eth_call", [
+      {
+        to: UNISWAP_V3_POSITION_MANAGER,
+        data: `0x70a08231${address.slice(2).padStart(64, "0")}`, // balanceOf(address)
+      },
+      "latest",
+    ])
 
-    if (!response.ok) {
-      console.error("[v0] Alchemy NFT API error:", response.status, response.statusText)
+    const balance = Number.parseInt(balanceData, 16)
+    console.log("[v0] User has", balance, "V3 position NFTs")
+
+    if (balance === 0) {
       return []
     }
 
-    const data = await response.json()
-    console.log("[v0] Found V3 NFTs:", data.ownedNfts?.length || 0)
-
     const positions: LPPosition[] = []
 
-    for (const nft of data.ownedNfts || []) {
+    // Step 2: Get token IDs for each position
+    for (let i = 0; i < Math.min(balance, 20); i++) {
       try {
-        const tokenId = Number.parseInt(nft.tokenId, 16)
-        console.log("[v0] Processing V3 position NFT:", tokenId)
+        // Get token ID by index
+        const tokenIdData = await rpcCall("eth_call", [
+          {
+            to: UNISWAP_V3_POSITION_MANAGER,
+            data: `0x2f745c59${address.slice(2).padStart(64, "0")}${i.toString(16).padStart(64, "0")}`, // tokenOfOwnerByIndex(address, index)
+          },
+          "latest",
+        ])
 
-        // Mock position data - in production, would call positions(tokenId) on the contract
-        const mockToken0 = "0x4200000000000000000000000000000000000006" // WETH
-        const mockToken1 = DEUS_TOKEN_ADDRESS
-        const mockAmount0 = 0.5
-        const mockAmount1 = 10000
+        const tokenId = Number.parseInt(tokenIdData, 16)
+        console.log("[v0] Processing position NFT #", i, "- Token ID:", tokenId)
 
-        const token0Price = await getTokenPrice(mockToken0)
-        const token1Price = await getTokenPrice(mockToken1)
+        // Step 3: Get position details
+        const positionData = await rpcCall("eth_call", [
+          {
+            to: UNISWAP_V3_POSITION_MANAGER,
+            data: `0x99fbab88${tokenId.toString(16).padStart(64, "0")}`, // positions(uint256)
+          },
+          "latest",
+        ])
 
-        const token0Meta = TOKEN_METADATA[mockToken0] || { symbol: "TOKEN0", name: "Token 0", decimals: 18 }
-        const token1Meta = TOKEN_METADATA[mockToken1] || { symbol: "TOKEN1", name: "Token 1", decimals: 18 }
+        if (!positionData || positionData === "0x") {
+          console.log("[v0] No position data for token ID:", tokenId)
+          continue
+        }
 
-        const totalValue = mockAmount0 * token0Price + mockAmount1 * token1Price
-        const feesEarned = totalValue * 0.03
-        const initialValue = totalValue * 0.92
-        const impermanentLoss = totalValue * 0.015
-        const netPnl = feesEarned - impermanentLoss + (totalValue - initialValue)
+        // Parse position data
+        const cleanData = positionData.slice(2)
+        const token0 = "0x" + cleanData.slice(88, 128)
+        const token1 = "0x" + cleanData.slice(152, 192)
+        const fee = Number.parseInt(cleanData.slice(192, 200), 16)
+        const tickLowerHex = cleanData.slice(200, 208)
+        const tickUpperHex = cleanData.slice(208, 216)
+        const tickLower =
+          Number.parseInt(tickLowerHex, 16) > 0x7fffffff
+            ? Number.parseInt(tickLowerHex, 16) - 0x100000000
+            : Number.parseInt(tickLowerHex, 16)
+        const tickUpper =
+          Number.parseInt(tickUpperHex, 16) > 0x7fffffff
+            ? Number.parseInt(tickUpperHex, 16) - 0x100000000
+            : Number.parseInt(tickUpperHex, 16)
+        const liquidity = "0x" + cleanData.slice(216, 248)
+        const tokensOwed0 = "0x" + cleanData.slice(376, 408)
+        const tokensOwed1 = "0x" + cleanData.slice(408, 440)
+
+        // Skip if liquidity is 0 (closed position)
+        if (BigInt(liquidity) === 0n) {
+          console.log("[v0] Position", tokenId, "has zero liquidity (closed)")
+          continue
+        }
+
+        console.log("[v0] Position", tokenId, "details:", {
+          token0: token0.slice(0, 10) + "...",
+          token1: token1.slice(0, 10) + "...",
+          fee,
+          tickLower,
+          tickUpper,
+          liquidity,
+        })
+
+        // Step 4: Get pool address and current tick
+        const poolAddressData = await rpcCall("eth_call", [
+          {
+            to: UNISWAP_V3_FACTORY,
+            data: `0x1698ee82${token0.slice(2).padStart(64, "0")}${token1.slice(2).padStart(64, "0")}${fee.toString(16).padStart(64, "0")}`, // getPool(token0, token1, fee)
+          },
+          "latest",
+        ])
+
+        const poolAddress = "0x" + poolAddressData.slice(-40)
+
+        if (poolAddress === "0x0000000000000000000000000000000000000000") {
+          console.log("[v0] Pool not found for position", tokenId)
+          continue
+        }
+
+        // Get pool slot0 (current tick and sqrtPriceX96)
+        const slot0Data = await rpcCall("eth_call", [
+          {
+            to: poolAddress,
+            data: "0x3850c7bd", // slot0()
+          },
+          "latest",
+        ])
+
+        const slot0Clean = slot0Data.slice(2)
+        const sqrtPriceX96 = "0x" + slot0Clean.slice(0, 64)
+        const tickHex = slot0Clean.slice(64, 128)
+        const currentTick =
+          Number.parseInt(tickHex, 16) > 0x7fffffffffffffffffffffffffffffff
+            ? Number.parseInt(tickHex, 16) - 0x100000000000000000000000000000000
+            : Number.parseInt(tickHex, 16)
+
+        const inRange = currentTick >= tickLower && currentTick < tickUpper
+
+        console.log("[v0] Pool state:", { currentTick, tickLower, tickUpper, inRange })
+
+        // Step 5: Calculate token amounts
+        const liquidityBigInt = BigInt(liquidity)
+        const sqrtPriceX96BigInt = BigInt(sqrtPriceX96)
+        const sqrtPriceLower = BigInt(Math.floor(Math.pow(1.0001, tickLower / 2) * Math.pow(2, 96)))
+        const sqrtPriceUpper = BigInt(Math.floor(Math.pow(1.0001, tickUpper / 2) * Math.pow(2, 96)))
+
+        let amount0 = 0
+        let amount1 = 0
+
+        if (currentTick < tickLower) {
+          // Position entirely in token0
+          const amt0 = Number((liquidityBigInt * (sqrtPriceUpper - sqrtPriceLower)) / sqrtPriceUpper / sqrtPriceLower)
+          amount0 = amt0 / 1e18
+        } else if (currentTick >= tickUpper) {
+          // Position entirely in token1
+          const amt1 = Number(liquidityBigInt * (sqrtPriceUpper - sqrtPriceLower))
+          amount1 = amt1 / 1e18 / Math.pow(2, 96)
+        } else {
+          // Position in range
+          const amt0 = Number(
+            (liquidityBigInt * (sqrtPriceUpper - sqrtPriceX96BigInt)) / sqrtPriceUpper / sqrtPriceX96BigInt,
+          )
+          const amt1 = Number(liquidityBigInt * (sqrtPriceX96BigInt - sqrtPriceLower))
+          amount0 = amt0 / 1e18
+          amount1 = amt1 / 1e18 / Math.pow(2, 96)
+        }
+
+        // Add uncollected fees
+        amount0 += Number(BigInt(tokensOwed0)) / 1e18
+        amount1 += Number(BigInt(tokensOwed1)) / 1e18
+
+        // Step 6: Get token metadata and prices
+        const [token0Meta, token1Meta, token0Price, token1Price] = await Promise.all([
+          getTokenMetadata(token0),
+          getTokenMetadata(token1),
+          getTokenPrice(token0),
+          getTokenPrice(token1),
+        ])
+
+        // Adjust amounts for token decimals
+        amount0 = amount0 * Math.pow(10, 18 - token0Meta.decimals)
+        amount1 = amount1 * Math.pow(10, 18 - token1Meta.decimals)
+
+        const totalValue = amount0 * token0Price + amount1 * token1Price
+        const feesEarned =
+          (Number(BigInt(tokensOwed0)) / 1e18) * token0Price + (Number(BigInt(tokensOwed1)) / 1e18) * token1Price
+        const initialValue = totalValue - feesEarned
+        const netPnl = totalValue - initialValue
 
         const isDeusPool =
-          mockToken0.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ||
-          mockToken1.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
+          token0.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ||
+          token1.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
 
         positions.push({
           id: `uniswap-v3-${tokenId}`,
           tokenId,
-          poolId: `${token0Meta.symbol}/${token1Meta.symbol}-0.30%`,
-          pairAddress: `${mockToken0}-${mockToken1}`,
+          poolId: `${token0Meta.symbol}/${token1Meta.symbol}-${(fee / 10000).toFixed(2)}%`,
+          pairAddress: poolAddress,
           baseToken: {
-            address: mockToken0,
+            address: token0,
             symbol: token0Meta.symbol,
             name: token0Meta.name,
-            amount: mockAmount0,
-            value: mockAmount0 * token0Price,
+            amount: amount0,
+            value: amount0 * token0Price,
           },
           quoteToken: {
-            address: mockToken1,
+            address: token1,
             symbol: token1Meta.symbol,
             name: token1Meta.name,
-            amount: mockAmount1,
-            value: mockAmount1 * token1Price,
+            amount: amount1,
+            value: amount1 * token1Price,
           },
           dexId: "Uniswap V3",
           poolType: "v3",
           isDeusPool,
-          feeTier: "0.30%",
-          liquidityTokens: 1000000,
+          feeTier: `${(fee / 10000).toFixed(2)}%`,
+          liquidityTokens: Number(liquidityBigInt / BigInt(1e15)) / 1000,
           totalValue,
           initialValue,
-          currentApr: isDeusPool ? 28.5 + Math.random() * 10 : 15.2 + Math.random() * 8,
+          currentApr: 0, // Would need historical data to calculate
           feesEarned,
-          impermanentLoss,
+          impermanentLoss: 0, // Would need entry price to calculate
           netPnl,
-          poolShare: 0.05 + Math.random() * 0.15,
-          entryDate: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),
+          poolShare: 0, // Would need total pool liquidity to calculate
+          entryDate: new Date().toISOString(), // Would need to fetch from events
           lastUpdated: new Date().toISOString(),
-          tickLower: -887220,
-          tickUpper: 887220,
-          inRange: true,
+          tickLower,
+          tickUpper,
+          inRange,
         })
+
+        console.log("[v0] Successfully processed position", tokenId, "- Total value:", totalValue)
       } catch (error) {
-        console.error("[v0] Error processing V3 NFT:", error)
+        console.error("[v0] Error processing position NFT #", i, ":", error)
       }
     }
 
@@ -176,111 +362,8 @@ async function fetchV3Positions(address: string): Promise<LPPosition[]> {
 }
 
 async function fetchV2Positions(address: string): Promise<LPPosition[]> {
-  try {
-    console.log("[v0] Fetching V2 LP tokens for:", address)
-
-    const alchemyUrl = `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-    const response = await fetch(alchemyUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "alchemy_getTokenBalances",
-        params: [address, "erc20"],
-      }),
-    })
-
-    if (!response.ok) {
-      console.error("[v0] Alchemy token balance API error:", response.status)
-      return []
-    }
-
-    const data = await response.json()
-    const tokenBalances = data.result?.tokenBalances || []
-    console.log("[v0] Found token balances:", tokenBalances.length)
-
-    const positions: LPPosition[] = []
-
-    // Filter for Uniswap V2 LP tokens (they have specific naming patterns)
-    for (const balance of tokenBalances) {
-      try {
-        if (Number.parseInt(balance.tokenBalance, 16) === 0) continue
-
-        // Check if this is a Uniswap V2 LP token by checking the contract
-        // In production, would verify this is actually a Uniswap V2 pair contract
-        const isLPToken = Math.random() < 0.1 // Mock: 10% chance it's an LP token
-
-        if (!isLPToken) continue
-
-        console.log("[v0] Found potential V2 LP token:", balance.contractAddress)
-
-        // Mock LP token data
-        const mockToken0 = "0x4200000000000000000000000000000000000006" // WETH
-        const mockToken1 = DEUS_TOKEN_ADDRESS
-        const lpBalance = Number.parseInt(balance.tokenBalance, 16) / 1e18
-        const mockAmount0 = lpBalance * 0.0001
-        const mockAmount1 = lpBalance * 200
-
-        const token0Price = await getTokenPrice(mockToken0)
-        const token1Price = await getTokenPrice(mockToken1)
-
-        const token0Meta = TOKEN_METADATA[mockToken0] || { symbol: "TOKEN0", name: "Token 0", decimals: 18 }
-        const token1Meta = TOKEN_METADATA[mockToken1] || { symbol: "TOKEN1", name: "Token 1", decimals: 18 }
-
-        const totalValue = mockAmount0 * token0Price + mockAmount1 * token1Price
-        const feesEarned = totalValue * 0.025
-        const initialValue = totalValue * 0.95
-        const impermanentLoss = totalValue * 0.02
-        const netPnl = feesEarned - impermanentLoss + (totalValue - initialValue)
-
-        const isDeusPool =
-          mockToken0.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ||
-          mockToken1.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
-
-        positions.push({
-          id: `uniswap-v2-${balance.contractAddress}`,
-          poolId: `${token0Meta.symbol}/${token1Meta.symbol}`,
-          pairAddress: balance.contractAddress,
-          baseToken: {
-            address: mockToken0,
-            symbol: token0Meta.symbol,
-            name: token0Meta.name,
-            amount: mockAmount0,
-            value: mockAmount0 * token0Price,
-          },
-          quoteToken: {
-            address: mockToken1,
-            symbol: token1Meta.symbol,
-            name: token1Meta.name,
-            amount: mockAmount1,
-            value: mockAmount1 * token1Price,
-          },
-          dexId: "Uniswap V2",
-          poolType: "v2",
-          isDeusPool,
-          feeTier: "0.30%",
-          liquidityTokens: lpBalance,
-          totalValue,
-          initialValue,
-          currentApr: isDeusPool ? 22.5 + Math.random() * 8 : 12.2 + Math.random() * 6,
-          feesEarned,
-          impermanentLoss,
-          netPnl,
-          poolShare: 0.03 + Math.random() * 0.12,
-          entryDate: new Date(Date.now() - Math.random() * 120 * 24 * 60 * 60 * 1000).toISOString(),
-          lastUpdated: new Date().toISOString(),
-        })
-      } catch (error) {
-        console.error("[v0] Error processing V2 LP token:", error)
-      }
-    }
-
-    return positions
-  } catch (error) {
-    console.error("[v0] Error fetching V2 positions:", error)
-    return []
-  }
+  // V2 positions are rare on Base, focusing on V3 for now
+  return []
 }
 
 export async function GET(
