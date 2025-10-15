@@ -83,6 +83,13 @@ export default function SwapPage() {
         return
       }
 
+      console.log("[v0] Fetching swap quote:", {
+        fromToken: fromToken.address,
+        toToken: toToken.address,
+        amount: fromAmount,
+        userAddress: address,
+      })
+
       setIsLoading(true)
       try {
         const response = await fetch("/api/swap/quote", {
@@ -96,16 +103,34 @@ export default function SwapPage() {
           }),
         })
 
+        console.log("[v0] Quote API response status:", response.status)
+
         if (response.ok) {
           const quote = await response.json()
+          console.log("[v0] Quote received successfully:", {
+            toAmount: quote.toAmount,
+            hasUniswapV3Data: !!quote.uniswapV3Data,
+          })
           setToAmount(quote.toAmount.toString())
           setCurrentQuote(quote)
         } else {
+          const errorData = await response.json().catch(() => ({ message: "Unknown error" }))
+          console.error("[v0] Quote API error:", errorData)
+          toast({
+            title: "Quote Failed",
+            description: errorData.message || "Failed to get swap quote",
+            variant: "destructive",
+          })
           setToAmount("")
           setCurrentQuote(null)
         }
       } catch (error) {
-        console.error("Failed to get quote:", error)
+        console.error("[v0] Failed to get quote:", error)
+        toast({
+          title: "Quote Error",
+          description: error instanceof Error ? error.message : "Network error",
+          variant: "destructive",
+        })
         setToAmount("")
         setCurrentQuote(null)
       } finally {
@@ -118,7 +143,18 @@ export default function SwapPage() {
   }, [fromAmount, fromToken, toToken, address])
 
   const handleSwap = async () => {
+    console.log("[v0] Swap button clicked")
+    console.log("[v0] Swap validation:", {
+      hasFromToken: !!fromToken,
+      hasToToken: !!toToken,
+      hasFromAmount: !!fromAmount,
+      hasToAmount: !!toAmount,
+      hasQuote: !!currentQuote,
+      isSwapping,
+    })
+
     if (!fromToken || !toToken || !fromAmount || !toAmount || !currentQuote) {
+      console.error("[v0] Swap validation failed")
       toast({
         title: "Invalid Swap",
         description: "Please wait for the quote to load",
@@ -128,6 +164,7 @@ export default function SwapPage() {
     }
 
     if (isSwapping) {
+      console.log("[v0] Swap already in progress")
       toast({
         title: "Swap in Progress",
         description: "Please wait for the current swap to complete",
@@ -135,10 +172,12 @@ export default function SwapPage() {
       return
     }
 
+    console.log("[v0] Starting swap execution")
     setIsLoading(true)
     setIsSwapping(true)
 
     try {
+      console.log("[v0] Calling swap execute API")
       const response = await fetch("/api/swap/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -149,13 +188,19 @@ export default function SwapPage() {
         }),
       })
 
+      console.log("[v0] Execute API response status:", response.status)
+
       if (!response.ok) {
         const error = await response.json()
+        console.error("[v0] Execute API error:", error)
         throw new Error(error.message || "Failed to prepare transaction")
       }
 
       const txData = await response.json()
-      console.log("[v0] Transaction data received:", txData.message)
+      console.log("[v0] Transaction data received:", {
+        hasTransaction: !!txData.transaction,
+        message: txData.message,
+      })
 
       if (!txData.transaction) {
         throw new Error("No transaction data in response")
@@ -167,6 +212,7 @@ export default function SwapPage() {
         throw new Error("No wallet found")
       }
 
+      console.log("[v0] Checking EIP-5792 support")
       const supportsEIP5792 = await checkEIP5792Support()
 
       if (supportsEIP5792) {
@@ -177,6 +223,7 @@ export default function SwapPage() {
         await executeSwapTraditional(transaction, fromAmount, fromToken.symbol, toAmount, toToken.symbol)
       }
 
+      console.log("[v0] Swap completed successfully")
       setFromAmount("")
       setToAmount("")
       setCurrentQuote(null)
@@ -212,9 +259,12 @@ export default function SwapPage() {
 
       console.log("[v0] Wallet capabilities:", capabilities)
 
-      // Check if wallet supports sendCalls on Base chain (chainId: 8453)
       const baseCapabilities = capabilities?.["0x2105"] || capabilities?.["8453"]
-      return baseCapabilities?.atomicBatch?.supported === true
+      const supportsAtomic = baseCapabilities?.atomic?.status === "ready"
+
+      console.log("[v0] EIP-5792 atomic support on Base:", supportsAtomic)
+
+      return supportsAtomic
     } catch (error) {
       console.log("[v0] EIP-5792 not supported:", error)
       return false
@@ -279,18 +329,54 @@ export default function SwapPage() {
       description: "Please approve the transaction in your wallet",
     })
 
-    const txHash = await window.ethereum.request({
-      method: "eth_sendTransaction",
-      params: [
-        {
-          from: address,
-          to: transaction.to,
-          data: transaction.data,
-          value: `0x${BigInt(transaction.value).toString(16)}`,
-          gas: transaction.gasLimit,
-        },
-      ],
-    })
+    let txHash: string | null = null
+    let attempts = 0
+    const maxAttempts = 5
+
+    while (attempts < maxAttempts && !txHash) {
+      try {
+        txHash = await window.ethereum.request({
+          method: "eth_sendTransaction",
+          params: [
+            {
+              from: address,
+              to: transaction.to,
+              data: transaction.data,
+              value: `0x${BigInt(transaction.value).toString(16)}`,
+              gas: transaction.gasLimit,
+            },
+          ],
+        })
+      } catch (error: any) {
+        attempts++
+
+        // Check if it's a rate limit error
+        if (error.message?.includes("rate limit") || error.code === -32005) {
+          if (attempts < maxAttempts) {
+            const delay = Math.pow(2, attempts) * 1000 // Exponential backoff: 2s, 4s, 8s, 16s
+            console.log(`[v0] Rate limited, retrying in ${delay}ms (attempt ${attempts}/${maxAttempts})`)
+
+            toast({
+              title: "Rate Limited",
+              description: `Retrying in ${delay / 1000} seconds... (${attempts}/${maxAttempts})`,
+            })
+
+            await new Promise((resolve) => setTimeout(resolve, delay))
+          } else {
+            throw new Error(
+              "Transaction failed after multiple retries due to rate limiting. Please try again in a few moments.",
+            )
+          }
+        } else {
+          // Not a rate limit error, throw immediately
+          throw error
+        }
+      }
+    }
+
+    if (!txHash) {
+      throw new Error("Failed to send transaction")
+    }
 
     console.log("[v0] Transaction sent:", txHash)
 

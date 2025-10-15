@@ -206,7 +206,6 @@ export async function getSwapQuote(
 
 /**
  * Build swap transaction data for Uniswap V3 SwapRouter
- * For ETH swaps, we need to use multicall with refundETH to handle native ETH properly
  */
 export function buildSwapTransaction(
   tokenIn: string,
@@ -234,62 +233,7 @@ export function buildSwapTransaction(
 
   const isEthSwap = tokenIn === "0x0000000000000000000000000000000000000000"
 
-  if (isEthSwap) {
-    // Encode exactInputSingle params with WETH as tokenIn
-    const exactInputSingleParams = encodeAbiParameters(
-      [
-        {
-          type: "tuple",
-          components: [
-            { name: "tokenIn", type: "address" },
-            { name: "tokenOut", type: "address" },
-            { name: "fee", type: "uint24" },
-            { name: "recipient", type: "address" },
-            { name: "deadline", type: "uint256" },
-            { name: "amountIn", type: "uint256" },
-            { name: "amountOutMinimum", type: "uint256" },
-            { name: "sqrtPriceLimitX96", type: "uint160" },
-          ],
-        },
-      ],
-      [
-        {
-          tokenIn: UNISWAP_V3_ADDRESSES.WETH as `0x${string}`,
-          tokenOut: tokenOut as `0x${string}`,
-          fee,
-          recipient: recipient as `0x${string}`,
-          deadline: BigInt(deadline),
-          amountIn: BigInt(amountIn),
-          amountOutMinimum: BigInt(amountOutMinimum),
-          sqrtPriceLimitX96: BigInt(0),
-        },
-      ],
-    )
-
-    const exactInputSingleSelector = "0x414bf389"
-    const exactInputSingleCall = exactInputSingleSelector + exactInputSingleParams.slice(2)
-
-    // Encode refundETH call (no parameters)
-    const refundETHSelector = "0x12210e8a"
-
-    // Encode multicall with both calls
-    const multicallParams = encodeAbiParameters(
-      [{ type: "bytes[]" }],
-      [[exactInputSingleCall as `0x${string}`, refundETHSelector as `0x${string}`]],
-    )
-
-    const multicallSelector = "0xac9650d8" // multicall(bytes[])
-    const data = multicallSelector + multicallParams.slice(2)
-
-    return {
-      to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,
-      data,
-      value: amountIn,
-      gasLimit: "0x61a80", // 400,000 gas for multicall
-    }
-  }
-
-  // For token swaps (non-ETH)
+  // The SwapRouter automatically wraps ETH to WETH when ETH value is sent
   const params = encodeAbiParameters(
     [
       {
@@ -308,7 +252,8 @@ export function buildSwapTransaction(
     ],
     [
       {
-        tokenIn: tokenIn as `0x${string}`,
+        // Use WETH address for ETH swaps, actual ETH address for token swaps
+        tokenIn: (isEthSwap ? UNISWAP_V3_ADDRESSES.WETH : tokenIn) as `0x${string}`,
         tokenOut: tokenOut as `0x${string}`,
         fee,
         recipient: recipient as `0x${string}`,
@@ -320,13 +265,14 @@ export function buildSwapTransaction(
     ],
   )
 
-  const functionSelector = "0x414bf389"
+  const functionSelector = "0x414bf389" // exactInputSingle
   const data = functionSelector + params.slice(2)
 
   return {
     to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,
     data,
-    value: "0",
+    // Send ETH value for ETH swaps, 0 for token swaps
+    value: isEthSwap ? amountIn : "0",
     gasLimit: "0x493e0", // 300,000 gas
   }
 }
