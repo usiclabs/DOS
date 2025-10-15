@@ -86,14 +86,28 @@ const FACTORY_ABI = [
   },
 ] as const
 
+// Pool ABI to check liquidity
+const POOL_ABI = [
+  {
+    inputs: [],
+    name: "liquidity",
+    outputs: [{ name: "", type: "uint128" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const
+
 /**
  * Detect which fee tier has a pool for the given token pair
+ * Returns the pool with the highest liquidity
  */
 export async function detectPoolFeeTier(
   tokenA: string,
   tokenB: string,
 ): Promise<{ fee: number; poolAddress: string } | null> {
   console.log("[v0] Detecting pool fee tier for:", { tokenA, tokenB })
+
+  const pools: Array<{ fee: number; poolAddress: string; liquidity: bigint }> = []
 
   for (const fee of FEE_TIERS) {
     try {
@@ -119,16 +133,43 @@ export async function detectPoolFeeTier(
 
       // Check if pool exists (not zero address)
       if (poolAddress !== "0x0000000000000000000000000000000000000000") {
-        console.log("[v0] Found pool:", { fee, poolAddress })
-        return { fee, poolAddress }
+        // Get pool liquidity
+        try {
+          const liquidityResult = await rpcCall("eth_call", [
+            {
+              to: poolAddress,
+              data: "0x1a686502", // liquidity()
+            },
+            "latest",
+          ])
+
+          const liquidity = BigInt(liquidityResult)
+          console.log("[v0] Found pool:", { fee, poolAddress, liquidity: liquidity.toString() })
+
+          pools.push({ fee, poolAddress, liquidity })
+        } catch (error) {
+          console.error(`[v0] Error getting liquidity for pool ${poolAddress}:`, error)
+        }
       }
     } catch (error) {
       console.error(`[v0] Error checking fee tier ${fee}:`, error)
     }
   }
 
-  console.log("[v0] No pool found for token pair")
-  return null
+  if (pools.length === 0) {
+    console.log("[v0] No pool found for token pair")
+    return null
+  }
+
+  const bestPool = pools.reduce((best, current) => (current.liquidity > best.liquidity ? current : best))
+
+  console.log("[v0] Selected pool with best liquidity:", {
+    fee: bestPool.fee,
+    poolAddress: bestPool.poolAddress,
+    liquidity: bestPool.liquidity.toString(),
+  })
+
+  return { fee: bestPool.fee, poolAddress: bestPool.poolAddress }
 }
 
 /**
@@ -233,7 +274,62 @@ export function buildSwapTransaction(
 
   const isEthSwap = tokenIn === "0x0000000000000000000000000000000000000000"
 
-  // The SwapRouter automatically wraps ETH to WETH when ETH value is sent
+  if (isEthSwap) {
+    // Encode exactInputSingle parameters
+    const exactInputParams = encodeAbiParameters(
+      [
+        {
+          type: "tuple",
+          components: [
+            { name: "tokenIn", type: "address" },
+            { name: "tokenOut", type: "address" },
+            { name: "fee", type: "uint24" },
+            { name: "recipient", type: "address" },
+            { name: "deadline", type: "uint256" },
+            { name: "amountIn", type: "uint256" },
+            { name: "amountOutMinimum", type: "uint256" },
+            { name: "sqrtPriceLimitX96", type: "uint160" },
+          ],
+        },
+      ],
+      [
+        {
+          tokenIn: UNISWAP_V3_ADDRESSES.WETH as `0x${string}`,
+          tokenOut: tokenOut as `0x${string}`,
+          fee,
+          recipient: recipient as `0x${string}`,
+          deadline: BigInt(deadline),
+          amountIn: BigInt(amountIn),
+          amountOutMinimum: BigInt(amountOutMinimum),
+          sqrtPriceLimitX96: BigInt(0),
+        },
+      ],
+    )
+
+    const exactInputSelector = "0x414bf389" // exactInputSingle
+    const exactInputCall = exactInputSelector + exactInputParams.slice(2)
+
+    // refundETH function selector (no parameters)
+    const refundETHSelector = "0x12210e8a"
+
+    // Encode multicall with both calls
+    const multicallParams = encodeAbiParameters(
+      [{ type: "bytes[]" }],
+      [[exactInputCall as `0x${string}`, refundETHSelector as `0x${string}`]],
+    )
+
+    const multicallSelector = "0xac9650d8" // multicall(bytes[])
+    const data = multicallSelector + multicallParams.slice(2)
+
+    return {
+      to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,
+      data,
+      value: amountIn,
+      gasLimit: "0x7a120", // 500,000 gas (increased for multicall)
+    }
+  }
+
+  // For token swaps, use regular exactInputSingle
   const params = encodeAbiParameters(
     [
       {
@@ -252,8 +348,7 @@ export function buildSwapTransaction(
     ],
     [
       {
-        // Use WETH address for ETH swaps, actual ETH address for token swaps
-        tokenIn: (isEthSwap ? UNISWAP_V3_ADDRESSES.WETH : tokenIn) as `0x${string}`,
+        tokenIn: tokenIn as `0x${string}`,
         tokenOut: tokenOut as `0x${string}`,
         fee,
         recipient: recipient as `0x${string}`,
@@ -271,8 +366,7 @@ export function buildSwapTransaction(
   return {
     to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,
     data,
-    // Send ETH value for ETH swaps, 0 for token swaps
-    value: isEthSwap ? amountIn : "0",
-    gasLimit: "0x493e0", // 300,000 gas
+    value: "0",
+    gasLimit: "0x61a80", // 400,000 gas
   }
 }

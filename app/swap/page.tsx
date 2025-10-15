@@ -5,11 +5,13 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ArrowDownUp, Settings, RefreshCw, ChevronDown, Wallet } from "lucide-react"
-import { useWallet } from "@/hooks/use-wallet"
+import { useWalletContext } from "@/contexts/wallet-context"
 import { StickyHeader } from "@/components/sticky-header"
 import { useToast } from "@/hooks/use-toast"
 import { DeusTicker } from "@/components/deus-ticker"
 import { motion } from "framer-motion"
+import { createPublicClient, http } from "viem"
+import { base } from "viem/chains"
 
 interface Token {
   symbol: string
@@ -23,7 +25,7 @@ interface Token {
 
 export default function SwapPage() {
   const { toast } = useToast()
-  const { isConnected, address, connectWallet } = useWallet()
+  const { isConnected, address, connectWallet } = useWalletContext()
 
   const [fromToken, setFromToken] = useState<Token | null>(null)
   const [toToken, setToToken] = useState<Token | null>(null)
@@ -35,6 +37,33 @@ export default function SwapPage() {
   const [showSettings, setShowSettings] = useState(false)
   const [currentQuote, setCurrentQuote] = useState<any>(null)
   const [isSwapping, setIsSwapping] = useState(false)
+  const [cooldownRemaining, setCooldownRemaining] = useState(0)
+  const SWAP_COOLDOWN = 60000 // 60 seconds to avoid MetaMask rate limiting
+
+  useEffect(() => {
+    const lastSwapTime = localStorage.getItem("lastSwapTime")
+    if (lastSwapTime) {
+      const timeSinceLastSwap = Date.now() - Number.parseInt(lastSwapTime)
+      if (timeSinceLastSwap < SWAP_COOLDOWN) {
+        setCooldownRemaining(Math.ceil((SWAP_COOLDOWN - timeSinceLastSwap) / 1000))
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (cooldownRemaining > 0) {
+      const timer = setInterval(() => {
+        setCooldownRemaining((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+      return () => clearInterval(timer)
+    }
+  }, [cooldownRemaining])
 
   const DEUS_TOKEN: Token = {
     symbol: "DEUS",
@@ -143,18 +172,15 @@ export default function SwapPage() {
   }, [fromAmount, fromToken, toToken, address])
 
   const handleSwap = async () => {
-    console.log("[v0] Swap button clicked")
-    console.log("[v0] Swap validation:", {
-      hasFromToken: !!fromToken,
-      hasToToken: !!toToken,
-      hasFromAmount: !!fromAmount,
-      hasToAmount: !!toAmount,
-      hasQuote: !!currentQuote,
-      isSwapping,
-    })
+    if (cooldownRemaining > 0) {
+      toast({
+        title: "Please Wait",
+        description: `Please wait ${cooldownRemaining} seconds before swapping again to avoid rate limiting`,
+      })
+      return
+    }
 
     if (!fromToken || !toToken || !fromAmount || !toAmount || !currentQuote) {
-      console.error("[v0] Swap validation failed")
       toast({
         title: "Invalid Swap",
         description: "Please wait for the quote to load",
@@ -163,21 +189,55 @@ export default function SwapPage() {
       return
     }
 
-    if (isSwapping) {
-      console.log("[v0] Swap already in progress")
+    if (!window.ethereum) {
       toast({
-        title: "Swap in Progress",
-        description: "Please wait for the current swap to complete",
+        title: "No Wallet Found",
+        description: "Please install MetaMask or another Web3 wallet",
+        variant: "destructive",
       })
       return
     }
 
-    console.log("[v0] Starting swap execution")
-    setIsLoading(true)
+    const now = Date.now()
+    localStorage.setItem("lastSwapTime", now.toString())
+    setCooldownRemaining(60)
     setIsSwapping(true)
 
     try {
-      console.log("[v0] Calling swap execute API")
+      console.log("[v0] Configuring MetaMask to use BlastAPI RPC...")
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [
+            {
+              chainId: "0x2105", // Base chain ID (8453)
+              chainName: "Base",
+              nativeCurrency: {
+                name: "Ether",
+                symbol: "ETH",
+                decimals: 18,
+              },
+              rpcUrls: ["https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"],
+              blockExplorerUrls: ["https://basescan.org"],
+            },
+          ],
+        })
+        console.log("[v0] MetaMask configured to use BlastAPI RPC")
+      } catch (addError: any) {
+        // Chain might already exist, try switching
+        if (addError.code === 4902) {
+          console.log("[v0] Chain already exists, switching...")
+          await window.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x2105" }],
+          })
+        } else {
+          console.log("[v0] MetaMask RPC configuration skipped:", addError.message)
+        }
+      }
+
+      console.log("[v0] Preparing swap transaction...")
+
       const response = await fetch("/api/swap/execute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -188,19 +248,12 @@ export default function SwapPage() {
         }),
       })
 
-      console.log("[v0] Execute API response status:", response.status)
-
       if (!response.ok) {
         const error = await response.json()
-        console.error("[v0] Execute API error:", error)
         throw new Error(error.message || "Failed to prepare transaction")
       }
 
       const txData = await response.json()
-      console.log("[v0] Transaction data received:", {
-        hasTransaction: !!txData.transaction,
-        message: txData.message,
-      })
 
       if (!txData.transaction) {
         throw new Error("No transaction data in response")
@@ -208,32 +261,86 @@ export default function SwapPage() {
 
       const { transaction } = txData
 
-      if (!window.ethereum) {
-        throw new Error("No wallet found")
-      }
+      console.log("[v0] Transaction prepared, sending to wallet...")
 
-      console.log("[v0] Checking EIP-5792 support")
-      const supportsEIP5792 = await checkEIP5792Support()
+      const txHash = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: address,
+            to: transaction.to,
+            data: transaction.data,
+            value: `0x${BigInt(transaction.value).toString(16)}`,
+            gas: `0x${BigInt(transaction.gasLimit).toString(16)}`,
+          },
+        ],
+      })
 
-      if (supportsEIP5792) {
-        console.log("[v0] Using EIP-5792 wallet_sendCalls for atomic swap")
-        await executeSwapWithEIP5792(transaction, fromAmount, fromToken.symbol, toAmount, toToken.symbol)
+      console.log("[v0] Transaction sent:", txHash)
+
+      toast({
+        title: "Transaction Submitted",
+        description: (
+          <div className="space-y-1">
+            <p>Your swap is being processed on-chain</p>
+            <a
+              href={`https://basescan.org/tx/${txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-accent hover:underline text-sm"
+            >
+              View on BaseScan →
+            </a>
+          </div>
+        ),
+      })
+
+      console.log("[v0] Waiting for transaction confirmation via BlastAPI...")
+      const publicClient = createPublicClient({
+        chain: base,
+        transport: http("https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"),
+      })
+
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: txHash as `0x${string}`,
+        timeout: 120_000,
+        pollingInterval: 3_000,
+      })
+
+      if (receipt.status === "success") {
+        console.log("[v0] Transaction confirmed!")
+        toast({
+          title: "Swap Successful!",
+          description: `Successfully swapped ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`,
+        })
+
+        setFromAmount("")
+        setToAmount("")
+        setCurrentQuote(null)
       } else {
-        console.log("[v0] Falling back to traditional eth_sendTransaction")
-        await executeSwapTraditional(transaction, fromAmount, fromToken.symbol, toAmount, toToken.symbol)
+        throw new Error("Transaction reverted on-chain")
       }
-
-      console.log("[v0] Swap completed successfully")
-      setFromAmount("")
-      setToAmount("")
-      setCurrentQuote(null)
     } catch (error: any) {
       console.error("[v0] Swap execution error:", error)
 
-      if (error.code === 4001 || error.message?.includes("User denied")) {
+      if (error.code === 4001 || error.message?.includes("User rejected") || error.message?.includes("User denied")) {
+        setCooldownRemaining(0)
+        localStorage.removeItem("lastSwapTime")
         toast({
           title: "Transaction Cancelled",
           description: "You cancelled the transaction",
+        })
+      } else if (error.message?.includes("rate limit")) {
+        toast({
+          title: "Rate Limited",
+          description: "Please wait 60 seconds before trying again",
+          variant: "destructive",
+        })
+      } else if (error.message?.includes("reverted")) {
+        toast({
+          title: "Transaction Reverted",
+          description: "The transaction failed on-chain. This may be due to insufficient liquidity or price movement.",
+          variant: "destructive",
         })
       } else {
         toast({
@@ -243,292 +350,7 @@ export default function SwapPage() {
         })
       }
     } finally {
-      setIsLoading(false)
       setIsSwapping(false)
-    }
-  }
-
-  const checkEIP5792Support = async (): Promise<boolean> => {
-    try {
-      if (!window.ethereum) return false
-
-      const capabilities = await window.ethereum.request({
-        method: "wallet_getCapabilities",
-        params: [address],
-      })
-
-      console.log("[v0] Wallet capabilities:", capabilities)
-
-      const baseCapabilities = capabilities?.["0x2105"] || capabilities?.["8453"]
-      const supportsAtomic = baseCapabilities?.atomic?.status === "ready"
-
-      console.log("[v0] EIP-5792 atomic support on Base:", supportsAtomic)
-
-      return supportsAtomic
-    } catch (error) {
-      console.log("[v0] EIP-5792 not supported:", error)
-      return false
-    }
-  }
-
-  const executeSwapWithEIP5792 = async (
-    transaction: any,
-    fromAmt: string,
-    fromSym: string,
-    toAmt: string,
-    toSym: string,
-  ) => {
-    toast({
-      title: "Confirm Transaction",
-      description: "Please approve the atomic swap in your wallet",
-    })
-
-    const callsPayload = {
-      version: "1.0",
-      chainId: "0x2105", // Base chain ID (8453 in hex)
-      from: address,
-      calls: [
-        {
-          to: transaction.to,
-          value: transaction.value,
-          data: transaction.data,
-        },
-      ],
-    }
-
-    const txId = await window.ethereum.request({
-      method: "wallet_sendCalls",
-      params: [callsPayload],
-    })
-
-    console.log("[v0] EIP-5792 transaction ID:", txId)
-
-    toast({
-      title: "Transaction Submitted!",
-      description: (
-        <div className="space-y-1">
-          <p>Your atomic swap is being processed on-chain</p>
-          <p className="text-sm text-muted-foreground">Transaction ID: {txId.slice(0, 10)}...</p>
-        </div>
-      ),
-    })
-
-    // Wait for transaction confirmation
-    await waitForEIP5792Transaction(txId, fromAmt, fromSym, toAmt, toSym)
-  }
-
-  const executeSwapTraditional = async (
-    transaction: any,
-    fromAmt: string,
-    fromSym: string,
-    toAmt: string,
-    toSym: string,
-  ) => {
-    toast({
-      title: "Confirm Transaction",
-      description: "Please approve the transaction in your wallet",
-    })
-
-    let txHash: string | null = null
-    let attempts = 0
-    const maxAttempts = 5
-
-    while (attempts < maxAttempts && !txHash) {
-      try {
-        txHash = await window.ethereum.request({
-          method: "eth_sendTransaction",
-          params: [
-            {
-              from: address,
-              to: transaction.to,
-              data: transaction.data,
-              value: `0x${BigInt(transaction.value).toString(16)}`,
-              gas: transaction.gasLimit,
-            },
-          ],
-        })
-      } catch (error: any) {
-        attempts++
-
-        // Check if it's a rate limit error
-        if (error.message?.includes("rate limit") || error.code === -32005) {
-          if (attempts < maxAttempts) {
-            const delay = Math.pow(2, attempts) * 1000 // Exponential backoff: 2s, 4s, 8s, 16s
-            console.log(`[v0] Rate limited, retrying in ${delay}ms (attempt ${attempts}/${maxAttempts})`)
-
-            toast({
-              title: "Rate Limited",
-              description: `Retrying in ${delay / 1000} seconds... (${attempts}/${maxAttempts})`,
-            })
-
-            await new Promise((resolve) => setTimeout(resolve, delay))
-          } else {
-            throw new Error(
-              "Transaction failed after multiple retries due to rate limiting. Please try again in a few moments.",
-            )
-          }
-        } else {
-          // Not a rate limit error, throw immediately
-          throw error
-        }
-      }
-    }
-
-    if (!txHash) {
-      throw new Error("Failed to send transaction")
-    }
-
-    console.log("[v0] Transaction sent:", txHash)
-
-    toast({
-      title: "Transaction Submitted!",
-      description: (
-        <div className="space-y-1">
-          <p>Your swap is being processed on-chain</p>
-          <a
-            href={`https://basescan.org/tx/${txHash}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-accent hover:underline text-sm"
-          >
-            View on BaseScan →
-          </a>
-        </div>
-      ),
-    })
-
-    waitForTransactionInBackground(txHash, fromAmt, fromSym, toAmt, toSym)
-  }
-
-  const waitForEIP5792Transaction = async (
-    txId: string,
-    fromAmt: string,
-    fromSym: string,
-    toAmt: string,
-    toSym: string,
-  ) => {
-    try {
-      let attempts = 0
-      const maxAttempts = 60
-
-      while (attempts < maxAttempts) {
-        try {
-          const calls = await window.ethereum.request({
-            method: "wallet_getCallsStatus",
-            params: [txId],
-          })
-
-          console.log("[v0] EIP-5792 calls status:", calls)
-
-          if (calls.status === "CONFIRMED") {
-            const txHash = calls.receipts?.[0]?.transactionHash
-
-            toast({
-              title: "Swap Confirmed!",
-              description: (
-                <div className="space-y-1">
-                  <p>
-                    Successfully swapped {fromAmt} {fromSym} for {toAmt} {toSym}
-                  </p>
-                  {txHash && (
-                    <a
-                      href={`https://basescan.org/tx/${txHash}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-accent hover:underline text-sm"
-                    >
-                      View on BaseScan →
-                    </a>
-                  )}
-                </div>
-              ),
-            })
-            return
-          }
-
-          if (calls.status === "FAILED") {
-            toast({
-              title: "Transaction Failed",
-              description: "The atomic swap was reverted on-chain",
-              variant: "destructive",
-            })
-            return
-          }
-        } catch (error) {
-          console.log("[v0] EIP-5792 polling error (will retry):", error)
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 3000))
-        attempts++
-      }
-
-      toast({
-        title: "Confirmation Timeout",
-        description: "Transaction is taking longer than expected. Check your wallet for status.",
-      })
-    } catch (error) {
-      console.error("[v0] EIP-5792 confirmation error:", error)
-    }
-  }
-
-  const waitForTransactionInBackground = async (
-    txHash: string,
-    fromAmt: string,
-    fromSym: string,
-    toAmt: string,
-    toSym: string,
-  ) => {
-    try {
-      let attempts = 0
-      const maxAttempts = 60
-      const BLAST_API_URL = "https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"
-
-      while (attempts < maxAttempts) {
-        try {
-          // Use BlastAPI directly instead of window.ethereum to avoid rate limiting
-          const response = await fetch(BLAST_API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              jsonrpc: "2.0",
-              id: 1,
-              method: "eth_getTransactionReceipt",
-              params: [txHash],
-            }),
-          })
-
-          const data = await response.json()
-          const receipt = data.result
-
-          if (receipt) {
-            if (receipt.status === "0x1") {
-              toast({
-                title: "Swap Confirmed!",
-                description: `Successfully swapped ${fromAmt} ${fromSym} for ${toAmt} ${toSym}`,
-              })
-            } else {
-              toast({
-                title: "Transaction Failed",
-                description: "The transaction was reverted on-chain",
-                variant: "destructive",
-              })
-            }
-            return
-          }
-        } catch (error) {
-          console.log("[v0] Polling error (will retry):", error)
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 3000))
-        attempts++
-      }
-
-      toast({
-        title: "Confirmation Timeout",
-        description: "Transaction is taking longer than expected. Check BaseScan for status.",
-      })
-    } catch (error) {
-      console.error("[v0] Background confirmation error:", error)
     }
   }
 
@@ -678,14 +500,21 @@ export default function SwapPage() {
 
             <Button
               onClick={handleSwap}
-              disabled={!fromAmount || !toAmount || isLoading || isSwapping}
+              disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
               className="w-full mt-6 bg-accent hover:bg-accent/90 text-white font-medium"
               size="lg"
             >
-              {isLoading || isSwapping ? (
+              {cooldownRemaining > 0 ? (
+                `Wait ${cooldownRemaining}s to avoid rate limiting`
+              ) : isSwapping ? (
                 <>
                   <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  {isSwapping ? "Swapping..." : "Loading..."}
+                  Confirming in wallet...
+                </>
+              ) : isLoading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  Loading...
                 </>
               ) : (
                 "Swap"

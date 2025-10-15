@@ -6,18 +6,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Copy, Check, ExternalLink, LogOut, Settings } from "lucide-react"
+import { useWalletContext } from "@/contexts/wallet-context"
 
-interface WalletInfoProps {
-  address: string
-  balance: string
-  network: string
-  onDisconnect: () => void
-}
-
-export function WalletInfo({ address, balance, network, onDisconnect }: WalletInfoProps) {
+export function WalletInfo() {
   const [copied, setCopied] = useState(false)
+  const { address, balance, isConnected, disconnectWallet } = useWalletContext()
 
   const handleCopyAddress = async () => {
+    if (!address) return
     try {
       await navigator.clipboard.writeText(address)
       setCopied(true)
@@ -31,13 +27,17 @@ export function WalletInfo({ address, balance, network, onDisconnect }: WalletIn
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`
   }
 
+  if (!isConnected || !address) {
+    return null
+  }
+
   return (
     <Card className="glass-card">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Wallet Connected</span>
           <Badge variant="secondary" className="bg-green-500/20 text-green-400 border-green-500/30">
-            {network}
+            Base
           </Badge>
         </CardTitle>
       </CardHeader>
@@ -54,21 +54,23 @@ export function WalletInfo({ address, balance, network, onDisconnect }: WalletIn
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Balance</span>
-            <span className="text-sm font-medium">{balance} ETH</span>
+            <span className="text-sm font-medium">{Number.parseFloat(balance).toFixed(4)} ETH</span>
           </div>
         </div>
 
         <Separator />
 
         <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm" className="flex-1 bg-transparent">
-            <ExternalLink className="h-3 w-3 mr-1" />
-            View on Explorer
+          <Button variant="outline" size="sm" className="flex-1 bg-transparent" asChild>
+            <a href={`https://basescan.org/address/${address}`} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-3 w-3 mr-1" />
+              View on Explorer
+            </a>
           </Button>
           <Button variant="outline" size="sm">
             <Settings className="h-3 w-3" />
           </Button>
-          <Button variant="outline" size="sm" onClick={onDisconnect}>
+          <Button variant="outline" size="sm" onClick={disconnectWallet}>
             <LogOut className="h-3 w-3" />
           </Button>
         </div>
