@@ -121,6 +121,41 @@ export async function GET() {
     const tokenBalancesData = await tokenBalancesResponse.json()
     const tokenBalances: TokenBalance[] = tokenBalancesData.result?.tokenBalances || []
 
+    let deusBalance = "0x0"
+    const deusTokenInList = tokenBalances.find(
+      (token) => token.contractAddress.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase(),
+    )
+
+    if (deusTokenInList) {
+      deusBalance = deusTokenInList.tokenBalance
+      console.log("[v0] Found DEUS in token balances:", deusBalance)
+    } else {
+      // Explicitly fetch DEUS balance
+      console.log("[v0] DEUS not in token list, fetching explicitly...")
+      try {
+        const deusBalanceResponse = await fetchWithTimeout(ALCHEMY_BASE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "alchemy_getTokenBalances",
+            params: [TREASURY_ADDRESS, [DEUS_TOKEN_ADDRESS]],
+          }),
+        })
+
+        if (deusBalanceResponse.ok) {
+          const deusBalanceData = await deusBalanceResponse.json()
+          if (deusBalanceData.result?.tokenBalances?.[0]) {
+            deusBalance = deusBalanceData.result.tokenBalances[0].tokenBalance
+            console.log("[v0] Fetched DEUS balance explicitly:", deusBalance)
+          }
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching DEUS balance explicitly:", error)
+      }
+    }
+
     const nonZeroBalances = tokenBalances.filter((token) => {
       const balance = BigInt(token.tokenBalance)
       return balance > 0n
@@ -150,7 +185,43 @@ export async function GET() {
 
     let deusToken: { address: string; balance: number; metadata: TokenMetadata } | null = null
 
+    try {
+      const deusMetadataResponse = await fetchWithTimeout(
+        ALCHEMY_BASE_URL,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            id: 1,
+            method: "alchemy_getTokenMetadata",
+            params: [DEUS_TOKEN_ADDRESS],
+          }),
+        },
+        5000,
+      )
+
+      if (deusMetadataResponse.ok) {
+        const deusMetadata: TokenMetadata = (await deusMetadataResponse.json()).result
+        if (deusMetadata && deusMetadata.decimals) {
+          const balance = Number(BigInt(deusBalance)) / Math.pow(10, deusMetadata.decimals)
+          deusToken = {
+            address: DEUS_TOKEN_ADDRESS,
+            balance,
+            metadata: deusMetadata,
+          }
+          console.log("[v0] DEUS token processed. Balance:", balance, deusMetadata.symbol)
+        }
+      }
+    } catch (error) {
+      console.error("[v0] Error processing DEUS token:", error)
+    }
+
     for (const token of nonZeroBalances) {
+      if (token.contractAddress.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()) {
+        continue
+      }
+
       try {
         const metadataResponse = await fetchWithTimeout(
           ALCHEMY_BASE_URL,
@@ -165,7 +236,7 @@ export async function GET() {
             }),
           },
           5000,
-        ) // 5 second timeout per token
+        )
 
         if (!metadataResponse.ok) {
           console.error("[v0] Failed to fetch metadata for token:", token.contractAddress)
@@ -180,18 +251,11 @@ export async function GET() {
 
         const balance = Number(BigInt(token.tokenBalance)) / Math.pow(10, metadata.decimals)
 
-        const tokenData = {
+        tokensWithMetadata.push({
           address: token.contractAddress,
           balance,
           metadata,
-        }
-
-        if (token.contractAddress.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()) {
-          deusToken = tokenData
-          console.log("[v0] Found DEUS token in treasury!")
-        } else {
-          tokensWithMetadata.push(tokenData)
-        }
+        })
       } catch (error) {
         console.error("[v0] Error processing token:", token.contractAddress, error)
         continue
@@ -202,13 +266,33 @@ export async function GET() {
       tokensWithMetadata.unshift(deusToken)
     }
 
-    const tokensToProcess = tokensWithMetadata.slice(0, 15) // Reduced from 20 to 15 for faster response
+    const tokensToProcess = tokensWithMetadata.slice(0, 15)
 
     console.log("[v0] Processing", tokensToProcess.length, "tokens for prices")
 
     for (const token of tokensToProcess) {
       try {
-        const price = await getTokenPrice(token.address)
+        let price = 0
+        if (token.address.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()) {
+          try {
+            const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
+              ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+              : "http://localhost:3000"
+            const tickerResponse = await fetchWithTimeout(`${baseUrl}/api/deus/ticker`, {}, 5000)
+            if (tickerResponse.ok) {
+              const tickerData = await tickerResponse.json()
+              price = tickerData.priceUsd || 0 // Changed from tickerData.price to tickerData.priceUsd
+              console.log("[v0] DEUS price from ticker:", price)
+            }
+          } catch (error) {
+            console.error("[v0] Error fetching DEUS price from ticker:", error)
+            // Fallback to Dexscreener
+            price = await getTokenPrice(token.address)
+          }
+        } else {
+          price = await getTokenPrice(token.address)
+        }
+
         const usdValue = token.balance * price
 
         console.log(
@@ -235,7 +319,6 @@ export async function GET() {
         totalUsdValue += usdValue
       } catch (error) {
         console.error("[v0] Error processing token price:", token.address, error)
-        // Add token without price
         holdings.push({
           address: token.address,
           name: token.metadata.name || "Unknown",
@@ -261,14 +344,27 @@ export async function GET() {
       })
     }
 
-    const filteredHoldings = holdings.filter((holding) => holding.usdValue >= 0.01)
+    const filteredHoldings = holdings.filter(
+      (holding) => holding.usdValue >= 0.01 || holding.address.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase(),
+    )
+
     const filteredTotalUsdValue = filteredHoldings.reduce((sum, holding) => sum + holding.usdValue, 0)
 
     console.log("[v0] Total holdings before filter:", holdings.length)
     console.log("[v0] Holdings after $0.01 filter:", filteredHoldings.length)
     console.log("[v0] Filtered out:", holdings.length - filteredHoldings.length, "tokens")
 
-    filteredHoldings.sort((a, b) => b.usdValue - a.usdValue)
+    filteredHoldings.sort((a, b) => {
+      // DEUS always comes first (after ETH)
+      const aIsDeus = a.address.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
+      const bIsDeus = b.address.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
+
+      if (aIsDeus && !bIsDeus) return -1
+      if (!aIsDeus && bIsDeus) return 1
+
+      // Otherwise sort by USD value
+      return b.usdValue - a.usdValue
+    })
 
     console.log("[v0] Treasury data fetched successfully. Total USD value:", filteredTotalUsdValue)
 

@@ -223,11 +223,12 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
       } catch (error: any) {
         lastError = error
 
-        // Check if it's a rate limit error
         const isRateLimit =
           error?.code === -32603 ||
+          error?.code === 429 ||
           error?.message?.toLowerCase().includes("rate limit") ||
-          error?.message?.toLowerCase().includes("too many requests")
+          error?.message?.toLowerCase().includes("too many requests") ||
+          error?.message?.toLowerCase().includes("capacity exceeded")
 
         if (isRateLimit && i < maxRetries - 1) {
           const delay = initialDelay * Math.pow(2, i)
@@ -265,7 +266,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         if (Number.parseFloat(balanceEth) < 0.001) {
           toast({
             title: "Insufficient ETH for gas",
-            description: `You need ETH to pay for gas fees. Current balance: ${Number.parseFloat(balanceEth).toFixed(6)} ETH`,
+            description: `You need at least 0.001 ETH to pay for gas fees. Current balance: ${Number.parseFloat(balanceEth).toFixed(6)} ETH`,
             variant: "destructive",
           })
           setStep("input")
@@ -284,55 +285,78 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         const amount1Wei = ethers.parseUnits(amount1, 18)
 
         setApprovalStep("token0")
+        console.log("[v0] Checking allowance for token0:", token0)
         const allowance0 = await checkAllowance(provider, token0, address, NONFUNGIBLE_POSITION_MANAGER_ADDRESS)
+        console.log("[v0] Token0 allowance:", allowance0.toString(), "Required:", amount0Wei.toString())
+
         if (allowance0 < amount0Wei) {
           toast({
-            title: "Approving first token...",
-            description: "Please confirm in your wallet",
+            title: `Approving ${pool.baseToken.symbol}...`,
+            description: "Please confirm the approval in your wallet",
           })
 
           await retryWithBackoff(async () => {
-            return await approveToken(signer, token0, NONFUNGIBLE_POSITION_MANAGER_ADDRESS, amount0Wei)
+            const receipt = await approveToken(signer, token0, NONFUNGIBLE_POSITION_MANAGER_ADDRESS, amount0Wei)
+            console.log("[v0] Token0 approval confirmed:", receipt?.hash)
+            return receipt
           })
 
-          console.log("[v0] Waiting 2 seconds before next approval to avoid rate limits...")
-          await new Promise((resolve) => setTimeout(resolve, 2000))
+          console.log("[v0] Waiting 3 seconds before next approval to avoid rate limits...")
+          await new Promise((resolve) => setTimeout(resolve, 3000))
+        } else {
+          console.log("[v0] Token0 already approved, skipping")
         }
 
         setApprovalStep("token1")
+        console.log("[v0] Checking allowance for token1:", token1)
         const allowance1 = await checkAllowance(provider, token1, address, NONFUNGIBLE_POSITION_MANAGER_ADDRESS)
+        console.log("[v0] Token1 allowance:", allowance1.toString(), "Required:", amount1Wei.toString())
+
         if (allowance1 < amount1Wei) {
           toast({
-            title: "Approving second token...",
-            description: "Please confirm in your wallet",
+            title: `Approving ${pool.quoteToken.symbol}...`,
+            description: "Please confirm the approval in your wallet",
           })
 
           await retryWithBackoff(async () => {
-            return await approveToken(signer, token1, NONFUNGIBLE_POSITION_MANAGER_ADDRESS, amount1Wei)
+            const receipt = await approveToken(signer, token1, NONFUNGIBLE_POSITION_MANAGER_ADDRESS, amount1Wei)
+            console.log("[v0] Token1 approval confirmed:", receipt?.hash)
+            return receipt
           })
+
+          console.log("[v0] Waiting 2 seconds before deployment to avoid rate limits...")
+          await new Promise((resolve) => setTimeout(resolve, 2000))
+        } else {
+          console.log("[v0] Token1 already approved, skipping")
         }
 
         setApprovalStep("complete")
         setStep("deploying")
 
         let tickLower, tickUpper
-        if (useFullRange) {
+        try {
           const tickSpacing = getTickSpacing(feeTier)
           const poolAddress = await getPoolAddress(provider, token0, token1, feeTier)
-          const poolState = await getPoolState(provider, poolAddress)
-          tickLower = nearestUsableTick(poolState.tick - 887220, tickSpacing)
-          tickUpper = nearestUsableTick(poolState.tick + 887220, tickSpacing)
-        } else {
-          const tickSpacing = getTickSpacing(feeTier)
-          const poolAddress = await getPoolAddress(provider, token0, token1, feeTier)
-          const poolState = await getPoolState(provider, poolAddress)
-          const currentTick = poolState.tick
+          console.log("[v0] Pool address:", poolAddress)
 
-          const rangeLower = priceRange[0] / 100
-          const rangeUpper = priceRange[1] / 100
+          const poolState = await getPoolState(provider, poolAddress)
+          console.log("[v0] Pool state - Current tick:", poolState.tick, "Tick spacing:", tickSpacing)
 
-          tickLower = nearestUsableTick(currentTick - Math.floor(887220 * (1 - rangeLower)), tickSpacing)
-          tickUpper = nearestUsableTick(currentTick + Math.floor(887220 * rangeUpper), tickSpacing)
+          if (useFullRange) {
+            tickLower = nearestUsableTick(poolState.tick - 887220, tickSpacing)
+            tickUpper = nearestUsableTick(poolState.tick + 887220, tickSpacing)
+          } else {
+            const rangeLower = priceRange[0] / 100
+            const rangeUpper = priceRange[1] / 100
+            // Corrected: currentTick should be poolState.tick
+            tickLower = nearestUsableTick(poolState.tick - Math.floor(887220 * (1 - rangeLower)), tickSpacing)
+            tickUpper = nearestUsableTick(poolState.tick + Math.floor(887220 * rangeUpper), tickSpacing)
+          }
+
+          console.log("[v0] Calculated tick range:", { tickLower, tickUpper })
+        } catch (error) {
+          console.error("[v0] Error calculating tick range:", error)
+          throw new Error("Failed to calculate price range. Please try again.")
         }
 
         const params: DeploymentParams = {
@@ -350,9 +374,13 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
           description: "Please confirm the transaction in your wallet",
         })
 
+        console.log("[v0] Deploying liquidity with params:", params)
+
         const result = await retryWithBackoff(async () => {
           return await deployLiquidity(signer, params)
         })
+
+        console.log("[v0] Deployment result:", result)
 
         if (result.success) {
           setTxHash(result.txHash || null)
@@ -360,7 +388,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
           setStep("success")
           toast({
             title: "Liquidity deployed successfully!",
-            description: `Position NFT ID: ${result.tokenId}`,
+            description: result.tokenId ? `Position NFT ID: ${result.tokenId}` : "Your position has been created",
           })
         } else {
           throw new Error(result.error || "Deployment failed")
@@ -379,10 +407,23 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
 
       const isRateLimit =
         error?.code === -32603 ||
+        error?.code === 429 ||
         error?.message?.toLowerCase().includes("rate limit") ||
-        error?.message?.toLowerCase().includes("too many requests")
+        error?.message?.toLowerCase().includes("too many requests") ||
+        error?.message?.toLowerCase().includes("capacity exceeded")
 
-      if (isRateLimit) {
+      const isUserRejection =
+        error?.code === 4001 ||
+        error?.code === "ACTION_REJECTED" ||
+        error?.message?.toLowerCase().includes("user rejected") ||
+        error?.message?.toLowerCase().includes("user denied")
+
+      if (isUserRejection) {
+        toast({
+          title: "Transaction cancelled",
+          description: "You cancelled the transaction in your wallet",
+        })
+      } else if (isRateLimit) {
         toast({
           title: "Rate limit exceeded",
           description:
@@ -395,10 +436,16 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
           description: "You need ETH to pay for transaction fees. Please add ETH to your wallet and try again.",
           variant: "destructive",
         })
+      } else if (error?.message?.toLowerCase().includes("insufficient")) {
+        toast({
+          title: "Insufficient token balance",
+          description: "You don't have enough tokens to complete this transaction. Please check your balances.",
+          variant: "destructive",
+        })
       } else {
         toast({
           title: "Deployment failed",
-          description: error.message || "Please try again",
+          description: error.message || "An unexpected error occurred. Please try again.",
           variant: "destructive",
         })
       }

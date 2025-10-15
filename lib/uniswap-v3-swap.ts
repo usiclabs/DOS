@@ -10,6 +10,7 @@ import { rpcCall } from "./rpc-config"
 export const UNISWAP_V3_ADDRESSES = {
   FACTORY: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
   SWAP_ROUTER: "0x2626664c2603336E57B271c5C0b26F421741e481",
+  UNIVERSAL_ROUTER: "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD",
   QUOTER_V2: "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a",
   WETH: "0x4200000000000000000000000000000000000006",
 } as const
@@ -246,7 +247,8 @@ export async function getSwapQuote(
 }
 
 /**
- * Build swap transaction data for Uniswap V3 SwapRouter
+ * Build swap transaction data for Uniswap V3 SwapRouter or Universal Router
+ * Uses command-based system for ETH swaps
  */
 export function buildSwapTransaction(
   tokenIn: string,
@@ -275,61 +277,63 @@ export function buildSwapTransaction(
   const isEthSwap = tokenIn === "0x0000000000000000000000000000000000000000"
 
   if (isEthSwap) {
-    // Encode exactInputSingle parameters
-    const exactInputParams = encodeAbiParameters(
-      [
-        {
-          type: "tuple",
-          components: [
-            { name: "tokenIn", type: "address" },
-            { name: "tokenOut", type: "address" },
-            { name: "fee", type: "uint24" },
-            { name: "recipient", type: "address" },
-            { name: "deadline", type: "uint256" },
-            { name: "amountIn", type: "uint256" },
-            { name: "amountOutMinimum", type: "uint256" },
-            { name: "sqrtPriceLimitX96", type: "uint160" },
-          ],
-        },
-      ],
-      [
-        {
-          tokenIn: UNISWAP_V3_ADDRESSES.WETH as `0x${string}`,
-          tokenOut: tokenOut as `0x${string}`,
-          fee,
-          recipient: recipient as `0x${string}`,
-          deadline: BigInt(deadline),
-          amountIn: BigInt(amountIn),
-          amountOutMinimum: BigInt(amountOutMinimum),
-          sqrtPriceLimitX96: BigInt(0),
-        },
-      ],
+    // Universal Router commands: WRAP_ETH = 0x0b, V3_SWAP_EXACT_IN = 0x00
+    const commands = "0x0b00" // WRAP_ETH followed by V3_SWAP_EXACT_IN
+
+    // Encode path for V3 swap: tokenIn (WETH) + fee + tokenOut
+    const tokenInAddress = UNISWAP_V3_ADDRESSES.WETH.slice(2).toLowerCase()
+    const tokenOutAddress = tokenOut.slice(2).toLowerCase()
+    const feeHex = fee.toString(16).padStart(6, "0")
+    const path = `0x${tokenInAddress}${feeHex}${tokenOutAddress}` as `0x${string}`
+
+    console.log("[v0] Encoded path for Universal Router:", {
+      tokenIn: UNISWAP_V3_ADDRESSES.WETH,
+      fee,
+      feeHex,
+      tokenOut,
+      path,
+    })
+
+    // Parameters: recipient (address), amountMin (uint256)
+    // Recipient should be the Universal Router itself (ADDRESS_THIS = 0x0000000000000000000000000000000000000002)
+    const ADDRESS_THIS = "0x0000000000000000000000000000000000000002"
+    const wrapEthInput = encodeAbiParameters(
+      [{ type: "address" }, { type: "uint256" }],
+      [ADDRESS_THIS as `0x${string}`, BigInt(amountIn)],
     )
 
-    const exactInputSelector = "0x414bf389" // exactInputSingle
-    const exactInputCall = exactInputSelector + exactInputParams.slice(2)
-
-    // refundETH function selector (no parameters)
-    const refundETHSelector = "0x12210e8a"
-
-    // Encode multicall with both calls
-    const multicallParams = encodeAbiParameters(
-      [{ type: "bytes[]" }],
-      [[exactInputCall as `0x${string}`, refundETHSelector as `0x${string}`]],
+    // Parameters: recipient, amountIn, amountOutMin, path, payerIsUser
+    // payerIsUser should be false because WETH is coming from the router (from WRAP_ETH command)
+    const swapInput = encodeAbiParameters(
+      [{ type: "address" }, { type: "uint256" }, { type: "uint256" }, { type: "bytes" }, { type: "bool" }],
+      [recipient as `0x${string}`, BigInt(amountIn), BigInt(amountOutMinimum), path, false],
     )
 
-    const multicallSelector = "0xac9650d8" // multicall(bytes[])
-    const data = multicallSelector + multicallParams.slice(2)
+    // Encode the execute function call: execute(bytes commands, bytes[] inputs, uint256 deadline)
+    const executeParams = encodeAbiParameters(
+      [{ type: "bytes" }, { type: "bytes[]" }, { type: "uint256" }],
+      [commands as `0x${string}`, [wrapEthInput, swapInput], BigInt(deadline)],
+    )
+
+    const functionSelector = "0x3593564c" // execute(bytes,bytes[],uint256)
+    const data = functionSelector + executeParams.slice(2)
+
+    console.log("[v0] Universal Router transaction data:", {
+      to: UNISWAP_V3_ADDRESSES.UNIVERSAL_ROUTER,
+      commands,
+      inputsCount: 2,
+      dataLength: data.length,
+      value: amountIn,
+    })
 
     return {
-      to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,
+      to: UNISWAP_V3_ADDRESSES.UNIVERSAL_ROUTER,
       data,
       value: amountIn,
-      gasLimit: "0x7a120", // 500,000 gas (increased for multicall)
+      gasLimit: "0x61a80", // 400,000 gas
     }
   }
 
-  // For token swaps, use regular exactInputSingle
   const params = encodeAbiParameters(
     [
       {

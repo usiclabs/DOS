@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     // Cap price impact display at reasonable levels (should be <5% for small swaps)
     const displayPriceImpact = Math.min(priceImpact, 5)
 
-    const slippageTolerance = 70 // 70% slippage tolerance to ensure swap completes
+    const slippageTolerance = 95 // 95% slippage tolerance to handle fee-on-transfer tokens
 
     const quoteResponse = {
       fromToken: {
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
         tokenOut: toToken,
         fee: poolInfo.fee,
         amountIn: amountInWei,
-        amountOutMinimum: ((BigInt(quote.amountOut) * BigInt(30)) / BigInt(100)).toString(),
+        amountOutMinimum: ((BigInt(quote.amountOut) * BigInt(5)) / BigInt(100)).toString(),
         poolAddress: poolInfo.poolAddress,
       },
     }

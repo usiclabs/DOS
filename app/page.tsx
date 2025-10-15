@@ -27,8 +27,17 @@ import {
 } from "lucide-react"
 
 const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      mass: 0.5,
+    },
+  },
 }
 
 const staggerContainer = {
@@ -36,14 +45,24 @@ const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.1,
+      staggerChildren: 0.06,
+      delayChildren: 0.1,
     },
   },
 }
 
 const scaleIn = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: { opacity: 1, scale: 1 },
+  hidden: { opacity: 0, scale: 0.92 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 120,
+      damping: 12,
+      mass: 0.4,
+    },
+  },
 }
 
 export default function HomePage() {
@@ -64,12 +83,11 @@ export default function HomePage() {
           initial="hidden"
           animate="visible"
           variants={fadeInUp}
-          transition={{ duration: 0.6 }}
           className="text-center py-8 md:py-16 relative"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-accent/5 blur-3xl" />
           <div className="max-w-5xl mx-auto relative">
-            <motion.div variants={fadeInUp} transition={{ delay: 0.2 }}>
+            <motion.div variants={fadeInUp}>
               <Badge className="mb-8 glass-card text-accent-foreground border-accent/20 hover:border-accent/40 transition-all duration-300 px-4 py-2">
                 <Activity className="h-4 w-4 mr-2" />
                 Base's Most Advanced Liquidity Hub
@@ -78,7 +96,6 @@ export default function HomePage() {
 
             <motion.h1
               variants={fadeInUp}
-              transition={{ delay: 0.3 }}
               className="text-4xl md:text-6xl lg:text-7xl font-bold mb-8 text-white leading-tight tracking-tight"
             >
               <span className="bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">
@@ -88,17 +105,12 @@ export default function HomePage() {
 
             <motion.p
               variants={fadeInUp}
-              transition={{ delay: 0.4 }}
               className="text-xl md:text-2xl text-gray-300 mb-6 max-w-4xl mx-auto leading-relaxed font-medium"
             >
               The most sophisticated liquidity management platform on Base chain.
             </motion.p>
 
-            <motion.p
-              variants={fadeInUp}
-              transition={{ delay: 0.5 }}
-              className="text-lg text-gray-400 mb-16 max-w-3xl mx-auto leading-relaxed"
-            >
+            <motion.p variants={fadeInUp} className="text-lg text-gray-400 mb-16 max-w-3xl mx-auto leading-relaxed">
               AI-powered pool discovery, exotic yield strategies, and institutional-grade risk management for the next
               generation of DeFi.
             </motion.p>
@@ -148,8 +160,9 @@ export default function HomePage() {
                   key={index}
                   variants={scaleIn}
                   whileHover={{ scale: 1.05, y: -5 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   className="flex flex-col items-center space-y-3 p-6 glass-card rounded-xl"
+                  style={{ willChange: "transform" }}
                 >
                   <div className="p-3 rounded-full bg-accent/20 backdrop-blur-sm">
                     <stat.icon className="h-6 w-6 text-accent-foreground" />
