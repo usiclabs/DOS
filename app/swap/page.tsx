@@ -1,29 +1,15 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { ArrowDownUp, TrendingUp, RefreshCw, AlertCircle } from "lucide-react"
+import { ArrowDownUp, Settings, RefreshCw, ChevronDown, Wallet } from "lucide-react"
 import { useWallet } from "@/hooks/use-wallet"
-import { TokenHoldingsTable } from "@/components/swap/token-holdings-table"
-import { SwapQuote } from "@/components/swap/swap-quote"
-import { SwapConfirmation } from "@/components/swap/swap-confirmation"
 import { StickyHeader } from "@/components/sticky-header"
 import { useToast } from "@/hooks/use-toast"
-import dynamic from "next/dynamic"
-import { PortfolioValueBanner } from "@/components/portfolio/portfolio-value-banner"
-import { motion } from "framer-motion"
 import { DeusTicker } from "@/components/deus-ticker"
-import { useIsMobile } from "@/hooks/use-mobile"
-
-const WagmiSwapHooks = dynamic(() => import("@/components/swap/wagmi-swap-hooks"), {
-  ssr: false,
-})
+import { motion } from "framer-motion"
 
 interface Token {
   symbol: string
@@ -35,302 +21,428 @@ interface Token {
   decimals: number
 }
 
-interface TickerData {
-  price: number
-  change24h: number
-  volume24h: number
-  marketCap: number
-  status: string
-}
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-}
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-const scaleIn = {
-  hidden: { scale: 0 },
-  visible: { scale: 1 },
-}
-
-function EnhancedWalletConnect({ onConnect }: { onConnect: (walletType: string) => Promise<boolean> }) {
-  const [isConnecting, setIsConnecting] = useState(false)
-  const [selectedWallet, setSelectedWallet] = useState<string | null>(null)
-
-  const handleConnect = async (walletType: string) => {
-    setIsConnecting(true)
-    setSelectedWallet(walletType)
-
-    try {
-      const success = await onConnect(walletType)
-    } catch (error) {
-      console.error("Wallet connection failed:", error)
-    } finally {
-      setIsConnecting(false)
-      setSelectedWallet(null)
-    }
-  }
-
-  const wallets = [
-    { id: "metamask", name: "MetaMask", icon: "🦊", recommended: true },
-    { id: "coinbase", name: "Coinbase", icon: "🔵", recommended: false },
-    { id: "walletconnect", name: "WalletConnect", icon: "📱", recommended: false },
-  ]
-
-  return (
-    <div className="space-y-4">
-      {wallets.map((wallet) => (
-        <Button
-          key={wallet.id}
-          onClick={() => handleConnect(wallet.id)}
-          disabled={isConnecting}
-          className="w-full bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] hover:bg-white/5 p-4 h-auto"
-        >
-          <div className="flex items-center space-x-3">
-            <span className="text-2xl">{wallet.icon}</span>
-            <div className="text-left">
-              <div className="font-medium">{wallet.name}</div>
-              {wallet.recommended && <div className="text-xs text-accent">Recommended</div>}
-            </div>
-            {isConnecting && selectedWallet === wallet.id && (
-              <div className="ml-auto">
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-              </div>
-            )}
-          </div>
-        </Button>
-      ))}
-    </div>
-  )
-}
-
 export default function SwapPage() {
   const { toast } = useToast()
   const { isConnected, address, connectWallet } = useWallet()
-  const isMobile = useIsMobile()
 
-  const [fromToken, setFromToken] = useState("ETH")
+  const [fromToken, setFromToken] = useState<Token | null>(null)
+  const [toToken, setToToken] = useState<Token | null>(null)
   const [fromAmount, setFromAmount] = useState("")
   const [toAmount, setToAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [quote, setQuote] = useState<any>(null)
-  const [showConfirmation, setShowConfirmation] = useState(false)
   const [userTokens, setUserTokens] = useState<Token[]>([])
-  const [isLoadingBalances, setIsLoadingBalances] = useState(false)
-  const [tickerData, setTickerData] = useState<TickerData | null>(null)
-  const [isExecutingSwap, setIsExecutingSwap] = useState(false)
-  const [retryStatus, setRetryStatus] = useState<{
-    attempt?: number
-    maxRetries?: number
-    delay?: number
-  }>({})
-  const [transactionHash, setTransactionHash] = useState<string | undefined>()
+  const [slippage, setSlippage] = useState("0.5")
+  const [showSettings, setShowSettings] = useState(false)
+  const [currentQuote, setCurrentQuote] = useState<any>(null)
+  const [isSwapping, setIsSwapping] = useState(false)
 
-  const DEUS_CONTRACT_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
+  const DEUS_TOKEN: Token = {
+    symbol: "DEUS",
+    name: "DEUS Finance",
+    address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
+    balance: 0,
+    price: 0.00005113,
+    logo: "⚡",
+    decimals: 18,
+  }
 
-  const handleSwapExecution = useCallback(
-    (swapData: any) => {
-      setIsExecutingSwap(swapData.isExecuting)
-
-      if (swapData.retryAttempt) {
-        setRetryStatus({
-          attempt: swapData.retryAttempt,
-          maxRetries: swapData.maxRetries,
-          delay: swapData.retryDelay,
-        })
-      } else {
-        setRetryStatus({})
-      }
-
-      if (swapData.txHash) {
-        setTransactionHash(swapData.txHash)
-        const basescanUrl = `https://basescan.org/tx/${swapData.txHash}`
-
-        if (swapData.isConfirmed) {
-          toast({
-            title: "Swap Completed Successfully!",
-            description: (
-              <a
-                href={basescanUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-blue-400 hover:underline"
-              >
-                View on Basescan →
-              </a>
-            ) as any,
-            duration: 10000,
-          })
-          setTimeout(() => {
-            setShowConfirmation(false)
-            window.location.reload()
-          }, 3000)
-        } else {
-          toast({
-            title: "Transaction Submitted",
-            description: "Waiting for blockchain confirmation...",
-            duration: 5000,
-          })
-        }
-      }
-
-      if (swapData.error) {
-        toast({
-          title: "Swap Failed",
-          description: swapData.error,
-          variant: "destructive",
-        })
-        setIsExecutingSwap(false)
-        setShowConfirmation(false)
-        setTransactionHash(undefined)
-        setRetryStatus({})
-      }
-    },
-    [toast],
-  )
-
-  useEffect(() => {
-    const fetchTickerData = async () => {
-      try {
-        const response = await fetch("/api/ticker")
-        if (response.ok) {
-          const data = await response.json()
-          setTickerData(data)
-          console.log("[v0] Live DEUS price fetched:", data.price)
-        }
-      } catch (error) {
-        console.error("[v0] Error fetching ticker data:", error)
-      }
+  const handlePercentage = (percent: number) => {
+    if (fromToken && userTokens.length > 0) {
+      const maxAmount = (fromToken.balance / fromToken.decimals).toFixed(6)
+      setFromAmount(percent === 100 ? maxAmount : ((Number.parseFloat(maxAmount) * percent) / 100).toFixed(6))
     }
-
-    fetchTickerData()
-    const interval = setInterval(fetchTickerData, 30000) // Update every 30 seconds
-    return () => clearInterval(interval)
-  }, [])
+  }
 
   useEffect(() => {
-    const fetchWalletBalances = async () => {
+    const fetchBalances = async () => {
       if (!isConnected || !address) return
-
-      setIsLoadingBalances(true)
-      console.log("[v0] Fetching wallet balances for:", address)
 
       try {
         const response = await fetch(`/api/wallet/balances/${address}`)
-        if (!response.ok) {
-          throw new Error("Failed to fetch wallet balances")
+        if (response.ok) {
+          const data = await response.json()
+          setUserTokens(data.tokens || [])
+
+          const ethToken = data.tokens?.find((t: Token) => t.symbol === "ETH")
+          if (ethToken) setFromToken(ethToken)
+          setToToken(DEUS_TOKEN)
         }
-
-        const balances = await response.json()
-        console.log("[v0] Wallet balances fetched:", balances)
-
-        const tokensWithLivePrice =
-          balances.tokens?.map((token: Token) => {
-            if (token.symbol === "DEUS" && tickerData) {
-              return { ...token, price: tickerData.price }
-            }
-            return token
-          }) || []
-
-        setUserTokens(tokensWithLivePrice)
       } catch (error) {
-        console.error("[v0] Error fetching wallet balances:", error)
-        setUserTokens([
-          {
-            symbol: "ETH",
-            name: "Ethereum",
-            address: "0x0000000000000000000000000000000000000000",
-            balance: 0,
-            price: 0,
-            logo: "🔷",
-            decimals: 18,
-          },
-        ])
-      } finally {
-        setIsLoadingBalances(false)
+        console.error("Failed to fetch balances:", error)
       }
     }
 
-    fetchWalletBalances()
-  }, [isConnected, address, tickerData])
+    fetchBalances()
+  }, [isConnected, address])
 
-  const selectedFromToken = userTokens.find((t) => t.symbol === fromToken)
-  const deusToken = userTokens.find((t) => t.symbol === "DEUS")
+  useEffect(() => {
+    const getQuote = async () => {
+      if (!fromAmount || !fromToken || !toToken || Number.parseFloat(fromAmount) <= 0) {
+        setToAmount("")
+        setCurrentQuote(null)
+        return
+      }
 
-  const handleGetQuote = async () => {
-    if (!fromAmount || !selectedFromToken) return
+      setIsLoading(true)
+      try {
+        const response = await fetch("/api/swap/quote", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            fromToken: fromToken.address,
+            toToken: toToken.address,
+            amount: fromAmount,
+            userAddress: address,
+          }),
+        })
+
+        if (response.ok) {
+          const quote = await response.json()
+          setToAmount(quote.toAmount.toString())
+          setCurrentQuote(quote)
+        } else {
+          setToAmount("")
+          setCurrentQuote(null)
+        }
+      } catch (error) {
+        console.error("Failed to get quote:", error)
+        setToAmount("")
+        setCurrentQuote(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    const debounce = setTimeout(getQuote, 500)
+    return () => clearTimeout(debounce)
+  }, [fromAmount, fromToken, toToken, address])
+
+  const handleSwap = async () => {
+    if (!fromToken || !toToken || !fromAmount || !toAmount || !currentQuote) {
+      toast({
+        title: "Invalid Swap",
+        description: "Please wait for the quote to load",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (isSwapping) {
+      toast({
+        title: "Swap in Progress",
+        description: "Please wait for the current swap to complete",
+      })
+      return
+    }
 
     setIsLoading(true)
-    console.log("[v0] Getting swap quote for:", { fromToken, fromAmount, toToken: "DEUS" })
+    setIsSwapping(true)
 
     try {
-      const response = await fetch("/api/swap/quote", {
+      const response = await fetch("/api/swap/execute", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fromToken: selectedFromToken.address,
-          toToken: DEUS_CONTRACT_ADDRESS,
-          amount: fromAmount,
+          quote: currentQuote,
           userAddress: address,
-          liveDEUSPrice: tickerData?.price,
+          slippage: Number.parseFloat(slippage),
         }),
       })
 
       if (!response.ok) {
-        throw new Error("Failed to get swap quote")
+        const error = await response.json()
+        throw new Error(error.message || "Failed to prepare transaction")
       }
 
-      const quoteData = await response.json()
-      console.log("[v0] Swap quote received:", quoteData)
+      const txData = await response.json()
+      console.log("[v0] Transaction data received:", txData.message)
 
-      setToAmount(quoteData.toAmount)
-      setQuote(quoteData)
-    } catch (error) {
-      console.error("[v0] Failed to get quote:", error)
-      const fromAmountNum = Number.parseFloat(fromAmount)
-      const fromValueUSD = fromAmountNum * selectedFromToken.price
-      const deusPrice = tickerData?.price || 0.00007765 // Use live price or fallback
-      const estimatedDeus = (fromValueUSD / deusPrice) * 0.997
+      if (!txData.transaction) {
+        throw new Error("No transaction data in response")
+      }
 
-      setToAmount(estimatedDeus.toFixed(6))
-      setQuote({
-        fromAmount: fromAmountNum,
-        toAmount: estimatedDeus,
-        fromToken: selectedFromToken,
-        toToken: { symbol: "DEUS", address: DEUS_CONTRACT_ADDRESS },
-        rate: estimatedDeus / fromAmountNum,
-        priceImpact: 0.15,
-        fee: fromValueUSD * 0.003,
-        route: `${selectedFromToken.symbol} → DEUS`,
-        estimatedGas: 0.002,
-      })
+      const { transaction } = txData
+
+      if (!window.ethereum) {
+        throw new Error("No wallet found")
+      }
+
+      const supportsEIP5792 = await checkEIP5792Support()
+
+      if (supportsEIP5792) {
+        console.log("[v0] Using EIP-5792 wallet_sendCalls for atomic swap")
+        await executeSwapWithEIP5792(transaction, fromAmount, fromToken.symbol, toAmount, toToken.symbol)
+      } else {
+        console.log("[v0] Falling back to traditional eth_sendTransaction")
+        await executeSwapTraditional(transaction, fromAmount, fromToken.symbol, toAmount, toToken.symbol)
+      }
+
+      setFromAmount("")
+      setToAmount("")
+      setCurrentQuote(null)
+    } catch (error: any) {
+      console.error("[v0] Swap execution error:", error)
+
+      if (error.code === 4001 || error.message?.includes("User denied")) {
+        toast({
+          title: "Transaction Cancelled",
+          description: "You cancelled the transaction",
+        })
+      } else {
+        toast({
+          title: "Swap Failed",
+          description: error.message || "An error occurred during the swap",
+          variant: "destructive",
+        })
+      }
     } finally {
       setIsLoading(false)
+      setIsSwapping(false)
     }
   }
 
-  const handleTokenSelect = (token: Token) => {
-    setFromToken(token.symbol)
-    setFromAmount("")
-    setToAmount("")
-    setQuote(null)
+  const checkEIP5792Support = async (): Promise<boolean> => {
+    try {
+      if (!window.ethereum) return false
+
+      const capabilities = await window.ethereum.request({
+        method: "wallet_getCapabilities",
+        params: [address],
+      })
+
+      console.log("[v0] Wallet capabilities:", capabilities)
+
+      // Check if wallet supports sendCalls on Base chain (chainId: 8453)
+      const baseCapabilities = capabilities?.["0x2105"] || capabilities?.["8453"]
+      return baseCapabilities?.atomicBatch?.supported === true
+    } catch (error) {
+      console.log("[v0] EIP-5792 not supported:", error)
+      return false
+    }
   }
 
-  const handleMaxClick = () => {
-    if (selectedFromToken) {
-      setFromAmount(selectedFromToken.balance.toString())
+  const executeSwapWithEIP5792 = async (
+    transaction: any,
+    fromAmt: string,
+    fromSym: string,
+    toAmt: string,
+    toSym: string,
+  ) => {
+    toast({
+      title: "Confirm Transaction",
+      description: "Please approve the atomic swap in your wallet",
+    })
+
+    const callsPayload = {
+      version: "1.0",
+      chainId: "0x2105", // Base chain ID (8453 in hex)
+      from: address,
+      calls: [
+        {
+          to: transaction.to,
+          value: transaction.value,
+          data: transaction.data,
+        },
+      ],
+    }
+
+    const txId = await window.ethereum.request({
+      method: "wallet_sendCalls",
+      params: [callsPayload],
+    })
+
+    console.log("[v0] EIP-5792 transaction ID:", txId)
+
+    toast({
+      title: "Transaction Submitted!",
+      description: (
+        <div className="space-y-1">
+          <p>Your atomic swap is being processed on-chain</p>
+          <p className="text-sm text-muted-foreground">Transaction ID: {txId.slice(0, 10)}...</p>
+        </div>
+      ),
+    })
+
+    // Wait for transaction confirmation
+    await waitForEIP5792Transaction(txId, fromAmt, fromSym, toAmt, toSym)
+  }
+
+  const executeSwapTraditional = async (
+    transaction: any,
+    fromAmt: string,
+    fromSym: string,
+    toAmt: string,
+    toSym: string,
+  ) => {
+    toast({
+      title: "Confirm Transaction",
+      description: "Please approve the transaction in your wallet",
+    })
+
+    const txHash = await window.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [
+        {
+          from: address,
+          to: transaction.to,
+          data: transaction.data,
+          value: `0x${BigInt(transaction.value).toString(16)}`,
+          gas: transaction.gasLimit,
+        },
+      ],
+    })
+
+    console.log("[v0] Transaction sent:", txHash)
+
+    toast({
+      title: "Transaction Submitted!",
+      description: (
+        <div className="space-y-1">
+          <p>Your swap is being processed on-chain</p>
+          <a
+            href={`https://basescan.org/tx/${txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline text-sm"
+          >
+            View on BaseScan →
+          </a>
+        </div>
+      ),
+    })
+
+    waitForTransactionInBackground(txHash, fromAmt, fromSym, toAmt, toSym)
+  }
+
+  const waitForEIP5792Transaction = async (
+    txId: string,
+    fromAmt: string,
+    fromSym: string,
+    toAmt: string,
+    toSym: string,
+  ) => {
+    try {
+      let attempts = 0
+      const maxAttempts = 60
+
+      while (attempts < maxAttempts) {
+        try {
+          const calls = await window.ethereum.request({
+            method: "wallet_getCallsStatus",
+            params: [txId],
+          })
+
+          console.log("[v0] EIP-5792 calls status:", calls)
+
+          if (calls.status === "CONFIRMED") {
+            const txHash = calls.receipts?.[0]?.transactionHash
+
+            toast({
+              title: "Swap Confirmed!",
+              description: (
+                <div className="space-y-1">
+                  <p>
+                    Successfully swapped {fromAmt} {fromSym} for {toAmt} {toSym}
+                  </p>
+                  {txHash && (
+                    <a
+                      href={`https://basescan.org/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline text-sm"
+                    >
+                      View on BaseScan →
+                    </a>
+                  )}
+                </div>
+              ),
+            })
+            return
+          }
+
+          if (calls.status === "FAILED") {
+            toast({
+              title: "Transaction Failed",
+              description: "The atomic swap was reverted on-chain",
+              variant: "destructive",
+            })
+            return
+          }
+        } catch (error) {
+          console.log("[v0] EIP-5792 polling error (will retry):", error)
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        attempts++
+      }
+
+      toast({
+        title: "Confirmation Timeout",
+        description: "Transaction is taking longer than expected. Check your wallet for status.",
+      })
+    } catch (error) {
+      console.error("[v0] EIP-5792 confirmation error:", error)
+    }
+  }
+
+  const waitForTransactionInBackground = async (
+    txHash: string,
+    fromAmt: string,
+    fromSym: string,
+    toAmt: string,
+    toSym: string,
+  ) => {
+    try {
+      let attempts = 0
+      const maxAttempts = 60
+      const BLAST_API_URL = "https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"
+
+      while (attempts < maxAttempts) {
+        try {
+          // Use BlastAPI directly instead of window.ethereum to avoid rate limiting
+          const response = await fetch(BLAST_API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              id: 1,
+              method: "eth_getTransactionReceipt",
+              params: [txHash],
+            }),
+          })
+
+          const data = await response.json()
+          const receipt = data.result
+
+          if (receipt) {
+            if (receipt.status === "0x1") {
+              toast({
+                title: "Swap Confirmed!",
+                description: `Successfully swapped ${fromAmt} ${fromSym} for ${toAmt} ${toSym}`,
+              })
+            } else {
+              toast({
+                title: "Transaction Failed",
+                description: "The transaction was reverted on-chain",
+                variant: "destructive",
+              })
+            }
+            return
+          }
+        } catch (error) {
+          console.log("[v0] Polling error (will retry):", error)
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 3000))
+        attempts++
+      }
+
+      toast({
+        title: "Confirmation Timeout",
+        description: "Transaction is taking longer than expected. Check BaseScan for status.",
+      })
+    } catch (error) {
+      console.error("[v0] Background confirmation error:", error)
     }
   }
 
@@ -339,33 +451,27 @@ export default function SwapPage() {
       <div className="min-h-screen bg-background">
         <StickyHeader />
         <DeusTicker />
-
-        <div className="min-h-screen bg-gradient-to-br from-black via-accent/10 to-black p-6">
-          <div className="max-w-4xl mx-auto">
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={scaleIn}
-              transition={{ duration: 0.6 }}
-              className="text-center py-16"
-            >
-              <div className="glass-card rounded-2xl p-12 max-w-md mx-auto backdrop-blur-xl">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-20 h-20 mx-auto mb-6 glass-card rounded-full flex items-center justify-center"
-                >
-                  <ArrowDownUp className="h-10 w-10 text-accent" />
-                </motion.div>
-                <h1 className="text-4xl font-bold mb-4 text-white">Token Swap</h1>
-                <p className="text-gray-300 mb-8 leading-relaxed">
-                  Connect your wallet to swap tokens into DEUS with live market rates on Base network
-                </p>
-                <EnhancedWalletConnect onConnect={connectWallet} />
+        <div className="flex items-center justify-center min-h-[80vh] px-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md"
+          >
+            <Card className="glass-card p-8 text-center">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-accent/10 flex items-center justify-center">
+                <Wallet className="w-8 h-8 text-accent" />
               </div>
-            </motion.div>
-          </div>
+              <h2 className="text-2xl font-bold mb-2">Connect Wallet</h2>
+              <p className="text-muted-foreground mb-6">Connect your wallet to start swapping tokens</p>
+              <Button
+                onClick={() => connectWallet("metamask")}
+                className="w-full bg-accent hover:bg-accent/90"
+                size="lg"
+              >
+                Connect Wallet
+              </Button>
+            </Card>
+          </motion.div>
         </div>
       </div>
     )
@@ -373,254 +479,154 @@ export default function SwapPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <DeusTicker />
       <StickyHeader />
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-6 sm:mb-8"
-        >
-          <h1 className="text-3xl sm:text-4xl font-bold mb-3 sm:mb-4 neon-text">Swap to DEUS</h1>
-          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-            Convert your tokens into DEUS with live market rates on Base network
-          </p>
-        </motion.div>
+      <DeusTicker />
 
-        {isConnected && address && <PortfolioValueBanner address={address} />}
+      <div className="flex items-center justify-center min-h-[80vh] px-4 py-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
+          <Card className="glass-card p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Swap</h2>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowSettings(!showSettings)}
+                className="hover:bg-white/5"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+            </div>
 
-        <motion.div
-          initial="hidden"
-          animate="visible"
-          variants={staggerContainer}
-          className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-8"
-        >
-          <motion.div variants={fadeInUp} className="lg:col-span-2 space-y-4 sm:space-y-6">
-            <Card className="glass-card">
-              <CardHeader className="pb-4 sm:pb-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                  <ArrowDownUp className="h-4 w-4 sm:h-5 sm:w-5 text-accent" />
-                  Swap Interface
-                  <Badge variant="outline" className="border-green-500/30 text-green-400 text-xs">
-                    Live Trading
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6">
-                {isLoadingBalances && (
-                  <div className="flex items-center justify-center p-8">
-                    <RefreshCw className="h-6 w-6 animate-spin mr-2" />
-                    <span>Loading wallet balances...</span>
+            {showSettings && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="mb-6 p-4 rounded-lg bg-white/5 border border-white/10"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Slippage Tolerance</span>
+                  <div className="flex items-center gap-2">
+                    <Input value={slippage} onChange={(e) => setSlippage(e.target.value)} className="w-20 text-right" />
+                    <span className="text-sm">%</span>
                   </div>
-                )}
+                </div>
+              </motion.div>
+            )}
 
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">From</Label>
-                  <div className="p-3 sm:p-4 rounded-lg bg-muted/50 border border-border">
-                    <div className="flex items-center justify-between mb-3">
-                      <Select value={fromToken} onValueChange={setFromToken}>
-                        <SelectTrigger className="w-36 sm:w-48">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {userTokens
-                            .filter((t) => t.symbol !== "DEUS")
-                            .map((token) => (
-                              <SelectItem key={token.symbol} value={token.symbol}>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-lg">{token.logo}</span>
-                                  <span>{token.symbol}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                      <Button variant="ghost" size="sm" onClick={handleMaxClick} className="text-xs sm:text-sm">
-                        Max
+            <div className="space-y-2 mb-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Sell</span>
+                {fromToken && <span>Balance: {fromToken.balance.toFixed(6)}</span>}
+              </div>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between mb-3">
+                  <Input
+                    type="number"
+                    placeholder="0.0"
+                    value={fromAmount}
+                    onChange={(e) => setFromAmount(e.target.value)}
+                    className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                  />
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
+                    <span className="text-xl">{fromToken?.logo}</span>
+                    <span className="font-medium">{fromToken?.symbol}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1">
+                    {[25, 50, 75, 100].map((percent) => (
+                      <Button
+                        key={percent}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handlePercentage(percent)}
+                        className="text-xs hover:bg-white/10"
+                      >
+                        {percent === 100 ? "MAX" : `${percent}%`}
                       </Button>
-                    </div>
-
-                    <Input
-                      placeholder="0.00"
-                      value={fromAmount}
-                      onChange={(e) => setFromAmount(e.target.value)}
-                      className="text-xl sm:text-2xl font-bold border-0 bg-transparent p-0 h-auto"
-                    />
-
-                    {selectedFromToken && (
-                      <div className="flex items-center justify-between mt-2 text-sm text-muted-foreground">
-                        <span>
-                          Balance: {selectedFromToken.balance.toLocaleString()} {selectedFromToken.symbol}
-                        </span>
-                        <span>${(Number.parseFloat(fromAmount || "0") * selectedFromToken.price).toFixed(2)}</span>
-                      </div>
-                    )}
+                    ))}
                   </div>
-                </div>
-
-                <div className="flex justify-center">
-                  <div className="p-2 rounded-full bg-accent/10 border border-accent/20">
-                    <ArrowDownUp className="h-4 w-4 text-accent" />
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium">To</Label>
-                  <div className="p-3 sm:p-4 rounded-lg bg-muted/50 border border-border">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">⚡</span>
-                        <span className="font-medium">DEUS</span>
-                        <Badge variant="secondary" className="text-xs">
-                          Destination
-                        </Badge>
-                      </div>
-                    </div>
-
-                    <div className="text-xl sm:text-2xl font-bold text-accent">{toAmount || "0.00"}</div>
-
-                    {deusToken && toAmount && (
-                      <div className="flex items-center justify-between mt-2 text-sm text-muted-foreground">
-                        <span>Balance: {deusToken.balance.toLocaleString()} DEUS</span>
-                        <span>${(Number.parseFloat(toAmount) * deusToken.price).toFixed(2)}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleGetQuote}
-                  disabled={!fromAmount || isLoading}
-                  className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
-                  size="lg"
-                >
-                  {isLoading ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Getting Quote...
-                    </>
-                  ) : (
-                    <>
-                      <TrendingUp className="h-4 w-4 mr-2" />
-                      Get Quote
-                    </>
-                  )}
-                </Button>
-
-                {quote && (
-                  <SwapQuote quote={quote} onSwap={() => setShowConfirmation(true)} isExecuting={isExecutingSwap} />
-                )}
-              </CardContent>
-            </Card>
-
-            {!isMobile && <TokenHoldingsTable tokens={userTokens} onTokenSelect={handleTokenSelect} />}
-          </motion.div>
-
-          <motion.div variants={staggerContainer} className="space-y-4 sm:space-y-6">
-            <motion.div variants={fadeInUp} whileHover={{ scale: 1.02 }}>
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-lg">⚡</span>
-                    DEUS Token
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Price</span>
-                    <span className="font-bold text-accent">
-                      ${tickerData?.price ? tickerData.price.toFixed(8) : deusToken?.price.toFixed(8)}
+                  {fromToken && fromAmount && (
+                    <span className="text-sm text-muted-foreground">
+                      ${(Number.parseFloat(fromAmount) * fromToken.price).toFixed(2)}
                     </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Your Balance</span>
-                    <span className="font-medium">{deusToken?.balance.toLocaleString()} DEUS</span>
-                  </div>
-                  {tickerData && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">24h Change</span>
-                      <span className={`font-medium ${tickerData.change24h >= 0 ? "text-green-400" : "text-red-400"}`}>
-                        {tickerData.change24h >= 0 ? "+" : ""}
-                        {tickerData.change24h.toFixed(2)}%
-                      </span>
-                    </div>
                   )}
-                  <Separator />
-                  <div className="text-xs text-muted-foreground">
-                    DEUS is the native token of the DEUS ecosystem, providing governance rights and access to premium
-                    features.
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+                </div>
+              </div>
+            </div>
 
-            <motion.div variants={fadeInUp} whileHover={{ scale: 1.02 }}>
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="text-lg">Swap Statistics</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="text-center p-3 rounded-lg bg-muted/30">
-                    <div className="text-2xl font-bold text-accent">
-                      ${tickerData?.volume24h ? (tickerData.volume24h / 1000000).toFixed(1) + "M" : "2.4M"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">24h Volume</div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center p-3 rounded-lg bg-muted/30">
-                      <div className="text-lg font-bold">0.3%</div>
-                      <div className="text-xs text-muted-foreground">Avg Fee</div>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-muted/30">
-                      <div className="text-lg font-bold">1,247</div>
-                      <div className="text-xs text-muted-foreground">24h Swaps</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+            <div className="flex justify-center -my-2 relative z-10">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="rounded-full bg-background border-4 border-background hover:bg-white/5"
+              >
+                <ArrowDownUp className="w-5 h-5 text-accent" />
+              </Button>
+            </div>
 
-            <motion.div variants={fadeInUp} whileHover={{ scale: 1.02 }}>
-              <Card className="glass-card border-yellow-500/20">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
-                    <div className="space-y-2">
-                      <h4 className="font-medium text-yellow-500">Important</h4>
-                      <p className="text-xs text-muted-foreground">
-                        Always verify token addresses and amounts before confirming transactions. Slippage may occur
-                        during high volatility periods.
-                      </p>
-                    </div>
+            <div className="space-y-2 mt-2">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Buy</span>
+                {toToken && <span>Balance: {toToken.balance.toFixed(6)}</span>}
+              </div>
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="text-2xl font-bold text-white">
+                    {isLoading ? <RefreshCw className="w-6 h-6 animate-spin" /> : toAmount || "0.0"}
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </motion.div>
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
+                    <span className="text-xl">{toToken?.logo}</span>
+                    <span className="font-medium">{toToken?.symbol}</span>
+                    <ChevronDown className="w-4 h-4" />
+                  </Button>
+                </div>
+                {toToken && toAmount && (
+                  <div className="text-sm text-muted-foreground text-right">
+                    ${(Number.parseFloat(toAmount) * toToken.price).toFixed(2)}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <Button
+              onClick={handleSwap}
+              disabled={!fromAmount || !toAmount || isLoading || isSwapping}
+              className="w-full mt-6 bg-accent hover:bg-accent/90 text-white font-medium"
+              size="lg"
+            >
+              {isLoading || isSwapping ? (
+                <>
+                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                  {isSwapping ? "Swapping..." : "Loading..."}
+                </>
+              ) : (
+                "Swap"
+              )}
+            </Button>
+
+            {toAmount && !isLoading && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 space-y-2 text-sm"
+              >
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Rate</span>
+                  <span>
+                    1 {fromToken?.symbol} = {(Number.parseFloat(toAmount) / Number.parseFloat(fromAmount)).toFixed(6)}{" "}
+                    {toToken?.symbol}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Slippage</span>
+                  <span>{slippage}%</span>
+                </div>
+              </motion.div>
+            )}
+          </Card>
         </motion.div>
-
-        {isConnected && showConfirmation && quote && (
-          <>
-            <WagmiSwapHooks quote={quote} address={address} onSwapUpdate={handleSwapExecution} />
-            <SwapConfirmation
-              quote={quote}
-              isOpen={showConfirmation}
-              onClose={() => {
-                setShowConfirmation(false)
-                setTransactionHash(undefined)
-                setRetryStatus({})
-              }}
-              onConfirm={() => {}} // This will be handled by WagmiSwapHooks
-              isExecuting={isExecutingSwap}
-              retryAttempt={retryStatus.attempt}
-              maxRetries={retryStatus.maxRetries}
-              retryDelay={retryStatus.delay}
-              txHash={transactionHash}
-            />
-          </>
-        )}
       </div>
     </div>
   )

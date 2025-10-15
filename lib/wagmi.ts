@@ -1,21 +1,17 @@
 import { createConfig, http, fallback } from "wagmi"
 import { base, baseSepolia, mainnet } from "wagmi/chains"
+import { BASE_RPC_URL } from "./rpc-config"
 
-// Using only public RPC endpoints with fallback for reliability
 export const config = createConfig({
   chains: [base, baseSepolia, mainnet],
   transports: {
     [base.id]: fallback(
       [
+        http(BASE_RPC_URL, {
+          retryCount: 3,
+          retryDelay: 1000,
+        }),
         http("https://base.llamarpc.com", {
-          retryCount: 3,
-          retryDelay: 1000,
-        }),
-        http("https://base.meowrpc.com", {
-          retryCount: 3,
-          retryDelay: 1000,
-        }),
-        http("https://base-rpc.publicnode.com", {
           retryCount: 3,
           retryDelay: 1000,
         }),

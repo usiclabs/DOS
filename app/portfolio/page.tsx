@@ -9,7 +9,6 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import { PositionCard } from "@/components/position-card"
 import { useWallet } from "@/hooks/use-wallet"
 import { toast } from "@/components/ui/use-toast"
@@ -26,8 +25,6 @@ import {
   Activity,
   Coins,
   Wallet,
-  AlertCircle,
-  CheckCircle,
   Clock,
 } from "lucide-react"
 
@@ -264,8 +261,8 @@ export default function PortfolioPage() {
     isConnected && address ? `/api/portfolio/${address}` : null,
     fetcher,
     {
-      refreshInterval: 30000,
-      revalidateOnFocus: true,
+      refreshInterval: 60000, // Increased from 30000 to 60000 (60 seconds)
+      revalidateOnFocus: false, // Disabled to prevent unnecessary refreshes
       onSuccess: (data) => {
         setLastUpdateTime(new Date())
         console.log("[v0] Portfolio data loaded successfully:", {
@@ -568,39 +565,15 @@ export default function PortfolioPage() {
                     </div>
                     <div className="flex items-center space-x-2 text-sm text-accent-light">
                       <RefreshCw className="h-4 w-4" />
-                      <span>Auto-refresh: 30s</span>
+                      <span>Auto-refresh: 60s</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-3">
-                    {data && (
-                      <>
-                        <Badge variant="outline" className="glass-card border-green-500/30 text-green-300">
-                          <CheckCircle className="h-3 w-3 mr-1" />
-                          Real-time Data
-                        </Badge>
-                        <Badge variant="outline" className="glass-card border-accent/30 text-accent-light">
-                          {data.summary.positionCount} positions • {data.summary.tokenCount} tokens
-                        </Badge>
-                      </>
-                    )}
-                    {error ? (
-                      <Badge variant="outline" className="glass-card border-red-500/30 text-red-300">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Connection Error
-                      </Badge>
-                    ) : isLoading ? (
-                      <Badge variant="outline" className="glass-card border-accent/30 text-accent-light">
-                        <div className="w-3 h-3 border-2 border-accent border-t-transparent rounded-full animate-spin mr-1" />
-                        Loading...
-                      </Badge>
-                    ) : null}
+                  <div className="mt-3 pt-3 border-t border-white/5">
+                    <p className="text-xs text-gray-400">
+                      <span className="text-accent-light font-medium">Data Source:</span> Fetched directly from Base
+                      blockchain via BlastAPI • No mock or cached data • Updates every 60 seconds
+                    </p>
                   </div>
-                </div>
-                <div className="mt-3 pt-3 border-t border-white/5">
-                  <p className="text-xs text-gray-400">
-                    <span className="text-accent-light font-medium">Data Source:</span> Fetched directly from Base
-                    blockchain via Alchemy API • No mock or cached data • Updates every 30 seconds
-                  </p>
                 </div>
               </div>
             </motion.div>

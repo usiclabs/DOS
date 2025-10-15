@@ -122,7 +122,7 @@ export function BuyNotifications() {
 
     checkForNewBuys()
 
-    const interval = setInterval(checkForNewBuys, 15000)
+    const interval = setInterval(checkForNewBuys, 60000) // Reduced frequency to 60 seconds (was 15 seconds)
 
     return () => clearInterval(interval)
   }, [lastBlock, deusPrice, toast])

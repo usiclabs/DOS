@@ -44,7 +44,6 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
         if (receipt) {
           console.log("[v0] Transaction receipt received:", receipt)
 
-          // Check if transaction succeeded (status === "0x1") or failed (status === "0x0")
           if (receipt.status === "0x1") {
             console.log("[v0] Transaction confirmed successfully!")
             return { success: true, receipt }
@@ -54,7 +53,6 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
           }
         }
 
-        // Transaction still pending, wait and retry
         if (attempt < maxAttempts) {
           console.log(`[v0] Transaction pending, checking again in 2s... (${attempt}/${maxAttempts})`)
           await new Promise((resolve) => setTimeout(resolve, 2000))
@@ -71,7 +69,7 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
     throw new Error("Transaction confirmation timeout - please check Basescan for status")
   }
 
-  const sendTransactionWithRetry = async (txParams: any, maxRetries = 3) => {
+  const sendTransactionWithRetry = async (txParams: any, maxRetries = 5) => {
     let lastError: any
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -90,10 +88,16 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
         const isRateLimit =
           error.message?.toLowerCase().includes("rate limit") ||
           error.message?.toLowerCase().includes("too many requests") ||
-          error.code === 429
+          error.code === 429 ||
+          error.code === -32603
 
         const isUserRejection =
-          error.code === 4001 || error.message?.includes("User rejected") || error.message?.includes("User denied")
+          error.code === 4001 ||
+          error.code === "ACTION_REJECTED" ||
+          error.message?.includes("user rejected") ||
+          error.message?.includes("user denied") ||
+          error.message?.includes("user cancelled") ||
+          error.message?.includes("rejected by user")
 
         if (isUserRejection) {
           throw error
@@ -103,8 +107,8 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
           throw error
         }
 
-        const delay = Math.pow(2, attempt) * 1000
-        console.log(`[v0] Rate limited, retrying in ${delay}ms...`)
+        const delay = Math.pow(2, attempt + 1) * 2500
+        console.log(`[v0] Rate limited, retrying in ${delay}ms... (attempt ${attempt}/${maxRetries})`)
 
         onSwapUpdate({
           isExecuting: true,
@@ -136,6 +140,9 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
     console.log("[v0] Executing real swap:", quote)
 
     try {
+      console.log("[v0] Waiting 3 seconds before transaction to avoid rate limits...")
+      await new Promise((resolve) => setTimeout(resolve, 3000))
+
       const response = await fetch("/api/swap/execute", {
         method: "POST",
         headers: {
@@ -207,7 +214,6 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
           isConfirmed: true,
         })
       } else {
-        // Transaction reverted
         throw new Error(
           result.error ||
             "Transaction failed on-chain. This usually means slippage was too high or there was insufficient liquidity.",
@@ -219,18 +225,34 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
       setIsExecuting(false)
 
       let errorMessage = error.message
+      const isUserRejection =
+        error.code === 4001 ||
+        error.code === "ACTION_REJECTED" ||
+        error.message?.toLowerCase().includes("user rejected") ||
+        error.message?.toLowerCase().includes("user denied") ||
+        error.message?.toLowerCase().includes("user cancelled") ||
+        error.message?.toLowerCase().includes("rejected by user")
 
-      if (error.code === 4001 || error.message?.includes("User rejected") || error.message?.includes("User denied")) {
-        errorMessage = "Transaction cancelled by user"
-        console.log("[v0] User cancelled the transaction")
+      if (isUserRejection) {
+        errorMessage = "You cancelled the transaction. Click 'Swap' to try again."
+        console.log("[v0] User cancelled the transaction in wallet")
+        onSwapUpdate({
+          isExecuting: false,
+          error: errorMessage,
+        })
+        return // Exit gracefully without showing error toast
       } else if (
         error.message?.toLowerCase().includes("rate limit") ||
         error.message?.toLowerCase().includes("too many requests")
       ) {
         errorMessage =
-          "Network is experiencing high traffic. Please wait a moment and try again, or check your wallet's RPC settings."
+          "RPC rate limit reached. Please wait 30-60 seconds and try again. If this persists, try adding a custom RPC endpoint in your wallet settings (MetaMask → Settings → Networks → Base → Edit → New RPC URL)."
       } else if (error.message?.includes("reverted")) {
         errorMessage = "Transaction failed: " + error.message
+      } else if (error.message?.includes("insufficient funds")) {
+        errorMessage = "Insufficient funds to complete this transaction. Please check your balance and try again."
+      } else if (error.message?.includes("gas")) {
+        errorMessage = "Gas estimation failed. The transaction may fail or the pool may have insufficient liquidity."
       }
 
       onSwapUpdate({ isExecuting: false, error: errorMessage })
