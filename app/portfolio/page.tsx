@@ -168,7 +168,7 @@ function TokenBalanceCard({
       <CardHeader>
         <CardTitle className="flex items-center text-white">
           <Wallet className="h-5 w-5 mr-2" />
-          Token Balances
+          Token Holdings
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -180,7 +180,7 @@ function TokenBalanceCard({
             </div>
             <div>
               <div className="font-medium text-white">Ethereum</div>
-              <div className="text-sm text-muted-foreground">{ethBalance.toFixed(4)} ETH</div>
+              <div className="text-sm text-muted-foreground">{ethBalance.toFixed(6)} ETH</div>
             </div>
           </div>
           <div className="text-right">
@@ -190,7 +190,7 @@ function TokenBalanceCard({
         </div>
 
         {/* Token Balances */}
-        {tokens.map((token) => (
+        {tokens.slice(0, 10).map((token) => (
           <div key={token.address} className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
@@ -198,26 +198,39 @@ function TokenBalanceCard({
               </div>
               <div>
                 <div className="font-medium text-white">{token.symbol}</div>
-                <div className="text-sm text-muted-foreground">{token.balanceFormatted.toFixed(4)}</div>
+                <div className="text-sm text-muted-foreground">
+                  {token.balanceFormatted >= 1000
+                    ? `${(token.balanceFormatted / 1000).toFixed(1)}K`
+                    : token.balanceFormatted.toFixed(2)}
+                  {token.balance === "0" && <span className="ml-2 text-xs text-accent-light">(in LP)</span>}
+                </div>
               </div>
             </div>
             <div className="text-right">
               <div className="font-semibold text-white">{formatNumber(token.value)}</div>
-              <div className="text-sm text-muted-foreground">${token.price.toFixed(4)}</div>
+              <div className="text-sm text-muted-foreground">${token.price.toFixed(6)}</div>
             </div>
           </div>
         ))}
 
         {tokens.length === 0 && (
-          <div className="text-center py-4 text-muted-foreground">
-            <Coins className="h-8 w-8 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No token balances found</p>
+          <div className="text-center py-6 px-4 bg-muted/10 rounded-lg border border-accent/20">
+            <Coins className="h-10 w-10 mx-auto mb-3 text-accent opacity-50" />
+            <p className="text-sm text-white font-medium mb-1">No Token Holdings</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Your tokens are currently deployed in liquidity positions. Check your LP positions below to see your token
+              allocations.
+            </p>
           </div>
+        )}
+
+        {tokens.length > 10 && (
+          <div className="text-center py-2 text-sm text-muted-foreground">+ {tokens.length - 10} more tokens</div>
         )}
 
         <div className="border-t border-border pt-3">
           <div className="flex justify-between items-center font-semibold">
-            <span className="text-white">Total Wallet Value</span>
+            <span className="text-white">Total Value</span>
             <span className="text-white">{formatNumber(totalValue)}</span>
           </div>
         </div>

@@ -323,6 +323,59 @@ async function fetchLPPositions(address: string): Promise<LPPosition[]> {
   }
 }
 
+async function extractTokensFromLPPositions(positions: LPPosition[]): Promise<TokenBalance[]> {
+  const tokenMap = new Map<string, { symbol: string; name: string; amount: number; price: number }>()
+
+  for (const position of positions) {
+    // Add base token
+    const baseKey = position.baseToken.address.toLowerCase()
+    if (tokenMap.has(baseKey)) {
+      const existing = tokenMap.get(baseKey)!
+      existing.amount += position.baseToken.amount
+    } else {
+      tokenMap.set(baseKey, {
+        symbol: position.baseToken.symbol,
+        name: position.baseToken.name,
+        amount: position.baseToken.amount,
+        price: position.baseToken.value / position.baseToken.amount || 0,
+      })
+    }
+
+    // Add quote token
+    const quoteKey = position.quoteToken.address.toLowerCase()
+    if (tokenMap.has(quoteKey)) {
+      const existing = tokenMap.get(quoteKey)!
+      existing.amount += position.quoteToken.amount
+    } else {
+      tokenMap.set(quoteKey, {
+        symbol: position.quoteToken.symbol,
+        name: position.quoteToken.name,
+        amount: position.quoteToken.amount,
+        price: position.quoteToken.value / position.quoteToken.amount || 0,
+      })
+    }
+  }
+
+  // Convert to TokenBalance array
+  const lpTokens: TokenBalance[] = Array.from(tokenMap.entries())
+    .map(([address, data]) => ({
+      address,
+      symbol: data.symbol,
+      name: data.name,
+      decimals: 18, // Default, actual decimals don't matter for display
+      balance: "0", // Not applicable for LP tokens
+      balanceFormatted: data.amount,
+      value: data.amount * data.price,
+      price: data.price,
+      logoURI: undefined,
+    }))
+    .filter((token) => token.value > 0.01) // Show tokens with value > $0.01
+    .sort((a, b) => b.value - a.value)
+
+  console.log("[v0] Extracted", lpTokens.length, "unique tokens from LP positions")
+  return lpTokens
+}
+
 export async function GET(request: Request, context: { params: Promise<{ address: string }> | { address: string } }) {
   console.log("[v0] ========== Portfolio API Called ==========")
 
@@ -353,7 +406,14 @@ export async function GET(request: Request, context: { params: Promise<{ address
       .filter((position) => position.totalValue > 1)
       .sort((a, b) => b.totalValue - a.totalValue)
 
-    const filteredTokens = balanceData.tokens.filter((token) => token.value > 1).sort((a, b) => b.value - a.value)
+    const filteredTokens = balanceData.tokens.filter((token) => token.value > 0.1).sort((a, b) => b.value - a.value)
+
+    const lpTokens = await extractTokensFromLPPositions(filteredPositions)
+
+    const allTokens = [...filteredTokens, ...lpTokens]
+    const uniqueTokens = Array.from(
+      new Map(allTokens.map((token) => [token.address.toLowerCase(), token])).values(),
+    ).sort((a, b) => b.value - a.value)
 
     const totalFeesEarned = filteredPositions.reduce((sum, position) => sum + position.feesEarned, 0)
     const totalImpermanentLoss = filteredPositions.reduce((sum, position) => sum + position.impermanentLoss, 0)
@@ -369,7 +429,7 @@ export async function GET(request: Request, context: { params: Promise<{ address
       tokenValue,
       lpValue,
       totalValue,
-      tokenCount: filteredTokens.length,
+      tokenCount: uniqueTokens.length,
       positionCount: filteredPositions.length,
     })
 
@@ -382,13 +442,13 @@ export async function GET(request: Request, context: { params: Promise<{ address
       avgApr,
       ethBalance: balanceData.eth,
       ethValue,
-      tokenCount: filteredTokens.length,
+      tokenCount: uniqueTokens.length,
     }
 
     const response: PortfolioResponse = {
       summary,
       positions: filteredPositions,
-      tokens: filteredTokens,
+      tokens: uniqueTokens,
     }
 
     const duration = Date.now() - startTime

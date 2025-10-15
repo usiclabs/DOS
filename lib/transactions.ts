@@ -11,7 +11,7 @@ export interface TransactionResult {
   error?: string
 }
 
-const UNISWAP_V3_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BF5d56E39E92d8b8b5e"
+const UNISWAP_V3_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1"
 
 // Simplified ABI for the functions we need
 const POSITION_MANAGER_ABI = {
