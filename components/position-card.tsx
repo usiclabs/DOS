@@ -159,12 +159,12 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
   return (
     <>
       <Card className="bg-card border-border shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] border-0 hover:bg-white/5 transition-colors">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">
+        <CardHeader className="pb-3 px-4 sm:px-6">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg">
               {position.baseToken.symbol}/{position.quoteToken.symbol}
             </CardTitle>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center flex-wrap gap-2">
               <Badge variant={position.isDeusPool ? "default" : "secondary"} className="text-xs">
                 {position.isDeusPool ? "DEUS" : position.dexId}
               </Badge>
@@ -178,22 +178,22 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
               )}
             </div>
           </div>
-          <CardDescription>
+          <CardDescription className="text-xs sm:text-sm break-words">
             Pool Type: {position.poolType.toUpperCase()} • Entry: {formatDate(position.entryDate)}
             {position.tokenId && ` • Token ID: ${position.tokenId}`}
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <CardContent className="space-y-4 px-4 sm:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <div className="text-sm text-muted-foreground">Total Value</div>
-              <div className="text-xl font-bold">{formatNumber(position.totalValue)}</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Total Value</div>
+              <div className="text-lg sm:text-xl font-bold">{formatNumber(position.totalValue)}</div>
             </div>
             <div>
-              <div className="text-sm text-muted-foreground">Net P&L</div>
+              <div className="text-xs sm:text-sm text-muted-foreground">Net P&L</div>
               <div
-                className={`text-xl font-bold flex items-center ${isProfitable ? "text-green-400" : "text-red-400"}`}
+                className={`text-lg sm:text-xl font-bold flex items-center ${isProfitable ? "text-green-400" : "text-red-400"}`}
               >
                 {isProfitable ? <TrendingUp className="h-4 w-4 mr-1" /> : <TrendingDown className="h-4 w-4 mr-1" />}
                 {formatNumber(Math.abs(position.netPnl))} ({formatPercent(pnlPercentage)})
@@ -204,17 +204,17 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
           <Separator />
 
           <div className="space-y-2">
-            <div className="text-sm font-medium">Position Breakdown</div>
+            <div className="text-xs sm:text-sm font-medium">Position Breakdown</div>
             <div className="space-y-1">
-              <div className="flex justify-between text-sm">
-                <span>{position.baseToken.symbol}</span>
-                <span>
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="truncate mr-2">{position.baseToken.symbol}</span>
+                <span className="text-right">
                   {position.baseToken.amount.toFixed(4)} ({formatNumber(position.baseToken.value)})
                 </span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span>{position.quoteToken.symbol}</span>
-                <span>
+              <div className="flex justify-between text-xs sm:text-sm">
+                <span className="truncate mr-2">{position.quoteToken.symbol}</span>
+                <span className="text-right">
                   {position.quoteToken.amount.toFixed(4)} ({formatNumber(position.quoteToken.value)})
                 </span>
               </div>
@@ -223,36 +223,36 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
 
           <Separator />
 
-          <div className="grid grid-cols-3 gap-4 text-sm">
+          <div className="grid grid-cols-3 gap-2 sm:gap-4 text-xs sm:text-sm">
             <div>
-              <div className="text-muted-foreground">Current APR</div>
+              <div className="text-muted-foreground text-xs">Current APR</div>
               <div className="font-medium text-accent">{position.currentApr.toFixed(1)}%</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Fees Earned</div>
+              <div className="text-muted-foreground text-xs">Fees Earned</div>
               <div className="font-medium text-green-400">{formatNumber(position.feesEarned)}</div>
             </div>
             <div>
-              <div className="text-muted-foreground">Pool Share</div>
+              <div className="text-muted-foreground text-xs">Pool Share</div>
               <div className="font-medium">{(position.poolShare * 100).toFixed(3)}%</div>
             </div>
           </div>
 
           {position.impermanentLoss > 0 && (
             <div className="flex items-center space-x-2 p-2 rounded bg-yellow-500/10 border border-yellow-500/20">
-              <AlertTriangle className="h-4 w-4 text-yellow-400" />
-              <div className="text-sm">
+              <AlertTriangle className="h-4 w-4 text-yellow-400 flex-shrink-0" />
+              <div className="text-xs sm:text-sm">
                 <span className="text-yellow-400">IL:</span> -{formatNumber(position.impermanentLoss)} (-
                 {((position.impermanentLoss / position.totalValue) * 100).toFixed(2)}%)
               </div>
             </div>
           )}
 
-          <div className="flex space-x-2 pt-2">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 pt-2">
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 bg-transparent"
+              className="flex-1 bg-transparent min-h-[44px] sm:min-h-[36px]"
               onClick={() => setShowWithdrawModal(true)}
               disabled={isWithdrawing || isCollectingFees}
             >
@@ -263,7 +263,7 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
             <Button
               variant="outline"
               size="sm"
-              className="flex-1 bg-transparent"
+              className="flex-1 bg-transparent min-h-[44px] sm:min-h-[36px]"
               onClick={handleCollectFees}
               disabled={isWithdrawing || isCollectingFees || position.feesEarned <= 0}
             >
@@ -274,14 +274,16 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
             <Button
               variant="ghost"
               size="sm"
+              className="sm:flex-none min-h-[44px] sm:min-h-[36px]"
               onClick={() => window.open(`https://basescan.org/address/${position.pairAddress}`, "_blank")}
             >
-              <ExternalLink className="h-4 w-4" />
+              <ExternalLink className="h-4 w-4 sm:mr-0" />
+              <span className="sm:hidden ml-2">View on BaseScan</span>
             </Button>
           </div>
 
           {transactionHash && (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground break-all">
               <span>Transaction: </span>
               <a
                 href={`https://basescan.org/tx/${transactionHash}`}
@@ -297,10 +299,10 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
       </Card>
 
       <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
-        <DialogContent className="bg-card border-border shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] border-0">
+        <DialogContent className="bg-card border-border shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] border-0 max-w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Withdraw Liquidity</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base sm:text-lg">Withdraw Liquidity</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Remove liquidity from {position.baseToken.symbol}/{position.quoteToken.symbol} pool
               <br />
               <span className="text-yellow-400 text-xs">⚠️ This will incur gas fees on the Base network</span>
@@ -309,13 +311,14 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
 
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Withdrawal Percentage</Label>
-              <div className="flex space-x-2">
+              <Label className="text-sm">Withdrawal Percentage</Label>
+              <div className="grid grid-cols-4 gap-2">
                 {["25", "50", "75", "100"].map((percent) => (
                   <Button
                     key={percent}
                     variant={withdrawPercentage === percent ? "default" : "outline"}
                     size="sm"
+                    className="min-h-[44px] sm:min-h-[36px]"
                     onClick={() => setWithdrawPercentage(percent)}
                   >
                     {percent}%
@@ -329,12 +332,13 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
                 value={withdrawPercentage}
                 onChange={(e) => setWithdrawPercentage(e.target.value)}
                 placeholder="Custom percentage"
+                className="min-h-[44px] sm:min-h-[36px]"
               />
             </div>
 
             <div className="space-y-2">
-              <div className="text-sm font-medium">You will receive:</div>
-              <div className="space-y-1 text-sm">
+              <div className="text-xs sm:text-sm font-medium">You will receive:</div>
+              <div className="space-y-1 text-xs sm:text-sm">
                 <div className="flex justify-between">
                   <span>{position.baseToken.symbol}</span>
                   <span>{(position.baseToken.amount * (Number(withdrawPercentage) / 100)).toFixed(4)}</span>
@@ -351,18 +355,18 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
               </div>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
               <Button
                 variant="outline"
                 onClick={() => setShowWithdrawModal(false)}
-                className="flex-1"
+                className="flex-1 min-h-[44px] sm:min-h-[36px]"
                 disabled={isWithdrawing}
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleWithdraw}
-                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 min-h-[44px] sm:min-h-[36px]"
                 disabled={isWithdrawing || !position.tokenId}
               >
                 {isWithdrawing ? (

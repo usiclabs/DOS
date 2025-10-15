@@ -77,7 +77,7 @@ export default function SwapPage() {
 
   const handlePercentage = (percent: number) => {
     if (fromToken && userTokens.length > 0) {
-      const maxAmount = (fromToken.balance / fromToken.decimals).toFixed(6)
+      const maxAmount = fromToken.balance.toFixed(6)
       setFromAmount(percent === 100 ? maxAmount : ((Number.parseFloat(maxAmount) * percent) / 100).toFixed(6))
     }
   }
@@ -93,8 +93,13 @@ export default function SwapPage() {
           setUserTokens(data.tokens || [])
 
           const ethToken = data.tokens?.find((t: Token) => t.symbol === "ETH")
+          const deusToken = data.tokens?.find((t: Token) => t.symbol === "DEUS")
+
           if (ethToken) setFromToken(ethToken)
-          setToToken(DEUS_TOKEN)
+          // Use fetched DEUS token with real balance, or fallback to hardcoded DEUS_TOKEN
+          setToToken(deusToken || DEUS_TOKEN)
+
+          console.log("[v0] Balances fetched - ETH:", ethToken?.balance, "DEUS:", deusToken?.balance)
         }
       } catch (error) {
         console.error("Failed to fetch balances:", error)
@@ -313,6 +318,29 @@ export default function SwapPage() {
           title: "Swap Successful!",
           description: `Successfully swapped ${fromAmount} ${fromToken?.symbol} for ${toAmount} ${toToken?.symbol}`,
         })
+
+        const refreshBalances = async () => {
+          try {
+            const response = await fetch(`/api/wallet/balances/${address}`)
+            if (response.ok) {
+              const data = await response.json()
+              setUserTokens(data.tokens || [])
+
+              const ethToken = data.tokens?.find((t: Token) => t.symbol === "ETH")
+              const deusToken = data.tokens?.find((t: Token) => t.symbol === "DEUS")
+
+              if (ethToken) setFromToken(ethToken)
+              if (deusToken) setToToken(deusToken)
+
+              console.log("[v0] Balances refreshed after swap - ETH:", ethToken?.balance, "DEUS:", deusToken?.balance)
+            }
+          } catch (error) {
+            console.error("Failed to refresh balances:", error)
+          }
+        }
+
+        // Wait 3 seconds for blockchain to update, then refresh
+        setTimeout(refreshBalances, 3000)
 
         setFromAmount("")
         setToAmount("")

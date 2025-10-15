@@ -100,7 +100,7 @@ export function DeusTicker() {
     {
       icon: <DollarSign className="h-4 w-4" />,
       label: "$DEUS",
-      value: `$${tickerData.priceUsd.toFixed(4)}`,
+      value: `$${tickerData.priceUsd.toFixed(6)}`, // Increased decimal places from 4 to 6
     },
     {
       icon: tickerData.change24hPct >= 0 ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />,

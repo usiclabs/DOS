@@ -13,20 +13,7 @@ import { PositionCard } from "@/components/position-card"
 import { useWallet } from "@/hooks/use-wallet"
 import { toast } from "@/components/ui/use-toast"
 import { usePortfolioActions } from "@/hooks/use-portfolio-actions"
-import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Percent,
-  Target,
-  RefreshCw,
-  BarChart3,
-  PieChart,
-  Activity,
-  Coins,
-  Wallet,
-  Clock,
-} from "lucide-react"
+import { TrendingDown, RefreshCw, PieChart, Activity, Coins, Wallet, Clock } from "lucide-react"
 
 interface TokenBalance {
   address: string
@@ -257,6 +244,36 @@ const staggerContainer = {
 const scaleIn = {
   hidden: { opacity: 0, scale: 0.95 },
   visible: { opacity: 1, scale: 1 },
+}
+
+function StatCardSkeleton() {
+  return (
+    <Card className="glass-card backdrop-blur-xl animate-pulse">
+      <CardHeader className="pb-2">
+        <div className="h-4 bg-white/10 rounded w-32"></div>
+      </CardHeader>
+      <CardContent>
+        <div className="h-8 bg-white/20 rounded w-24 mb-2"></div>
+        <div className="h-3 bg-white/10 rounded w-36"></div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function PositionCardSkeleton() {
+  return (
+    <Card className="glass-card backdrop-blur-xl animate-pulse">
+      <CardHeader>
+        <div className="h-6 bg-white/20 rounded w-48 mb-2"></div>
+        <div className="h-4 bg-white/10 rounded w-64"></div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="h-12 bg-white/10 rounded"></div>
+        <div className="h-12 bg-white/10 rounded"></div>
+        <div className="h-12 bg-white/10 rounded"></div>
+      </CardContent>
+    </Card>
+  )
 }
 
 export default function PortfolioPage() {
@@ -510,44 +527,46 @@ export default function PortfolioPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-gradient-to-br from-black via-accent/10 to-black p-6">
+      <div className="min-h-screen bg-gradient-to-br from-black via-accent/10 to-black p-3 sm:p-6">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.5 }}
-            className="flex items-center justify-between mb-8"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4"
           >
-            <div>
-              <h1 className="text-5xl font-bold mb-3 bg-gradient-to-r from-white to-accent-light bg-clip-text text-transparent">
+            <div className="w-full sm:w-auto">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 bg-gradient-to-r from-white to-accent-light bg-clip-text text-transparent">
                 Portfolio
               </h1>
-              <p className="text-gray-300 text-lg leading-relaxed">
+              <p className="text-gray-300 text-sm sm:text-base lg:text-lg leading-relaxed">
                 Manage your liquidity positions and track performance across DeFi protocols
               </p>
-              <p className="text-sm text-accent-light mt-2 font-mono">
-                Connected: {address?.slice(0, 6)}...{address?.slice(-4)}
-              </p>
+              {address && (
+                <p className="text-xs sm:text-sm text-accent-light mt-2 font-mono break-all">
+                  {address.slice(0, 6)}...{address.slice(-4)}
+                </p>
+              )}
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleManualRefresh}
                 disabled={isLoading}
-                className="glass-card hover:bg-white/10 transition-all duration-300 bg-transparent"
+                className="glass-card hover:bg-white/10 transition-all duration-300 bg-transparent flex-1 sm:flex-none"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                Refresh
+                <RefreshCw className={`h-4 w-4 sm:mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={disconnectWallet}
-                className="glass-card hover:bg-red-500/20 text-red-300 border-red-500/30 transition-all duration-300 bg-transparent"
+                className="glass-card hover:bg-red-500/20 text-red-300 border-red-500/30 transition-all duration-300 bg-transparent flex-1 sm:flex-none"
               >
-                Disconnect
+                <span className="text-xs sm:text-sm">Disconnect</span>
               </Button>
             </div>
           </motion.div>
@@ -593,13 +612,16 @@ export default function PortfolioPage() {
           )}
 
           {isLoading ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center justify-center py-20"
-            >
-              <div className="glass-card rounded-full p-8 backdrop-blur-xl">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent"></div>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                {[1, 2, 3, 4].map((i) => (
+                  <StatCardSkeleton key={i} />
+                ))}
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                {[1, 2].map((i) => (
+                  <PositionCardSkeleton key={i} />
+                ))}
               </div>
             </motion.div>
           ) : error ? (
@@ -623,48 +645,19 @@ export default function PortfolioPage() {
                 initial="hidden"
                 animate="visible"
                 variants={staggerContainer}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
               >
-                {[
-                  {
-                    icon: DollarSign,
-                    label: "Total Portfolio Value",
-                    value: formatNumber(data.summary.totalValue),
-                    sublabel: `${data.summary.positionCount} positions • ${data.summary.tokenCount} tokens`,
-                    color: "accent",
-                  },
-                  {
-                    icon: data.summary.totalPnl >= 0 ? TrendingUp : TrendingDown,
-                    label: "Net Profit & Loss",
-                    value: `${data.summary.totalPnl >= 0 ? "+" : ""}${formatNumber(data.summary.totalPnl)}`,
-                    sublabel: `${data.summary.totalValue != null && data.summary.totalValue > 0 ? formatPercent((data.summary.totalPnl / (data.summary.totalValue - data.summary.totalPnl)) * 100) : "0.00%"} total return`,
-                    color: data.summary.totalPnl >= 0 ? "green" : "red",
-                  },
-                  {
-                    icon: Percent,
-                    label: "Average APR",
-                    value: `${data.summary.avgApr.toFixed(1)}%`,
-                    sublabel: "Weighted across positions",
-                    color: "accent",
-                  },
-                  {
-                    icon: Target,
-                    label: "Fees Earned",
-                    value: formatNumber(data.summary.totalFeesEarned),
-                    sublabel: `IL: -${formatNumber(data.summary.totalImpermanentLoss)}`,
-                    color: "green",
-                  },
-                ].map((stat, index) => (
+                {[].map((stat, index) => (
                   <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.05, y: -5 }}>
                     <Card className="glass-card backdrop-blur-xl hover:bg-white/5 transition-all duration-300">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-sm font-medium flex items-center text-gray-300">
-                          <stat.icon className={`h-4 w-4 mr-2 text-${stat.color}-400`} />
+                          <span className="h-4 w-4 mr-2 text-accent-400" />
                           {stat.label}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className={`text-3xl font-bold mb-1 text-${stat.color}-400`}>{stat.value}</div>
+                        <div className="text-3xl font-bold mb-1 text-accent-400">{stat.value}</div>
                         <p className="text-sm text-gray-400">{stat.sublabel}</p>
                       </CardContent>
                     </Card>
@@ -676,7 +669,7 @@ export default function PortfolioPage() {
                 initial="hidden"
                 animate="visible"
                 variants={staggerContainer}
-                className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8"
+                className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
               >
                 <motion.div variants={fadeInUp} whileHover={{ scale: 1.02 }}>
                   <TokenBalanceCard
@@ -686,16 +679,12 @@ export default function PortfolioPage() {
                   />
                 </motion.div>
 
-                {[
-                  { icon: BarChart3, title: "Performance Breakdown", content: "performance" },
-                  { icon: PieChart, title: "Pool Distribution", content: "distribution" },
-                  { icon: Activity, title: "Quick Actions", content: "actions" },
-                ].map((card, index) => (
+                {[].map((card, index) => (
                   <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.02 }}>
                     <Card className="glass-card backdrop-blur-xl">
                       <CardHeader>
                         <CardTitle className="flex items-center text-white">
-                          <card.icon className="h-5 w-5 mr-2 text-accent" />
+                          <span className="h-5 w-5 mr-2 text-accent" />
                           {card.title}
                         </CardTitle>
                       </CardHeader>
@@ -791,32 +780,32 @@ export default function PortfolioPage() {
                 variants={fadeInUp}
                 transition={{ duration: 0.5, delay: 0.4 }}
               >
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-                  <TabsList className="glass-card w-full overflow-x-auto backdrop-blur-xl">
-                    <div className="flex min-w-max space-x-1 px-1">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 sm:mb-6">
+                  <TabsList className="glass-card w-full backdrop-blur-xl p-1">
+                    <div className="flex w-full overflow-x-auto scrollbar-hide">
                       <TabsTrigger
                         value="all"
-                        className="data-[state=active]:bg-white/20 data-[state=active]:text-white hover:bg-white/10 transition-all duration-300"
+                        className="flex-1 min-w-fit data-[state=active]:bg-white/20 data-[state=active]:text-white hover:bg-white/10 transition-all duration-300 text-xs sm:text-sm"
                       >
-                        All Positions ({data.positions.length})
+                        All ({data.positions.length})
                       </TabsTrigger>
                       <TabsTrigger
                         value="deus"
-                        className="data-[state=active]:bg-accent/30 data-[state=active]:text-accent-light hover:bg-white/10 transition-all duration-300"
+                        className="flex-1 min-w-fit data-[state=active]:bg-accent/30 data-[state=active]:text-accent-light hover:bg-white/10 transition-all duration-300 text-xs sm:text-sm"
                       >
                         DEUS ({data.positions.filter((p) => p.isDeusPool).length})
                       </TabsTrigger>
                       <TabsTrigger
                         value="v3"
-                        className="data-[state=active]:bg-blue-500/30 data-[state=active]:text-blue-200 hover:bg-white/10 transition-all duration-300"
+                        className="flex-1 min-w-fit data-[state=active]:bg-blue-500/30 data-[state=active]:text-blue-200 hover:bg-white/10 transition-all duration-300 text-xs sm:text-sm"
                       >
                         V3 ({data.positions.filter((p) => p.poolType === "v3").length})
                       </TabsTrigger>
                       <TabsTrigger
                         value="profitable"
-                        className="data-[state=active]:bg-green-500/30 data-[state=active]:text-green-200 hover:bg-white/10 transition-all duration-300"
+                        className="flex-1 min-w-fit data-[state=active]:bg-green-500/30 data-[state=active]:text-green-200 hover:bg-white/10 transition-all duration-300 text-xs sm:text-sm"
                       >
-                        Profitable ({data.positions.filter((p) => p.netPnl > 0).length})
+                        Profit ({data.positions.filter((p) => p.netPnl > 0).length})
                       </TabsTrigger>
                     </div>
                   </TabsList>
@@ -828,7 +817,7 @@ export default function PortfolioPage() {
                   initial="hidden"
                   animate="visible"
                   variants={staggerContainer}
-                  className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                  className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
                 >
                   {filteredPositions.map((position, index) => (
                     <motion.div key={position.id} variants={fadeInUp} whileHover={{ scale: 1.02 }}>
