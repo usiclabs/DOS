@@ -509,7 +509,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={resetModal}>
-      <DialogContent className="glass-card max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className="bg-black/30 backdrop-blur-xl border-white/20 max-w-4xl max-h-[90vh] flex flex-col">
         <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <Zap className="h-5 w-5 text-accent" />
