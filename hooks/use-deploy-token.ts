@@ -9,8 +9,8 @@ import {
   UNISWAP_V3_FACTORY_ABI,
   UNISWAP_V3_FACTORY_ADDRESS,
   UNISWAP_V3_POOL_ABI,
-  DEUS_TOKEN_ADDRESS,
 } from "@/lib/token-factory-abi"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 import { NONFUNGIBLE_POSITION_MANAGER_ABI, NONFUNGIBLE_POSITION_MANAGER_ADDRESS } from "@/lib/uniswap-abis"
 
 export type DeployStep =
@@ -230,10 +230,51 @@ export function useDeployToken() {
 
       // Parse the result - it's a hex string representing an address
       const existingPool = existingPoolResult as string
-      const poolExists = existingPool.toLowerCase() !== zeroAddress.toLowerCase()
+      const poolAddressFromResult = "0x" + existingPool.slice(-40)
+      const poolExists = poolAddressFromResult.toLowerCase() !== zeroAddress.toLowerCase()
+
+      console.log("[v0] Pool address from factory:", poolAddressFromResult)
+      console.log("[v0] Pool exists:", poolExists)
+
+      let needsInitialization = false
+      if (poolExists) {
+        console.log("[v0] Checking if pool is initialized...")
+        try {
+          const slot0Result = await window.ethereum.request({
+            method: "eth_call",
+            params: [
+              {
+                to: poolAddressFromResult,
+                data: encodeFunctionData({
+                  abi: UNISWAP_V3_POOL_ABI,
+                  functionName: "slot0",
+                  args: [],
+                }),
+              },
+              "latest",
+            ],
+          })
+
+          const slot0Data = slot0Result as string
+          const sqrtPriceX96Current = BigInt("0x" + slot0Data.slice(2, 66))
+          console.log("[v0] Pool sqrtPriceX96:", sqrtPriceX96Current.toString())
+
+          if (sqrtPriceX96Current === 0n) {
+            console.log("[v0] Pool exists but is not initialized")
+            needsInitialization = true
+          } else {
+            console.log("[v0] Pool is already initialized")
+          }
+        } catch (error: any) {
+          console.log("[v0] Error checking pool initialization:", error.message)
+          console.log("[v0] Assuming pool needs initialization")
+          needsInitialization = true
+        }
+      }
 
       if (!poolExists) {
         // Create new pool
+        console.log("[v0] Creating new pool...")
         const createPoolData = encodeFunctionData({
           abi: UNISWAP_V3_FACTORY_ABI,
           functionName: "createPool",
@@ -284,247 +325,73 @@ export function useDeployToken() {
           ],
         })
 
-        poolAddr = poolAddressResult as Address
+        poolAddr = ("0x" + (poolAddressResult as string).slice(-40)) as Address
         setPoolAddress(poolAddr)
         setFailedTxHash(null)
         console.log("[v0] Pool created at:", poolAddr)
-
-        // Step 3: Initialize Pool
-        setDeployStep("initializing-pool")
-        console.log("[v0] Initializing pool with lopsided ratio...")
-
-        const slot0Result = await window.ethereum.request({
-          method: "eth_call",
-          params: [
-            {
-              to: poolAddr,
-              data: encodeFunctionData({
-                abi: UNISWAP_V3_POOL_ABI,
-                functionName: "slot0",
-                args: [],
-              }),
-            },
-            "latest",
-          ],
-        })
-
-        // Decode slot0 to check sqrtPriceX96
-        const slot0Data = slot0Result as string
-        const sqrtPriceX96Current = BigInt("0x" + slot0Data.slice(2, 66))
-
-        if (sqrtPriceX96Current === 0n) {
-          // Pool not initialized, proceed with initialization
-          const supplyNum = Number.parseFloat(params.initialSupply)
-          const deusNum = 0.0001
-
-          let sqrtPriceX96: bigint
-          if (isNewTokenToken0) {
-            // price = DEUS/NewToken (very small number)
-            const price = deusNum / supplyNum
-            const sqrtPrice = Math.sqrt(price)
-            sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * 2 ** 96))
-          } else {
-            // price = NewToken/DEUS (very large number)
-            const price = supplyNum / deusNum
-            const sqrtPrice = Math.sqrt(price)
-            sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * 2 ** 96))
-          }
-
-          console.log("[v0] Calculated sqrtPriceX96:", sqrtPriceX96.toString())
-
-          const initializeData = encodeFunctionData({
-            abi: UNISWAP_V3_POOL_ABI,
-            functionName: "initialize",
-            args: [sqrtPriceX96],
-          })
-
-          const initTx = await window.ethereum.request({
-            method: "eth_sendTransaction",
-            params: [
-              {
-                from: address,
-                to: poolAddr,
-                data: initializeData,
-              },
-            ],
-          })
-
-          console.log("[v0] Pool initialization tx:", initTx)
-          setFailedTxHash(initTx as string)
-
-          // Wait for initialization
-          let initReceipt = null
-          while (!initReceipt) {
-            await new Promise((resolve) => setTimeout(resolve, 2000))
-            initReceipt = await window.ethereum.request({
-              method: "eth_getTransactionReceipt",
-              params: [initTx],
-            })
-          }
-
-          if (initReceipt.status !== "0x1") {
-            throw new Error(`Pool initialization failed. View transaction details: https://basescan.org/tx/${initTx}`)
-          }
-        } else {
-          console.log("[v0] Pool already initialized, skipping initialization")
-        }
+        needsInitialization = true
       } else {
-        poolAddr = existingPool as Address
+        poolAddr = poolAddressFromResult as Address
         setPoolAddress(poolAddr)
-        setFailedTxHash(null)
         console.log("[v0] Pool already exists at:", poolAddr)
       }
 
-      // Step 4: Approve Tokens
-      setDeployStep("approving-token")
-      console.log("[v0] Approving new token...")
+      if (needsInitialization) {
+        setDeployStep("initializing-pool")
+        console.log("[v0] Initializing pool with lopsided ratio...")
 
-      const approveTokenData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [NONFUNGIBLE_POSITION_MANAGER_ADDRESS, tokenAmountWei],
-      })
+        const supplyNum = Number.parseFloat(params.initialSupply)
+        const deusNum = 0.0001
 
-      const approveTokenTx = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: address,
-            to: newTokenAddress,
-            data: approveTokenData,
-          },
-        ],
-      })
+        let sqrtPriceX96: bigint
+        if (isNewTokenToken0) {
+          const price = deusNum / supplyNum
+          const sqrtPrice = Math.sqrt(price)
+          sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * 2 ** 96))
+        } else {
+          const price = supplyNum / deusNum
+          const sqrtPrice = Math.sqrt(price)
+          sqrtPriceX96 = BigInt(Math.floor(sqrtPrice * 2 ** 96))
+        }
 
-      console.log("[v0] Token approval tx:", approveTokenTx)
-      setFailedTxHash(approveTokenTx as string)
+        console.log("[v0] Calculated sqrtPriceX96:", sqrtPriceX96.toString())
 
-      // Wait for approval
-      let approveTokenReceipt = null
-      while (!approveTokenReceipt) {
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        approveTokenReceipt = await window.ethereum.request({
-          method: "eth_getTransactionReceipt",
-          params: [approveTokenTx],
+        const initializeData = encodeFunctionData({
+          abi: UNISWAP_V3_POOL_ABI,
+          functionName: "initialize",
+          args: [sqrtPriceX96],
         })
-      }
 
-      if (approveTokenReceipt.status !== "0x1") {
-        throw new Error(`Token approval failed. View transaction details: https://basescan.org/tx/${approveTokenTx}`)
-      }
-
-      // Step 5: Approve DEUS
-      setDeployStep("approving-deus")
-      console.log("[v0] Approving DEUS...")
-
-      const approveDeusData = encodeFunctionData({
-        abi: ERC20_ABI,
-        functionName: "approve",
-        args: [NONFUNGIBLE_POSITION_MANAGER_ADDRESS, deusAmountWei],
-      })
-
-      const approveDeusTx = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: address,
-            to: DEUS_TOKEN_ADDRESS,
-            data: approveDeusData,
-          },
-        ],
-      })
-
-      console.log("[v0] DEUS approval tx:", approveDeusTx)
-      setFailedTxHash(approveDeusTx as string)
-
-      // Wait for approval
-      let approveDeusReceipt = null
-      while (!approveDeusReceipt) {
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        approveDeusReceipt = await window.ethereum.request({
-          method: "eth_getTransactionReceipt",
-          params: [approveDeusTx],
+        const initTx = await window.ethereum.request({
+          method: "eth_sendTransaction",
+          params: [
+            {
+              from: address,
+              to: poolAddr,
+              data: initializeData,
+            },
+          ],
         })
-      }
 
-      if (approveDeusReceipt.status !== "0x1") {
-        throw new Error(`DEUS approval failed. View transaction details: https://basescan.org/tx/${approveDeusTx}`)
-      }
+        console.log("[v0] Pool initialization tx:", initTx)
+        setFailedTxHash(initTx as string)
 
-      // Step 6: Add Liquidity
-      setDeployStep("adding-liquidity")
-      console.log("[v0] Adding liquidity...")
+        // Wait for initialization
+        let initReceipt = null
+        while (!initReceipt) {
+          await new Promise((resolve) => setTimeout(resolve, 2000))
+          initReceipt = await window.ethereum.request({
+            method: "eth_getTransactionReceipt",
+            params: [initTx],
+          })
+        }
 
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 20 // 20 minutes
+        if (initReceipt.status !== "0x1") {
+          throw new Error(`Pool initialization failed. View transaction details: https://basescan.org/tx/${initTx}`)
+        }
 
-      // Calculate tick range (full range for simplicity)
-      const tickLower = -887220 // Min tick
-      const tickUpper = 887220 // Max tick
-
-      const amount0Desired = isNewTokenToken0 ? tokenAmountWei : deusAmountWei
-      const amount1Desired = isNewTokenToken0 ? deusAmountWei : tokenAmountWei
-
-      const amount0Min = (amount0Desired * 995n) / 1000n
-      const amount1Min = (amount1Desired * 995n) / 1000n
-
-      console.log("[v0] Liquidity amounts - token0:", amount0Desired.toString(), "token1:", amount1Desired.toString())
-
-      const mintData = encodeFunctionData({
-        abi: NONFUNGIBLE_POSITION_MANAGER_ABI,
-        functionName: "mint",
-        args: [
-          {
-            token0,
-            token1,
-            fee: 10000,
-            tickLower,
-            tickUpper,
-            amount0Desired,
-            amount1Desired,
-            amount0Min,
-            amount1Min,
-            recipient: address,
-            deadline: BigInt(deadline),
-          },
-        ],
-      })
-
-      const mintTx = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: address,
-            to: NONFUNGIBLE_POSITION_MANAGER_ADDRESS,
-            data: mintData,
-          },
-        ],
-      })
-
-      console.log("[v0] Liquidity mint tx:", mintTx)
-      setTxHash(mintTx)
-      setFailedTxHash(mintTx as string)
-
-      // Wait for mint
-      let mintReceipt = null
-      while (!mintReceipt) {
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-        mintReceipt = await window.ethereum.request({
-          method: "eth_getTransactionReceipt",
-          params: [mintTx],
-        })
-      }
-
-      if (mintReceipt.status !== "0x1") {
-        throw new Error(`Liquidity addition failed. View transaction details: https://basescan.org/tx/${mintTx}`)
-      }
-
-      setDeployStep("complete")
-      console.log("[v0] Token deployment and liquidity addition complete!")
-
-      return {
-        tokenAddress: newTokenAddress,
-        poolAddress: poolAddr,
-        txHash: mintTx,
+        setFailedTxHash(null)
+        console.log("[v0] Pool initialized successfully")
       }
     } catch (err: any) {
       console.error("[v0] ===== TOKEN DEPLOYMENT FAILED =====")
@@ -681,7 +548,47 @@ export function useDeployToken() {
       const zeroAddress = "0x0000000000000000000000000000000000000000"
 
       const existingPool = existingPoolResult as string
-      const poolExists = existingPool.toLowerCase() !== zeroAddress.toLowerCase()
+      const poolAddressFromResult = "0x" + existingPool.slice(-40)
+      const poolExists = poolAddressFromResult.toLowerCase() !== zeroAddress.toLowerCase()
+
+      console.log("[v0] Pool address from factory:", poolAddressFromResult)
+      console.log("[v0] Pool exists:", poolExists)
+
+      let needsInitialization = false
+      if (poolExists) {
+        console.log("[v0] Checking if pool is initialized...")
+        try {
+          const slot0Result = await window.ethereum.request({
+            method: "eth_call",
+            params: [
+              {
+                to: poolAddressFromResult,
+                data: encodeFunctionData({
+                  abi: UNISWAP_V3_POOL_ABI,
+                  functionName: "slot0",
+                  args: [],
+                }),
+              },
+              "latest",
+            ],
+          })
+
+          const slot0Data = slot0Result as string
+          const sqrtPriceX96Current = BigInt("0x" + slot0Data.slice(2, 66))
+          console.log("[v0] Pool sqrtPriceX96:", sqrtPriceX96Current.toString())
+
+          if (sqrtPriceX96Current === 0n) {
+            console.log("[v0] Pool exists but is not initialized")
+            needsInitialization = true
+          } else {
+            console.log("[v0] Pool is already initialized")
+          }
+        } catch (error: any) {
+          console.log("[v0] Error checking pool initialization:", error.message)
+          console.log("[v0] Assuming pool needs initialization")
+          needsInitialization = true
+        }
+      }
 
       if (!poolExists) {
         // Create new pool
@@ -736,12 +643,18 @@ export function useDeployToken() {
           ],
         })
 
-        poolAddr = poolAddressResult as Address
+        poolAddr = ("0x" + (poolAddressResult as string).slice(-40)) as Address
         setPoolAddress(poolAddr)
         setFailedTxHash(null)
         console.log("[v0] Pool created at:", poolAddr)
+        needsInitialization = true
+      } else {
+        poolAddr = poolAddressFromResult as Address
+        setPoolAddress(poolAddr)
+        console.log("[v0] Pool already exists at:", poolAddr)
+      }
 
-        // Initialize Pool
+      if (needsInitialization) {
         setDeployStep("initializing-pool")
         console.log("[v0] Initializing pool with lopsided ratio...")
 
@@ -796,10 +709,7 @@ export function useDeployToken() {
         }
 
         setFailedTxHash(null)
-      } else {
-        poolAddr = existingPool as Address
-        setPoolAddress(poolAddr)
-        console.log("[v0] Pool already exists at:", poolAddr)
+        console.log("[v0] Pool initialized successfully")
       }
 
       // Approve Tokens
@@ -988,7 +898,7 @@ export function useDeployToken() {
 
   return {
     deployToken,
-    createPoolWithExistingToken, // Exported new function
+    createPoolWithExistingToken,
     deployStep,
     error,
     tokenAddress,
