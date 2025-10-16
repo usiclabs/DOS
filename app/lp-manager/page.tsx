@@ -478,35 +478,182 @@ export default function LPManagerPage() {
           <DeusTicker />
         </ErrorBoundary>
 
-        <div className="min-h-screen bg-black p-6">
-          <div className="max-w-4xl mx-auto">
+        <div className="relative min-h-screen bg-black overflow-hidden p-6">
+          {/* Floating particles */}
+          {[...Array(20)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-0.5 h-0.5 bg-blue-500/60 rounded-full blur-sm"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+              }}
+              animate={{
+                y: [0, -30, 0],
+                x: [0, Math.random() * 20 - 10, 0],
+                opacity: [0.3, 0.8, 0.3],
+              }}
+              transition={{
+                duration: 3 + Math.random() * 2,
+                repeat: Number.POSITIVE_INFINITY,
+                delay: Math.random() * 2,
+              }}
+            />
+          ))}
+
+          <div className="relative max-w-4xl mx-auto">
             <motion.div
               initial="hidden"
               animate="visible"
-              variants={fadeInUp}
+              variants={{
+                hidden: { opacity: 0, scale: 0.95 },
+                visible: { opacity: 1, scale: 1 },
+              }}
               transition={{ duration: 0.6 }}
               className="text-center py-16"
             >
-              <div className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] rounded-2xl p-12 max-w-md mx-auto">
+              {/* Premium corner decorations */}
+              <div className="relative glass-card rounded-2xl p-12 max-w-md mx-auto backdrop-blur-xl border border-blue-500/20 shadow-2xl">
+                {/* Corner accents */}
+                <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-blue-500/40 rounded-tl-2xl" />
+                <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-blue-500/40 rounded-tr-2xl" />
+                <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-blue-500/40 rounded-bl-2xl" />
+                <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-blue-500/40 rounded-br-2xl" />
+
+                {/* Animated border glow */}
+                <motion.div
+                  className="absolute inset-0 rounded-2xl"
+                  style={{
+                    background: "linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.3), transparent)",
+                  }}
+                  animate={{
+                    x: ["-100%", "100%"],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "linear",
+                  }}
+                />
+
+                {/* Icon with multiple glow layers and rotation */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-16 h-16 mx-auto mb-6 bg-muted border border-white/5 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.02)] rounded-full flex items-center justify-center"
+                  className="relative w-32 h-32 mx-auto mb-6"
                 >
-                  <Target className="h-8 w-8 text-white" />
+                  {/* Rotating rings */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2 border-blue-500/30"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
+                  <motion.div
+                    className="absolute inset-2 rounded-full border-2 border-blue-400/20"
+                    animate={{ rotate: -360 }}
+                    transition={{ duration: 6, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                  />
+
+                  {/* Pulsing glow layers */}
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-blue-500/20 blur-xl"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.3, 0.6, 0.3],
+                    }}
+                    transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 rounded-full bg-blue-400/30 blur-2xl"
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.2, 0.5, 0.2],
+                    }}
+                    transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY }}
+                  />
+
+                  {/* Icon container */}
+                  <div className="absolute inset-0 glass-card rounded-full flex items-center justify-center border border-blue-500/30 shadow-2xl">
+                    <Target className="h-16 w-16 text-blue-400" />
+                  </div>
                 </motion.div>
-                <h1 className="text-3xl font-bold mb-4 text-white">LP Position Manager</h1>
-                <p className="text-muted-foreground mb-8">
+
+                {/* Animated text with gradient */}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+                  <motion.h1
+                    className="text-4xl font-bold mb-4 bg-gradient-to-r from-white via-blue-200 to-blue-400 to-white bg-clip-text text-transparent"
+                    style={{
+                      backgroundSize: "200% 100%",
+                    }}
+                    animate={{
+                      backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  >
+                    LP Position Manager
+                  </motion.h1>
+                </motion.div>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="text-gray-200 mb-8 leading-relaxed"
+                >
                   Connect your wallet to view and manage your Uniswap V3 liquidity positions on Base chain
-                </p>
-                <EnhancedWalletConnect onConnect={connectWallet} />
-                <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
-                  <p className="text-sm text-blue-400">
+                </motion.p>
+
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+                  <EnhancedWalletConnect onConnect={connectWallet} />
+                </motion.div>
+
+                {/* Info badge */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8 }}
+                  className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg"
+                >
+                  <p className="text-sm text-blue-300">
                     This manager displays Uniswap V3 positions on Base chain. Make sure your wallet is connected to Base
                     network.
                   </p>
-                </div>
+                </motion.div>
+
+                {/* Premium badge with sparkles */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 1 }}
+                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-full"
+                >
+                  {/* Sparkle animations */}
+                  {[...Array(3)].map((_, i) => (
+                    <motion.div
+                      key={i}
+                      className="absolute w-1 h-1 bg-blue-400 rounded-full"
+                      style={{
+                        left: `${30 + i * 20}%`,
+                        top: "20%",
+                      }}
+                      animate={{
+                        scale: [0, 1, 0],
+                        opacity: [0, 1, 0],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Number.POSITIVE_INFINITY,
+                        delay: i * 0.3,
+                      }}
+                    />
+                  ))}
+                  <span className="text-sm font-semibold text-blue-400">ADVANCED MANAGEMENT</span>
+                </motion.div>
               </div>
             </motion.div>
           </div>
