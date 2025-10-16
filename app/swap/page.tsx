@@ -391,21 +391,230 @@ export default function SwapPage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full max-w-md"
+            className="w-full max-w-2xl"
           >
-            <Card className="glass-card p-8 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-accent/10 flex items-center justify-center">
-                <Wallet className="w-8 h-8 text-accent" />
+            <Card className="glass-card relative overflow-hidden">
+              {/* Floating particles background */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-0.5 h-0.5 bg-emerald-400/60 rounded-full blur-sm"
+                    initial={{
+                      x: Math.random() * 100 + "%",
+                      y: Math.random() * 100 + "%",
+                    }}
+                    animate={{
+                      y: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      x: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      opacity: [0.3, 0.8, 0.3],
+                    }}
+                    transition={{
+                      duration: Math.random() * 10 + 15,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  />
+                ))}
               </div>
-              <h2 className="text-2xl font-bold mb-2">Connect Wallet</h2>
-              <p className="text-muted-foreground mb-6">Connect your wallet to start swapping tokens</p>
-              <Button
-                onClick={() => connectWallet("metamask")}
-                className="w-full bg-accent hover:bg-accent/90"
-                size="lg"
+
+              {/* Premium corner decorations */}
+              <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-emerald-500/30 rounded-tl-2xl" />
+              <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-emerald-500/30 rounded-tr-2xl" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-emerald-500/30 rounded-bl-2xl" />
+              <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-emerald-500/30 rounded-br-2xl" />
+
+              {/* Animated corner glows */}
+              <motion.div
+                className="absolute top-0 left-0 w-32 h-32"
+                animate={{
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
               >
-                Connect Wallet
-              </Button>
+                <div className="absolute top-0 left-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
+              </motion.div>
+              <motion.div
+                className="absolute top-0 right-0 w-32 h-32"
+                animate={{
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                  delay: 0.75,
+                }}
+              >
+                <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
+              </motion.div>
+              <motion.div
+                className="absolute bottom-0 left-0 w-32 h-32"
+                animate={{
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                  delay: 1.5,
+                }}
+              >
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
+              </motion.div>
+              <motion.div
+                className="absolute bottom-0 right-0 w-32 h-32"
+                animate={{
+                  opacity: [0.3, 0.6, 0.3],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                  delay: 2.25,
+                }}
+              >
+                <div className="absolute bottom-0 right-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
+              </motion.div>
+
+              <div className="relative p-12 text-center">
+                {/* Large animated icon with glow effects */}
+                <div className="relative w-32 h-32 mx-auto mb-8">
+                  {/* Pulsing glow layers - reduced intensity */}
+                  <motion.div
+                    className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl"
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.3, 0.5, 0.3],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 bg-emerald-400/10 rounded-full blur-2xl"
+                    animate={{
+                      scale: [1, 1.4, 1],
+                      opacity: [0.2, 0.4, 0.2],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                      delay: 0.5,
+                    }}
+                  />
+
+                  {/* Rotating rings */}
+                  <motion.div
+                    className="absolute inset-0 border-2 border-emerald-500/30 rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 20,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute inset-2 border-2 border-emerald-400/20 rounded-full border-dashed"
+                    animate={{ rotate: -360 }}
+                    transition={{
+                      duration: 15,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  />
+
+                  {/* Icon container */}
+                  <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/10 rounded-full border border-emerald-500/20 backdrop-blur-sm">
+                    <Wallet className="w-16 h-16 text-emerald-400" />
+                  </div>
+                </div>
+
+                {/* Heading with text shimmer effect only */}
+                <div className="relative mb-4">
+                  <motion.h2
+                    className="text-4xl font-bold bg-gradient-to-r from-emerald-200 via-emerald-400 to-emerald-200 bg-clip-text text-transparent bg-[length:200%_100%]"
+                    animate={{
+                      backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  >
+                    Token Swap
+                  </motion.h2>
+                </div>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-gray-300 text-lg mb-8 max-w-md mx-auto leading-relaxed"
+                >
+                  Connect your wallet to swap tokens instantly with the best rates across the DEUS ecosystem
+                </motion.p>
+
+                {/* Connect wallet button */}
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Button
+                    onClick={() => connectWallet("metamask")}
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-8 py-6 text-lg rounded-xl shadow-lg shadow-emerald-500/20"
+                    size="lg"
+                  >
+                    <Wallet className="w-5 h-5 mr-2" />
+                    Connect Wallet
+                  </Button>
+                </motion.div>
+
+                {/* Exclusive feature badge */}
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20"
+                >
+                  {/* Sparkle animations */}
+                  <motion.span
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                    className="text-emerald-400"
+                  >
+                    ✦
+                  </motion.span>
+                  <span className="text-sm font-medium text-emerald-300">INSTANT SWAPS</span>
+                  <motion.span
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                      delay: 1,
+                    }}
+                    className="text-emerald-400"
+                  >
+                    ✦
+                  </motion.span>
+                </motion.div>
+              </div>
             </Card>
           </motion.div>
         </div>

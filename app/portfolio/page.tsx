@@ -529,22 +529,6 @@ export default function PortfolioPage() {
                 <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-orange-500/40 rounded-bl-2xl" />
                 <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-orange-500/40 rounded-br-2xl" />
 
-                {/* Animated border glow */}
-                <motion.div
-                  className="absolute inset-0 rounded-2xl"
-                  style={{
-                    background: "linear-gradient(90deg, transparent, rgba(251, 146, 60, 0.3), transparent)",
-                  }}
-                  animate={{
-                    x: ["-100%", "100%"],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                />
-
                 {/* Icon with multiple glow layers and rotation */}
                 <motion.div
                   initial={{ scale: 0 }}
@@ -564,22 +548,13 @@ export default function PortfolioPage() {
                     transition={{ duration: 6, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
                   />
 
-                  {/* Pulsing glow layers */}
                   <motion.div
-                    className="absolute inset-0 rounded-full bg-orange-500/20 blur-xl"
+                    className="absolute inset-0 rounded-full bg-orange-500/10 blur-lg"
                     animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.3, 0.6, 0.3],
+                      scale: [1, 1.1, 1],
+                      opacity: [0.2, 0.4, 0.2],
                     }}
                     transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
-                  />
-                  <motion.div
-                    className="absolute inset-0 rounded-full bg-orange-400/30 blur-2xl"
-                    animate={{
-                      scale: [1, 1.3, 1],
-                      opacity: [0.2, 0.5, 0.2],
-                    }}
-                    transition={{ duration: 2.5, repeat: Number.POSITIVE_INFINITY }}
                   />
 
                   {/* Icon container */}
