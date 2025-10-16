@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { useWallet } from "@/hooks/use-wallet"
 import {
   TrendingUp,
@@ -29,6 +30,8 @@ import {
   AlertCircle,
   CheckCircle,
   Clock,
+  ChevronRight,
+  Zap,
 } from "lucide-react"
 
 interface LPPosition {
@@ -143,6 +146,234 @@ const staggerContainer = {
       staggerChildren: 0.08,
     },
   },
+}
+
+function MobilePositionCard({
+  position,
+  formatNumber,
+  formatPercent,
+}: { position: LPPosition; formatNumber: (n: number) => string; formatPercent: (n: number) => string }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
+      <SheetTrigger asChild>
+        <motion.div
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="bg-card border border-white/5 rounded-xl p-4 shadow-lg cursor-pointer"
+        >
+          {/* Pool Header */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center space-x-2">
+              <div className="flex items-center -space-x-2">
+                <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center border-2 border-background">
+                  <span className="text-xs font-bold text-white">{position.baseToken.symbol.slice(0, 1)}</span>
+                </div>
+                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
+                  <span className="text-xs font-bold text-white">{position.quoteToken.symbol.slice(0, 1)}</span>
+                </div>
+              </div>
+              <div>
+                <div className="font-semibold text-white text-sm">
+                  {position.baseToken.symbol}/{position.quoteToken.symbol}
+                </div>
+                <div className="text-xs text-muted-foreground">{position.feeTier}</div>
+              </div>
+            </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+          </div>
+
+          {/* Value and P&L */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Total Value</div>
+              <div className="text-lg font-bold text-white">{formatNumber(position.totalValue)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground mb-1">Net P&L</div>
+              <div className={`text-lg font-bold ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                {position.netPnl >= 0 ? "+" : ""}
+                {formatNumber(position.netPnl)}
+              </div>
+            </div>
+          </div>
+
+          {/* Badges */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge
+              variant="outline"
+              className={`text-xs ${position.poolType === "v3" ? "border-blue-500/30 text-blue-400" : "border-gray-500/30 text-gray-400"}`}
+            >
+              {position.poolType.toUpperCase()}
+            </Badge>
+            {position.isDeusPool && (
+              <Badge variant="outline" className="text-xs border-accent/30 text-accent">
+                DEUS
+              </Badge>
+            )}
+            <Badge
+              variant="outline"
+              className={`text-xs ${position.inRange ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}
+            >
+              {position.inRange ? "In Range" : "Out of Range"}
+            </Badge>
+            <Badge variant="outline" className="text-xs border-green-500/30 text-green-400">
+              {position.currentApr.toFixed(1)}% APR
+            </Badge>
+          </div>
+        </motion.div>
+      </SheetTrigger>
+
+      <SheetContent side="bottom" className="h-[90vh] bg-background border-t border-white/10">
+        <SheetHeader className="mb-6">
+          <SheetTitle className="text-2xl font-bold text-white">
+            {position.baseToken.symbol}/{position.quoteToken.symbol}
+          </SheetTitle>
+          <div className="flex items-center gap-2 flex-wrap mt-2">
+            <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">
+              {position.poolType.toUpperCase()}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {position.feeTier}
+            </Badge>
+            <Badge variant="outline" className="text-xs">
+              {position.dexId}
+            </Badge>
+          </div>
+        </SheetHeader>
+
+        <div className="space-y-6 overflow-y-auto pb-6">
+          {/* Value Overview */}
+          <div className="grid grid-cols-2 gap-4">
+            <Card className="bg-card/50 border-white/5">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground mb-1">Total Value</div>
+                <div className="text-2xl font-bold text-white">{formatNumber(position.totalValue)}</div>
+              </CardContent>
+            </Card>
+            <Card className="bg-card/50 border-white/5">
+              <CardContent className="p-4">
+                <div className="text-xs text-muted-foreground mb-1">Net P&L</div>
+                <div className={`text-2xl font-bold ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {position.netPnl >= 0 ? "+" : ""}
+                  {formatNumber(position.netPnl)}
+                </div>
+                <div className={`text-xs ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                  {formatPercent((position.netPnl / position.initialValue) * 100)}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Position Details */}
+          <Card className="bg-card/50 border-white/5">
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">Position Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{position.baseToken.symbol}</span>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-white">{position.baseToken.amount.toFixed(6)}</div>
+                  <div className="text-xs text-muted-foreground">{formatNumber(position.baseToken.value)}</div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{position.quoteToken.symbol}</span>
+                <div className="text-right">
+                  <div className="text-sm font-medium text-white">{position.quoteToken.amount.toFixed(6)}</div>
+                  <div className="text-xs text-muted-foreground">{formatNumber(position.quoteToken.value)}</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Performance Metrics */}
+          <Card className="bg-card/50 border-white/5">
+            <CardHeader>
+              <CardTitle className="text-sm text-muted-foreground">Performance</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Current APR</span>
+                <span className="text-sm font-medium text-white">{position.currentApr.toFixed(2)}%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Fees Earned</span>
+                <span className="text-sm font-medium text-green-400">{formatNumber(position.feesEarned)}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Pool Share</span>
+                <span className="text-sm font-medium text-white">{(position.poolShare * 100).toFixed(4)}%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Range Status</span>
+                <Badge
+                  variant="outline"
+                  className={`text-xs ${position.inRange ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}
+                >
+                  {position.inRange ? "In Range" : "Out of Range"}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <div className="grid grid-cols-2 gap-3">
+            <Button className="w-full h-12 bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20">
+              <Plus className="h-4 w-4 mr-2" />
+              Add Liquidity
+            </Button>
+            <Button className="w-full h-12 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20">
+              <Minus className="h-4 w-4 mr-2" />
+              Remove
+            </Button>
+            <Button variant="outline" className="w-full h-12 bg-transparent">
+              <Zap className="h-4 w-4 mr-2" />
+              Collect Fees
+            </Button>
+            <Button variant="outline" className="w-full h-12 bg-transparent">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View on Explorer
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function PositionSkeleton() {
+  return (
+    <div className="bg-card border border-white/5 rounded-xl p-4 animate-pulse">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center space-x-2">
+          <div className="w-8 h-8 bg-white/10 rounded-full" />
+          <div className="w-8 h-8 bg-white/10 rounded-full" />
+          <div className="space-y-2">
+            <div className="h-4 w-24 bg-white/10 rounded" />
+            <div className="h-3 w-16 bg-white/10 rounded" />
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-3">
+        <div className="space-y-2">
+          <div className="h-3 w-16 bg-white/10 rounded" />
+          <div className="h-6 w-20 bg-white/10 rounded" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-3 w-16 bg-white/10 rounded" />
+          <div className="h-6 w-20 bg-white/10 rounded" />
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <div className="h-6 w-16 bg-white/10 rounded-full" />
+        <div className="h-6 w-16 bg-white/10 rounded-full" />
+        <div className="h-6 w-20 bg-white/10 rounded-full" />
+      </div>
+    </div>
+  )
 }
 
 export default function LPManagerPage() {
@@ -291,7 +522,7 @@ export default function LPManagerPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-black p-6">
+      <div className="min-h-screen bg-black p-4 sm:p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <motion.div
@@ -299,34 +530,40 @@ export default function LPManagerPage() {
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.5 }}
-            className="flex items-center justify-between mb-8"
+            // Improved mobile button layout
+            className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
           >
             <div>
-              <h1 className="text-4xl font-bold mb-2 text-white">LP Position Manager</h1>
-              <p className="text-muted-foreground">Comprehensive view of your Uniswap v3 liquidity positions</p>
-              <p className="text-sm text-accent mt-1">
-                Connected: {address?.slice(0, 6)}...{address?.slice(-4)}
-              </p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white">LP Position Manager</h1>
+              <p className="text-sm sm:text-base text-muted-foreground">Manage your Uniswap v3 liquidity positions</p>
+              {isConnected && address && (
+                <p className="text-xs sm:text-sm text-accent mt-1">
+                  {address.slice(0, 6)}...{address.slice(-4)}
+                </p>
+              )}
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => mutate()}
                 disabled={isLoading}
-                className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] hover:bg-white/5"
+                className="flex-1 sm:flex-none bg-card border border-white/5 shadow-lg hover:bg-white/5 h-10 sm:h-9"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                Refresh
+                <RefreshCw className={`h-4 w-4 sm:mr-2 ${isLoading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">Refresh</span>
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={disconnectWallet}
-                className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] hover:bg-red-500/10 text-red-400 bg-transparent"
-              >
-                Disconnect
-              </Button>
+              {isConnected && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={disconnectWallet}
+                  className="flex-1 sm:flex-none bg-card border border-white/5 shadow-lg hover:bg-red-500/10 text-red-400 h-10 sm:h-9"
+                >
+                  <span className="sm:hidden">Disconnect</span>
+                  <span className="hidden sm:inline">Disconnect</span>
+                </Button>
+              )}
             </div>
           </motion.div>
 
@@ -374,7 +611,7 @@ export default function LPManagerPage() {
               initial="hidden"
               animate="visible"
               variants={staggerContainer}
-              className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8"
+              className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8"
             >
               {[
                 {
@@ -394,31 +631,33 @@ export default function LPManagerPage() {
                   icon: Target,
                   label: "Fees Earned",
                   value: formatNumber(data.totalFeesEarned),
-                  sublabel: "All-time earnings",
+                  sublabel: "All-time", // Changed from "All-time earnings" for brevity
                   color: "green",
                 },
                 {
                   icon: Activity,
-                  label: "Active Positions",
+                  label: "Active", // Changed from "Active Positions" for brevity
                   value: data.positions.filter((p) => p.inRange).length,
-                  sublabel: `In range / ${data.positionCount} total`,
+                  sublabel: `of ${data.positionCount}`, // Changed from "In range / total" for brevity
                 },
               ].map((stat, index) => (
                 <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.05, y: -5 }}>
-                  <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]">
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium flex items-center text-muted-foreground">
-                        <stat.icon className={`h-4 w-4 mr-2 ${stat.color ? `text-${stat.color}-400` : ""}`} />
+                  <Card className="bg-card border border-white/5 shadow-lg">
+                    <CardHeader className="pb-2 p-3 sm:p-4">
+                      <CardTitle className="text-xs sm:text-sm font-medium flex items-center text-muted-foreground">
+                        <stat.icon
+                          className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${stat.color ? `text-${stat.color}-400` : ""}`}
+                        />
                         {stat.label}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-3 sm:p-4 pt-0">
                       <div
-                        className={`text-3xl font-bold mb-1 ${stat.color ? `text-${stat.color}-400` : "text-white"}`}
+                        className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-1 ${stat.color ? `text-${stat.color}-400` : "text-white"}`}
                       >
                         {stat.value}
                       </div>
-                      <p className="text-sm text-muted-foreground">{stat.sublabel}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground">{stat.sublabel}</p>
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -432,66 +671,64 @@ export default function LPManagerPage() {
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="flex flex-col sm:flex-row gap-4 mb-6"
+            className="flex flex-col gap-3 mb-6"
           >
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by token symbol or pool ID..."
+                placeholder="Search pools..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 bg-card border border-white/5 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.02)]"
+                className="pl-10 bg-card border border-white/5 shadow-inner h-11"
               />
             </div>
 
-            <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-full sm:w-48 bg-card border border-white/5 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.02)]">
-                <Filter className="h-4 w-4 mr-2" />
-                <SelectValue placeholder="Filter positions" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Positions</SelectItem>
-                <SelectItem value="deus">DEUS Pools</SelectItem>
-                <SelectItem value="v3">Uniswap V3</SelectItem>
-                <SelectItem value="profitable">Profitable</SelectItem>
-                <SelectItem value="in-range">In Range</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex gap-2">
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="flex-1 bg-card border border-white/5 shadow-inner h-11">
+                  <Filter className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder="Filter" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All</SelectItem>
+                  <SelectItem value="deus">DEUS</SelectItem>
+                  <SelectItem value="v3">V3</SelectItem>
+                  <SelectItem value="profitable">Profitable</SelectItem>
+                  <SelectItem value="in-range">In Range</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-full sm:w-48 bg-card border border-white/5 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.02)]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="totalValue">Total Value</SelectItem>
-                <SelectItem value="netPnl">Net P&L</SelectItem>
-                <SelectItem value="feesEarned">Fees Earned</SelectItem>
-                <SelectItem value="currentApr">APR</SelectItem>
-                <SelectItem value="entryDate">Entry Date</SelectItem>
-              </SelectContent>
-            </Select>
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="flex-1 bg-card border border-white/5 shadow-inner h-11">
+                  <SelectValue placeholder="Sort" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="totalValue">Value</SelectItem>
+                  <SelectItem value="netPnl">P&L</SelectItem>
+                  <SelectItem value="feesEarned">Fees</SelectItem>
+                  <SelectItem value="currentApr">APR</SelectItem>
+                  <SelectItem value="entryDate">Entry Date</SelectItem>
+                </SelectContent>
+              </Select>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-              className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] hover:bg-white/5"
-            >
-              {sortOrder === "desc" ? "↓" : "↑"}
-            </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
+                className="bg-card border border-white/5 shadow-lg hover:bg-white/5 h-11 px-4"
+              >
+                {sortOrder === "desc" ? "↓" : "↑"}
+              </Button>
+            </div>
           </motion.div>
 
-          {/* Positions Table */}
+          {/* Positions */}
           {isLoading ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex items-center justify-center py-16"
-            >
-              <div className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] rounded-full p-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-              </div>
-            </motion.div>
+            <div className="space-y-3">
+              {[1, 2, 3, 4].map((i) => (
+                <PositionSkeleton key={i} />
+              ))}
+            </div>
           ) : error ? (
             <div className="text-center py-16">
               <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] max-w-md mx-auto">
@@ -516,144 +753,157 @@ export default function LPManagerPage() {
               variants={fadeInUp}
               transition={{ duration: 0.5, delay: 0.4 }}
             >
-              <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-white/5">
-                          <TableHead className="text-white">Pool</TableHead>
-                          <TableHead className="text-white">Type</TableHead>
-                          <TableHead className="text-white">Position</TableHead>
-                          <TableHead className="text-white">Total Value</TableHead>
-                          <TableHead className="text-white">Net P&L</TableHead>
-                          <TableHead className="text-white">APR</TableHead>
-                          <TableHead className="text-white">Fees Earned</TableHead>
-                          <TableHead className="text-white">Range</TableHead>
-                          <TableHead className="text-white">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredAndSortedPositions.map((position) => (
-                          <TableRow key={position.id} className="border-white/5 hover:bg-white/5">
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1">
-                                  <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center">
-                                    <span className="text-xs font-bold text-white">
-                                      {position.baseToken.symbol.slice(0, 1)}
-                                    </span>
-                                  </div>
-                                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-xs font-bold text-white">
-                                      {position.quoteToken.symbol.slice(0, 1)}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="font-medium text-white">
-                                    {position.baseToken.symbol}/{position.quoteToken.symbol}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {position.feeTier} • {position.dexId}
-                                  </div>
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs ${
-                                    position.poolType === "v3"
-                                      ? "border-blue-500/30 text-blue-400"
-                                      : "border-gray-500/30 text-gray-400"
-                                  }`}
-                                >
-                                  {position.poolType.toUpperCase()}
-                                </Badge>
-                                {position.isDeusPool && (
-                                  <Badge variant="outline" className="text-xs border-accent/30 text-accent">
-                                    DEUS
-                                  </Badge>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                <div className="text-white">
-                                  {position.baseToken.amount.toFixed(4)} {position.baseToken.symbol}
-                                </div>
-                                <div className="text-white">
-                                  {position.quoteToken.amount.toFixed(4)} {position.quoteToken.symbol}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium text-white">{formatNumber(position.totalValue)}</div>
-                            </TableCell>
-                            <TableCell>
-                              <div
-                                className={`font-medium ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}
-                              >
-                                {position.netPnl >= 0 ? "+" : ""}
-                                {formatNumber(position.netPnl)}
-                              </div>
-                              <div className={`text-xs ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                                {formatPercent((position.netPnl / position.initialValue) * 100)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium text-white">{position.currentApr.toFixed(1)}%</div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="font-medium text-green-400">{formatNumber(position.feesEarned)}</div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-2">
-                                <Badge
-                                  variant="outline"
-                                  className={`text-xs ${
-                                    position.inRange
-                                      ? "border-green-500/30 text-green-400"
-                                      : "border-red-500/30 text-red-400"
-                                  }`}
-                                >
-                                  {position.inRange ? "In Range" : "Out of Range"}
-                                </Badge>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center space-x-1">
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
-                                  <Settings className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
-                                  <ExternalLink className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-green-500/10 text-green-400"
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-8 w-8 p-0 hover:bg-red-500/10 text-red-400"
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
+              <div className="lg:hidden space-y-3">
+                {filteredAndSortedPositions.map((position) => (
+                  <MobilePositionCard
+                    key={position.id}
+                    position={position}
+                    formatNumber={formatNumber}
+                    formatPercent={formatPercent}
+                  />
+                ))}
+              </div>
+
+              <div className="hidden lg:block">
+                <Card className="bg-card border border-white/5 shadow-lg">
+                  <CardContent className="p-0">
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="border-white/5">
+                            <TableHead className="text-white">Pool</TableHead>
+                            <TableHead className="text-white">Type</TableHead>
+                            <TableHead className="text-white">Position</TableHead>
+                            <TableHead className="text-white">Total Value</TableHead>
+                            <TableHead className="text-white">Net P&L</TableHead>
+                            <TableHead className="text-white">APR</TableHead>
+                            <TableHead className="text-white">Fees Earned</TableHead>
+                            <TableHead className="text-white">Range</TableHead>
+                            <TableHead className="text-white">Actions</TableHead>
                           </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </CardContent>
-              </Card>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredAndSortedPositions.map((position) => (
+                            <TableRow key={position.id} className="border-white/5 hover:bg-white/5">
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <div className="flex items-center space-x-1">
+                                    <div className="w-6 h-6 bg-accent rounded-full flex items-center justify-center">
+                                      <span className="text-xs font-bold text-white">
+                                        {position.baseToken.symbol.slice(0, 1)}
+                                      </span>
+                                    </div>
+                                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                      <span className="text-xs font-bold text-white">
+                                        {position.quoteToken.symbol.slice(0, 1)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <div className="font-medium text-white">
+                                      {position.baseToken.symbol}/{position.quoteToken.symbol}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {position.feeTier} • {position.dexId}
+                                    </div>
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${
+                                      position.poolType === "v3"
+                                        ? "border-blue-500/30 text-blue-400"
+                                        : "border-gray-500/30 text-gray-400"
+                                    }`}
+                                  >
+                                    {position.poolType.toUpperCase()}
+                                  </Badge>
+                                  {position.isDeusPool && (
+                                    <Badge variant="outline" className="text-xs border-accent/30 text-accent">
+                                      DEUS
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  <div className="text-white">
+                                    {position.baseToken.amount.toFixed(4)} {position.baseToken.symbol}
+                                  </div>
+                                  <div className="text-white">
+                                    {position.quoteToken.amount.toFixed(4)} {position.quoteToken.symbol}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium text-white">{formatNumber(position.totalValue)}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div
+                                  className={`font-medium ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+                                >
+                                  {position.netPnl >= 0 ? "+" : ""}
+                                  {formatNumber(position.netPnl)}
+                                </div>
+                                <div className={`text-xs ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                                  {formatPercent((position.netPnl / position.initialValue) * 100)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium text-white">{position.currentApr.toFixed(1)}%</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium text-green-400">{formatNumber(position.feesEarned)}</div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-2">
+                                  <Badge
+                                    variant="outline"
+                                    className={`text-xs ${
+                                      position.inRange
+                                        ? "border-green-500/30 text-green-400"
+                                        : "border-red-500/30 text-red-400"
+                                    }`}
+                                  >
+                                    {position.inRange ? "In Range" : "Out of Range"}
+                                  </Badge>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center space-x-1">
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
+                                    <Settings className="h-4 w-4" />
+                                  </Button>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-green-500/10 text-green-400"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-red-500/10 text-red-400"
+                                  >
+                                    <Minus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </motion.div>
           ) : (
             <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]">
