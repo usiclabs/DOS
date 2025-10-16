@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useWallet } from "./use-wallet"
-import { parseEther, encodeFunctionData, encodeAbiParameters, type Address } from "viem"
+import { parseEther, encodeFunctionData, encodeDeployData, type Address } from "viem"
 import {
   ERC20_ABI,
   ERC20_BYTECODE,
@@ -119,23 +119,36 @@ export function useDeployToken() {
         )
       }
 
-      console.log("[v0] Encoding constructor parameters...")
-      const constructorParams = encodeAbiParameters(
-        [
-          { name: "name_", type: "string" },
-          { name: "symbol_", type: "string" },
-          { name: "initialSupply", type: "uint256" },
-        ],
-        [params.name, params.symbol, initialSupplyWei],
-      )
-
-      // Deploy contract by concatenating bytecode with encoded constructor params
-      const deployData = (ERC20_BYTECODE + constructorParams.slice(2)) as `0x${string}`
+      console.log("[v0] Encoding deployment data with viem...")
+      const deployData = encodeDeployData({
+        abi: ERC20_ABI,
+        bytecode: ERC20_BYTECODE,
+        args: [params.name, params.symbol, initialSupplyWei],
+      })
       console.log("[v0] Deploy data length:", deployData.length)
 
-      console.log("[v0] Using fixed gas limit to bypass estimation issues...")
-      const gasLimit = 5000000n // 5M gas should be more than enough for ERC20 deployment
-      console.log("[v0] Gas limit set to:", gasLimit.toString())
+      let gasLimit: bigint
+
+      try {
+        console.log("[v0] Attempting gas estimation...")
+        const estimatedGas = await window.ethereum.request({
+          method: "eth_estimateGas",
+          params: [
+            {
+              from: address,
+              data: deployData,
+            },
+          ],
+        })
+        gasLimit = (BigInt(estimatedGas as string) * 120n) / 100n // Add 20% buffer
+        console.log("[v0] Gas estimated:", gasLimit.toString())
+      } catch (estimateError: any) {
+        console.log("[v0] Gas estimation failed, using fixed gas limit")
+        console.log("[v0] Estimation error:", estimateError.message)
+        gasLimit = 5000000n // Fall back to 5M gas
+      }
+
+      console.log("[v0] Final gas limit:", gasLimit.toString())
 
       console.log("[v0] Sending token deployment transaction...")
       const deployTx = await window.ethereum.request({

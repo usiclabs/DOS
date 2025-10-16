@@ -30,12 +30,13 @@ import {
   type DeploymentParams,
   checkAllowance,
   approveToken,
-  getPoolAddress,
   getPoolState,
   nearestUsableTick,
   getTickSpacing,
+  createPoolIfNeeded,
 } from "@/lib/liquidity-deployment"
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESS, ERC20_ABI } from "@/lib/uniswap-abis"
+import { getTokenAddress } from "@/lib/constants"
 
 interface PoolData {
   id: string
@@ -76,6 +77,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
   const [approvalStep, setApprovalStep] = useState<"none" | "token0" | "token1" | "complete">("none")
   const [positionId, setPositionId] = useState<string | null>(null)
   const [estimatedValue, setEstimatedValue] = useState<string | null>(null)
+  const [actualAmounts, setActualAmounts] = useState<{ base: string; quote: string } | null>(null)
 
   useEffect(() => {
     if (!isOpen) {
@@ -93,39 +95,92 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
       setApprovalStep("none")
       setPositionId(null)
       setEstimatedValue(null)
+      setActualAmounts(null)
+    } else {
+      console.log("[v0] Deploy modal opened for pool:", pool)
     }
-  }, [isOpen])
+  }, [isOpen, pool])
 
   useEffect(() => {
     const fetchBalances = async () => {
       if (!pool || !isOpen) return
 
+      console.log("[v0] Fetching token balances for pool:", pool.baseToken.symbol, "/", pool.quoteToken.symbol)
+
       try {
+        const baseTokenAddress =
+          pool.baseToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.baseToken.symbol)
+            : pool.baseToken.address
+
+        const quoteTokenAddress =
+          pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.quoteToken.symbol)
+            : pool.quoteToken.address
+
+        if (!baseTokenAddress || !quoteTokenAddress) {
+          console.error("[v0] Could not resolve token addresses:", {
+            baseToken: pool.baseToken.symbol,
+            baseAddress: baseTokenAddress,
+            quoteToken: pool.quoteToken.symbol,
+            quoteAddress: quoteTokenAddress,
+          })
+          toast({
+            title: "Unknown token addresses",
+            description: `Cannot fetch balances for ${pool.baseToken.symbol}/${pool.quoteToken.symbol}. Token addresses are not available.`,
+            variant: "destructive",
+          })
+          return
+        }
+
+        console.log("[v0] Resolved token addresses:", {
+          baseToken: pool.baseToken.symbol,
+          baseAddress: baseTokenAddress,
+          quoteToken: pool.quoteToken.symbol,
+          quoteAddress: quoteTokenAddress,
+        })
+
         if (typeof window !== "undefined" && (window as any).ethereum) {
           const provider = new ethers.BrowserProvider((window as any).ethereum)
           const signer = await provider.getSigner()
           const address = await signer.getAddress()
 
-          const baseToken = new ethers.Contract(pool.baseToken.address, ERC20_ABI, provider)
-          const quoteToken = new ethers.Contract(pool.quoteToken.address, ERC20_ABI, provider)
+          console.log("[v0] User address:", address)
+
+          const baseToken = new ethers.Contract(baseTokenAddress, ERC20_ABI, provider)
+          const quoteToken = new ethers.Contract(quoteTokenAddress, ERC20_ABI, provider)
 
           const [baseBalance, quoteBalance] = await Promise.all([
             baseToken.balanceOf(address),
             quoteToken.balanceOf(address),
           ])
 
-          setTokenBalances({
+          const formattedBalances = {
             base: ethers.formatUnits(baseBalance, 18),
             quote: ethers.formatUnits(quoteBalance, 18),
+          }
+
+          console.log("[v0] Token balances fetched:", {
+            [pool.baseToken.symbol]: formattedBalances.base,
+            [pool.quoteToken.symbol]: formattedBalances.quote,
           })
+
+          setTokenBalances(formattedBalances)
+        } else {
+          console.log("[v0] No ethereum provider found")
         }
       } catch (error) {
-        console.error("[v0] Error fetching balances:", error)
+        console.error("[v0] Error fetching token balances:", error)
+        toast({
+          title: "Failed to fetch token balances",
+          description: "Please make sure your wallet is connected and try again.",
+          variant: "destructive",
+        })
       }
     }
 
     fetchBalances()
-  }, [pool, isOpen])
+  }, [pool, isOpen, toast])
 
   useEffect(() => {
     const estimateGas = async () => {
@@ -184,7 +239,14 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
   }
 
   const handlePreview = () => {
+    console.log("[v0] Preview clicked - validating inputs:", {
+      baseAmount,
+      quoteAmount,
+      tokenBalances,
+    })
+
     if (!baseAmount || !quoteAmount) {
+      console.log("[v0] Validation failed: Missing amounts")
       toast({
         title: "Missing amounts",
         description: "Please enter amounts for both tokens",
@@ -195,23 +257,28 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
 
     if (tokenBalances) {
       if (Number.parseFloat(baseAmount) > Number.parseFloat(tokenBalances.base)) {
+        console.log("[v0] Validation failed: Insufficient base token balance")
         toast({
           title: "Insufficient balance",
-          description: `You don't have enough ${pool.baseToken.symbol}`,
+          description: `You don't have enough ${pool.baseToken.symbol}. You have ${tokenBalances.base} but need ${baseAmount}`,
           variant: "destructive",
         })
         return
       }
       if (Number.parseFloat(quoteAmount) > Number.parseFloat(tokenBalances.quote)) {
+        console.log("[v0] Validation failed: Insufficient quote token balance")
         toast({
           title: "Insufficient balance",
-          description: `You don't have enough ${pool.quoteToken.symbol}`,
+          description: `You don't have enough ${pool.quoteToken.symbol}. You have ${tokenBalances.quote} but need ${quoteAmount}`,
           variant: "destructive",
         })
         return
       }
+    } else {
+      console.log("[v0] Warning: Token balances not loaded, skipping balance check")
     }
 
+    console.log("[v0] Validation passed, moving to preview step")
     setStep("preview")
   }
 
@@ -274,12 +341,40 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
           return
         }
 
+        const baseTokenAddress =
+          pool.baseToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.baseToken.symbol)
+            : pool.baseToken.address
+
+        const quoteTokenAddress =
+          pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.quoteToken.symbol)
+            : pool.quoteToken.address
+
+        if (!baseTokenAddress || !quoteTokenAddress) {
+          toast({
+            title: "Unknown token addresses",
+            description: `Cannot deploy liquidity for ${pool.baseToken.symbol}/${pool.quoteToken.symbol}. Token addresses are not available.`,
+            variant: "destructive",
+          })
+          setStep("input")
+          setIsDeploying(false)
+          return
+        }
+
+        console.log("[v0] Using token addresses:", {
+          baseToken: pool.baseToken.symbol,
+          baseAddress: baseTokenAddress,
+          quoteToken: pool.quoteToken.symbol,
+          quoteAddress: quoteTokenAddress,
+        })
+
         const feeTier = Number.parseFloat(pool.feeTier.replace("%", "")) * 10000
 
         const [token0, token1, amount0, amount1] =
-          pool.baseToken.address.toLowerCase() < pool.quoteToken.address.toLowerCase()
-            ? [pool.baseToken.address, pool.quoteToken.address, baseAmount, quoteAmount]
-            : [pool.quoteToken.address, pool.baseToken.address, quoteAmount, baseAmount]
+          baseTokenAddress.toLowerCase() < quoteTokenAddress.toLowerCase()
+            ? [baseTokenAddress, quoteTokenAddress, baseAmount, quoteAmount]
+            : [quoteTokenAddress, baseTokenAddress, quoteAmount, baseAmount]
 
         const amount0Wei = ethers.parseUnits(amount0, 18)
         const amount1Wei = ethers.parseUnits(amount1, 18)
@@ -336,21 +431,36 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         let tickLower, tickUpper
         try {
           const tickSpacing = getTickSpacing(feeTier)
-          const poolAddress = await getPoolAddress(provider, token0, token1, feeTier)
-          console.log("[v0] Pool address:", poolAddress)
+
+          const { poolAddress, created } = await createPoolIfNeeded(signer, token0, token1, feeTier)
+          console.log("[v0] Pool address (after creation if needed):", poolAddress)
+
+          if (created) {
+            console.log("[v0] New pool created, waiting 5 seconds for initialization...")
+            await new Promise((resolve) => setTimeout(resolve, 5000))
+            toast({
+              title: "Pool created successfully",
+              description: "Proceeding with liquidity deployment...",
+            })
+          }
+
+          if (poolAddress === "0x0000000000000000000000000000000000000000") {
+            throw new Error("Failed to create or find pool. Please try again.")
+          }
 
           const poolState = await getPoolState(provider, poolAddress)
-          console.log("[v0] Pool state - Current tick:", poolState.tick, "Tick spacing:", tickSpacing)
+          const currentTick = Number(poolState.tick)
+          const poolTickSpacing = Number(poolState.tickSpacing)
+          console.log("[v0] Pool state - Current tick:", currentTick, "Tick spacing:", poolTickSpacing)
 
           if (useFullRange) {
-            tickLower = nearestUsableTick(poolState.tick - 887220, tickSpacing)
-            tickUpper = nearestUsableTick(poolState.tick + 887220, tickSpacing)
+            tickLower = nearestUsableTick(currentTick - 887220, tickSpacing)
+            tickUpper = nearestUsableTick(currentTick + 887220, tickSpacing)
           } else {
             const rangeLower = priceRange[0] / 100
             const rangeUpper = priceRange[1] / 100
-            // Corrected: currentTick should be poolState.tick
-            tickLower = nearestUsableTick(poolState.tick - Math.floor(887220 * (1 - rangeLower)), tickSpacing)
-            tickUpper = nearestUsableTick(poolState.tick + Math.floor(887220 * rangeUpper), tickSpacing)
+            tickLower = nearestUsableTick(currentTick - Math.floor(887220 * (1 - rangeLower)), tickSpacing)
+            tickUpper = nearestUsableTick(currentTick + Math.floor(887220 * rangeUpper), tickSpacing)
           }
 
           console.log("[v0] Calculated tick range:", { tickLower, tickUpper })
@@ -385,6 +495,18 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         if (result.success) {
           setTxHash(result.txHash || null)
           setPositionId(result.tokenId || null)
+
+          if (result.amount0 && result.amount1) {
+            // Map amount0/amount1 back to base/quote based on token order
+            const [actualBase, actualQuote] =
+              baseTokenAddress.toLowerCase() < quoteTokenAddress.toLowerCase()
+                ? [result.amount0, result.amount1]
+                : [result.amount1, result.amount0]
+
+            setActualAmounts({ base: actualBase, quote: actualQuote })
+            console.log("[v0] Actual deposited amounts:", { base: actualBase, quote: actualQuote })
+          }
+
           setStep("success")
           toast({
             title: "Liquidity deployed successfully!",
@@ -499,6 +621,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     setApprovalStep("none")
     setPositionId(null)
     setEstimatedValue(null)
+    setActualAmounts(null)
     onClose()
   }
 
@@ -950,11 +1073,23 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                     <div>
                       <div className="text-gray-400 mb-1">Deposited</div>
                       <div className="font-medium">
-                        {baseAmount} {pool.baseToken.symbol}
+                        {actualAmounts ? Number.parseFloat(actualAmounts.base).toFixed(4) : baseAmount}{" "}
+                        {pool.baseToken.symbol}
                       </div>
                       <div className="font-medium">
-                        {quoteAmount} {pool.quoteToken.symbol}
+                        {actualAmounts ? Number.parseFloat(actualAmounts.quote).toFixed(4) : quoteAmount}{" "}
+                        {pool.quoteToken.symbol}
                       </div>
+                      {actualAmounts &&
+                        (Number.parseFloat(actualAmounts.base).toFixed(4) !==
+                          Number.parseFloat(baseAmount).toFixed(4) ||
+                          Number.parseFloat(actualAmounts.quote).toFixed(4) !==
+                            Number.parseFloat(quoteAmount).toFixed(4)) && (
+                          <div className="text-xs text-yellow-400 mt-2">
+                            <Info className="h-3 w-3 inline mr-1" />
+                            Amounts adjusted to match pool ratio
+                          </div>
+                        )}
                     </div>
                     <div>
                       <div className="text-gray-400 mb-1">Position Value</div>
@@ -967,7 +1102,11 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" asChild className="flex-1 bg-transparent">
                       <a
-                        href={`https://app.uniswap.org/pools/${positionId}`}
+                        href={
+                          positionId
+                            ? `https://app.uniswap.org/positions/v3/base/${positionId}`
+                            : `https://app.uniswap.org/pools`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
@@ -988,7 +1127,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                 </CardContent>
               </Card>
 
-              <Button onClick={resetModal} className="w-full">
+              <Button onClick={resetModal} className="w-full bg-accent text-accent-foreground hover:bg-accent/90">
                 Close
               </Button>
             </div>

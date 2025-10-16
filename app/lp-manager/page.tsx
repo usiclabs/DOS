@@ -10,10 +10,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Separator } from "@/components/ui/separator"
 import { useWallet } from "@/hooks/use-wallet"
+import { useToast } from "@/hooks/use-toast"
+import { managePosition, collectFees } from "@/lib/transactions"
 import {
   TrendingUp,
   TrendingDown,
@@ -32,6 +37,7 @@ import {
   Clock,
   ChevronRight,
   Zap,
+  Loader2,
 } from "lucide-react"
 
 interface LPPosition {
@@ -152,195 +158,451 @@ function MobilePositionCard({
   position,
   formatNumber,
   formatPercent,
-}: { position: LPPosition; formatNumber: (n: number) => string; formatPercent: (n: number) => string }) {
+  onUpdate,
+}: {
+  position: LPPosition
+  formatNumber: (n: number) => string
+  formatPercent: (n: number) => string
+  onUpdate?: () => void
+}) {
   const [isOpen, setIsOpen] = useState(false)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [withdrawPercentage, setWithdrawPercentage] = useState("100")
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
+  const [isCollectingFees, setIsCollectingFees] = useState(false)
+  const { toast } = useToast()
+
+  const handleCollectFees = async () => {
+    if (!position.tokenId) {
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (position.feesEarned <= 0) {
+      toast({
+        title: "No Fees Available",
+        description: "No fees available to collect",
+      })
+      return
+    }
+
+    setIsCollectingFees(true)
+
+    try {
+      console.log("[v0] Collecting fees for position:", position.tokenId)
+      const result = await collectFees(position.tokenId)
+
+      if (result.success) {
+        toast({
+          title: "✅ Fees Collected Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>Your fees have been collected and transferred to your wallet</p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
+        setTimeout(() => onUpdate?.(), 3000)
+      } else {
+        toast({
+          title: "Fee Collection Failed",
+          description: result.error || "Failed to collect fees",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("[v0] Fee collection error:", error)
+      toast({
+        title: "Fee Collection Failed",
+        description: error.message || "Failed to collect fees",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCollectingFees(false)
+    }
+  }
+
+  const handleWithdraw = async () => {
+    if (!position.tokenId) {
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsWithdrawing(true)
+
+    try {
+      console.log("[v0] Starting withdrawal for position:", position.tokenId)
+
+      const liquidityToRemove = Math.floor(
+        position.liquidityTokens * (Number.parseInt(withdrawPercentage) / 100),
+      ).toString(16)
+
+      const result = await managePosition(position.tokenId, "withdraw", {
+        liquidityPercentage: Number.parseInt(withdrawPercentage),
+        liquidityAmount: liquidityToRemove,
+      })
+
+      if (result.success) {
+        toast({
+          title: "✅ Liquidity Withdrawn Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>Successfully withdrew {withdrawPercentage}% of your position</p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
+        setShowWithdrawModal(false)
+        setTimeout(() => onUpdate?.(), 3000)
+      } else {
+        toast({
+          title: "Withdrawal Failed",
+          description: result.error || "Failed to withdraw liquidity",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("[v0] Withdrawal error:", error)
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw liquidity",
+        variant: "destructive",
+      })
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="bg-card border border-white/5 rounded-xl p-4 shadow-lg cursor-pointer"
-        >
-          {/* Pool Header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center -space-x-2">
-                <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center border-2 border-background">
-                  <span className="text-xs font-bold text-white">{position.baseToken.symbol.slice(0, 1)}</span>
+    <>
+      <Sheet open={isOpen} onOpenChange={setIsOpen}>
+        <SheetTrigger asChild>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="bg-card border border-white/5 rounded-xl p-4 shadow-lg cursor-pointer"
+          >
+            {/* Pool Header */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center -space-x-2">
+                  <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center border-2 border-background">
+                    <span className="text-xs font-bold text-white">{position.baseToken.symbol.slice(0, 1)}</span>
+                  </div>
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
+                    <span className="text-xs font-bold text-white">{position.quoteToken.symbol.slice(0, 1)}</span>
+                  </div>
                 </div>
-                <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-2 border-background">
-                  <span className="text-xs font-bold text-white">{position.quoteToken.symbol.slice(0, 1)}</span>
+                <div>
+                  <div className="font-semibold text-white text-sm">
+                    {position.baseToken.symbol}/{position.quoteToken.symbol}
+                  </div>
+                  <div className="text-xs text-muted-foreground">{position.feeTier}</div>
                 </div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+            </div>
+
+            {/* Value and P&L */}
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <div className="text-xs text-muted-foreground mb-1">Total Value</div>
+                <div className="text-lg font-bold text-white">{formatNumber(position.totalValue)}</div>
               </div>
               <div>
-                <div className="font-semibold text-white text-sm">
-                  {position.baseToken.symbol}/{position.quoteToken.symbol}
-                </div>
-                <div className="text-xs text-muted-foreground">{position.feeTier}</div>
-              </div>
-            </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
-          </div>
-
-          {/* Value and P&L */}
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Total Value</div>
-              <div className="text-lg font-bold text-white">{formatNumber(position.totalValue)}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Net P&L</div>
-              <div className={`text-lg font-bold ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                {position.netPnl >= 0 ? "+" : ""}
-                {formatNumber(position.netPnl)}
-              </div>
-            </div>
-          </div>
-
-          {/* Badges */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge
-              variant="outline"
-              className={`text-xs ${position.poolType === "v3" ? "border-blue-500/30 text-blue-400" : "border-gray-500/30 text-gray-400"}`}
-            >
-              {position.poolType.toUpperCase()}
-            </Badge>
-            {position.isDeusPool && (
-              <Badge variant="outline" className="text-xs border-accent/30 text-accent">
-                DEUS
-              </Badge>
-            )}
-            <Badge
-              variant="outline"
-              className={`text-xs ${position.inRange ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}
-            >
-              {position.inRange ? "In Range" : "Out of Range"}
-            </Badge>
-            <Badge variant="outline" className="text-xs border-green-500/30 text-green-400">
-              {position.currentApr.toFixed(1)}% APR
-            </Badge>
-          </div>
-        </motion.div>
-      </SheetTrigger>
-
-      <SheetContent side="bottom" className="h-[90vh] bg-background border-t border-white/10">
-        <SheetHeader className="mb-6">
-          <SheetTitle className="text-2xl font-bold text-white">
-            {position.baseToken.symbol}/{position.quoteToken.symbol}
-          </SheetTitle>
-          <div className="flex items-center gap-2 flex-wrap mt-2">
-            <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">
-              {position.poolType.toUpperCase()}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {position.feeTier}
-            </Badge>
-            <Badge variant="outline" className="text-xs">
-              {position.dexId}
-            </Badge>
-          </div>
-        </SheetHeader>
-
-        <div className="space-y-6 overflow-y-auto pb-6">
-          {/* Value Overview */}
-          <div className="grid grid-cols-2 gap-4">
-            <Card className="bg-card/50 border-white/5">
-              <CardContent className="p-4">
-                <div className="text-xs text-muted-foreground mb-1">Total Value</div>
-                <div className="text-2xl font-bold text-white">{formatNumber(position.totalValue)}</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-card/50 border-white/5">
-              <CardContent className="p-4">
                 <div className="text-xs text-muted-foreground mb-1">Net P&L</div>
-                <div className={`text-2xl font-bold ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                <div className={`text-lg font-bold ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
                   {position.netPnl >= 0 ? "+" : ""}
                   {formatNumber(position.netPnl)}
                 </div>
-                <div className={`text-xs ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                  {formatPercent((position.netPnl / position.initialValue) * 100)}
+              </div>
+            </div>
+
+            {/* Badges */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Badge
+                variant="outline"
+                className={`text-xs ${position.poolType === "v3" ? "border-blue-500/30 text-blue-400" : "border-gray-500/30 text-gray-400"}`}
+              >
+                {position.poolType.toUpperCase()}
+              </Badge>
+              {position.isDeusPool && (
+                <Badge variant="outline" className="text-xs border-accent/30 text-accent">
+                  DEUS
+                </Badge>
+              )}
+              <Badge
+                variant="outline"
+                className={`text-xs ${position.inRange ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}
+              >
+                {position.inRange ? "In Range" : "Out of Range"}
+              </Badge>
+              <Badge variant="outline" className="text-xs border-green-500/30 text-green-400">
+                {position.currentApr.toFixed(1)}% APR
+              </Badge>
+            </div>
+          </motion.div>
+        </SheetTrigger>
+
+        <SheetContent side="bottom" className="h-[90vh] bg-background border-t border-white/10">
+          <SheetHeader className="mb-6">
+            <SheetTitle className="text-2xl font-bold text-white">
+              {position.baseToken.symbol}/{position.quoteToken.symbol}
+            </SheetTitle>
+            <div className="flex items-center gap-2 flex-wrap mt-2">
+              <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">
+                {position.poolType.toUpperCase()}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {position.feeTier}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {position.dexId}
+              </Badge>
+            </div>
+          </SheetHeader>
+
+          <div className="space-y-6 overflow-y-auto pb-6 max-h-[calc(90vh-140px)]">
+            {/* Value Overview */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-card/50 border-white/5">
+                <CardContent className="p-4">
+                  <div className="text-xs text-muted-foreground mb-1">Total Value</div>
+                  <div className="text-2xl font-bold text-white">{formatNumber(position.totalValue)}</div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card/50 border-white/5">
+                <CardContent className="p-4">
+                  <div className="text-xs text-muted-foreground mb-1">Net P&L</div>
+                  <div className={`text-2xl font-bold ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {position.netPnl >= 0 ? "+" : ""}
+                    {formatNumber(position.netPnl)}
+                  </div>
+                  <div className={`text-xs ${position.netPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
+                    {formatPercent((position.netPnl / position.initialValue) * 100)}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Position Details */}
+            <Card className="bg-card/50 border-white/5">
+              <CardHeader>
+                <CardTitle className="text-sm text-muted-foreground">Position Breakdown</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">{position.baseToken.symbol}</span>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">{position.baseToken.amount.toFixed(6)}</div>
+                    <div className="text-xs text-muted-foreground">{formatNumber(position.baseToken.value)}</div>
+                  </div>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">{position.quoteToken.symbol}</span>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">{position.quoteToken.amount.toFixed(6)}</div>
+                    <div className="text-xs text-muted-foreground">{formatNumber(position.quoteToken.value)}</div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Position Details */}
-          <Card className="bg-card/50 border-white/5">
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Position Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{position.baseToken.symbol}</span>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">{position.baseToken.amount.toFixed(6)}</div>
-                  <div className="text-xs text-muted-foreground">{formatNumber(position.baseToken.value)}</div>
+            {/* Performance Metrics */}
+            <Card className="bg-card/50 border-white/5">
+              <CardHeader>
+                <CardTitle className="text-sm text-muted-foreground">Performance</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Current APR</span>
+                  <span className="text-sm font-medium text-white">{position.currentApr.toFixed(2)}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Fees Earned</span>
+                  <span className="text-sm font-medium text-green-400">{formatNumber(position.feesEarned)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Pool Share</span>
+                  <span className="text-sm font-medium text-white">{(position.poolShare * 100).toFixed(4)}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-muted-foreground">Range Status</span>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs ${position.inRange ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}
+                  >
+                    {position.inRange ? "In Range" : "Out of Range"}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                className="w-full h-12 bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20"
+                onClick={() => {
+                  toast({
+                    title: "Coming Soon",
+                    description: "Add liquidity feature will be available soon",
+                  })
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Liquidity
+              </Button>
+              <Button
+                className="w-full h-12 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20"
+                onClick={() => {
+                  setIsOpen(false)
+                  setShowWithdrawModal(true)
+                }}
+                disabled={isWithdrawing || !position.tokenId}
+              >
+                {isWithdrawing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Minus className="h-4 w-4 mr-2" />}
+                Remove
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-12 bg-transparent"
+                onClick={handleCollectFees}
+                disabled={isCollectingFees || position.feesEarned <= 0 || !position.tokenId}
+              >
+                {isCollectingFees ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Zap className="h-4 w-4 mr-2" />
+                )}
+                Collect Fees
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full h-12 bg-transparent"
+                onClick={() => {
+                  if (position.tokenId) {
+                    window.open(`https://app.uniswap.org/positions/v3/base/${position.tokenId}`, "_blank")
+                  } else {
+                    window.open(`https://basescan.org/address/${position.pairAddress}`, "_blank")
+                  }
+                }}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                View on Explorer
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+        <DialogContent className="bg-card border-border shadow-lg max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">Withdraw Liquidity</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              Remove liquidity from {position.baseToken.symbol}/{position.quoteToken.symbol} pool
+              <br />
+              <span className="text-yellow-400 text-xs">⚠️ This will incur gas fees on the Base network</span>
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm">Withdrawal Percentage</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {["25", "50", "75", "100"].map((percent) => (
+                  <Button
+                    key={percent}
+                    variant={withdrawPercentage === percent ? "default" : "outline"}
+                    size="sm"
+                    className="min-h-[44px] sm:min-h-[36px]"
+                    onClick={() => setWithdrawPercentage(percent)}
+                  >
+                    {percent}%
+                  </Button>
+                ))}
+              </div>
+              <Input
+                type="number"
+                min="1"
+                max="100"
+                value={withdrawPercentage}
+                onChange={(e) => setWithdrawPercentage(e.target.value)}
+                placeholder="Custom percentage"
+                className="min-h-[44px] sm:min-h-[36px]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-xs sm:text-sm font-medium">You will receive:</div>
+              <div className="space-y-1 text-xs sm:text-sm">
+                <div className="flex justify-between">
+                  <span>{position.baseToken.symbol}</span>
+                  <span>{(position.baseToken.amount * (Number(withdrawPercentage) / 100)).toFixed(4)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>{position.quoteToken.symbol}</span>
+                  <span>{(position.quoteToken.amount * (Number(withdrawPercentage) / 100)).toFixed(4)}</span>
+                </div>
+                <Separator />
+                <div className="flex justify-between font-medium">
+                  <span>Total Value</span>
+                  <span>{formatNumber(position.totalValue * (Number(withdrawPercentage) / 100))}</span>
                 </div>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{position.quoteToken.symbol}</span>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-white">{position.quoteToken.amount.toFixed(6)}</div>
-                  <div className="text-xs text-muted-foreground">{formatNumber(position.quoteToken.value)}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Performance Metrics */}
-          <Card className="bg-card/50 border-white/5">
-            <CardHeader>
-              <CardTitle className="text-sm text-muted-foreground">Performance</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Current APR</span>
-                <span className="text-sm font-medium text-white">{position.currentApr.toFixed(2)}%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Fees Earned</span>
-                <span className="text-sm font-medium text-green-400">{formatNumber(position.feesEarned)}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Pool Share</span>
-                <span className="text-sm font-medium text-white">{(position.poolShare * 100).toFixed(4)}%</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Range Status</span>
-                <Badge
-                  variant="outline"
-                  className={`text-xs ${position.inRange ? "border-green-500/30 text-green-400" : "border-red-500/30 text-red-400"}`}
-                >
-                  {position.inRange ? "In Range" : "Out of Range"}
-                </Badge>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button className="w-full h-12 bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20">
-              <Plus className="h-4 w-4 mr-2" />
-              Add Liquidity
-            </Button>
-            <Button className="w-full h-12 bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20">
-              <Minus className="h-4 w-4 mr-2" />
-              Remove
-            </Button>
-            <Button variant="outline" className="w-full h-12 bg-transparent">
-              <Zap className="h-4 w-4 mr-2" />
-              Collect Fees
-            </Button>
-            <Button variant="outline" className="w-full h-12 bg-transparent">
-              <ExternalLink className="h-4 w-4 mr-2" />
-              View on Explorer
-            </Button>
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowWithdrawModal(false)}
+                className="flex-1 min-h-[44px] sm:min-h-[36px]"
+                disabled={isWithdrawing}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleWithdraw}
+                className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 min-h-[44px] sm:min-h-[36px]"
+                disabled={isWithdrawing || !position.tokenId}
+              >
+                {isWithdrawing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Withdrawing...
+                  </>
+                ) : (
+                  "Withdraw"
+                )}
+              </Button>
+            </div>
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -382,6 +644,12 @@ export default function LPManagerPage() {
   const [filterType, setFilterType] = useState("all")
   const [sortBy, setSortBy] = useState("totalValue")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
+  const [selectedPosition, setSelectedPosition] = useState<LPPosition | null>(null)
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false)
+  const [withdrawPercentage, setWithdrawPercentage] = useState("100")
+  const [isWithdrawing, setIsWithdrawing] = useState(false)
+  const [isCollectingFees, setIsCollectingFees] = useState(false)
+  const { toast } = useToast()
 
   console.log("[v0] LP Manager page render - isConnected:", isConnected, "address:", address, "isChecking:", isChecking)
 
@@ -444,6 +712,131 @@ export default function LPManagerPage() {
         const bValue = b[sortBy as keyof LPPosition] as number
         return sortOrder === "desc" ? bValue - aValue : aValue - bValue
       }) || []
+
+  const handleCollectFees = async (position: LPPosition) => {
+    if (!position.tokenId) {
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (position.feesEarned <= 0) {
+      toast({
+        title: "No Fees Available",
+        description: "No fees available to collect",
+      })
+      return
+    }
+
+    setIsCollectingFees(true)
+
+    try {
+      console.log("[v0] Collecting fees for position:", position.tokenId)
+      const result = await collectFees(position.tokenId)
+
+      if (result.success) {
+        toast({
+          title: "✅ Fees Collected Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>Your fees have been collected and transferred to your wallet</p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
+        setTimeout(() => mutate(), 3000)
+      } else {
+        toast({
+          title: "Fee Collection Failed",
+          description: result.error || "Failed to collect fees",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("[v0] Fee collection error:", error)
+      toast({
+        title: "Fee Collection Failed",
+        description: error.message || "Failed to collect fees",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCollectingFees(false)
+    }
+  }
+
+  const handleWithdraw = async () => {
+    if (!selectedPosition?.tokenId) {
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsWithdrawing(true)
+
+    try {
+      console.log("[v0] Starting withdrawal for position:", selectedPosition.tokenId)
+
+      const liquidityToRemove = Math.floor(
+        selectedPosition.liquidityTokens * (Number.parseInt(withdrawPercentage) / 100),
+      ).toString(16)
+
+      const result = await managePosition(selectedPosition.tokenId, "withdraw", {
+        liquidityPercentage: Number.parseInt(withdrawPercentage),
+        liquidityAmount: liquidityToRemove,
+      })
+
+      if (result.success) {
+        toast({
+          title: "✅ Liquidity Withdrawn Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>Successfully withdrew {withdrawPercentage}% of your position</p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
+        setShowWithdrawModal(false)
+        setTimeout(() => mutate(), 3000)
+      } else {
+        toast({
+          title: "Withdrawal Failed",
+          description: result.error || "Failed to withdraw liquidity",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("[v0] Withdrawal error:", error)
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw liquidity",
+        variant: "destructive",
+      })
+    } finally {
+      setIsWithdrawing(false)
+    }
+  }
 
   if (isChecking) {
     return (
@@ -882,6 +1275,7 @@ export default function LPManagerPage() {
                     position={position}
                     formatNumber={formatNumber}
                     formatPercent={formatPercent}
+                    onUpdate={() => mutate()}
                   />
                 ))}
               </div>
@@ -996,16 +1390,46 @@ export default function LPManagerPage() {
                               </TableCell>
                               <TableCell>
                                 <div className="flex items-center space-x-1">
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-white/10"
+                                    onClick={() => {
+                                      if (position.tokenId) {
+                                        window.open(
+                                          `https://app.uniswap.org/positions/v3/base/${position.tokenId}`,
+                                          "_blank",
+                                        )
+                                      } else {
+                                        window.open(`https://basescan.org/address/${position.pairAddress}`, "_blank")
+                                      }
+                                    }}
+                                    title="View on Uniswap"
+                                  >
                                     <Settings className="h-4 w-4" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white/10">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-white/10"
+                                    onClick={() =>
+                                      window.open(`https://basescan.org/address/${position.pairAddress}`, "_blank")
+                                    }
+                                    title="View on BaseScan"
+                                  >
                                     <ExternalLink className="h-4 w-4" />
                                   </Button>
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     className="h-8 w-8 p-0 hover:bg-green-500/10 text-green-400"
+                                    onClick={() => {
+                                      toast({
+                                        title: "Coming Soon",
+                                        description: "Add liquidity feature will be available soon",
+                                      })
+                                    }}
+                                    title="Add Liquidity"
                                   >
                                     <Plus className="h-4 w-4" />
                                   </Button>
@@ -1013,8 +1437,28 @@ export default function LPManagerPage() {
                                     variant="ghost"
                                     size="sm"
                                     className="h-8 w-8 p-0 hover:bg-red-500/10 text-red-400"
+                                    onClick={() => {
+                                      setSelectedPosition(position)
+                                      setShowWithdrawModal(true)
+                                    }}
+                                    disabled={!position.tokenId}
+                                    title="Remove Liquidity"
                                   >
                                     <Minus className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-8 w-8 p-0 hover:bg-blue-500/10 text-blue-400"
+                                    onClick={() => handleCollectFees(position)}
+                                    disabled={isCollectingFees || position.feesEarned <= 0 || !position.tokenId}
+                                    title="Collect Fees"
+                                  >
+                                    {isCollectingFees ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Zap className="h-4 w-4" />
+                                    )}
                                   </Button>
                                 </div>
                               </TableCell>
@@ -1047,6 +1491,97 @@ export default function LPManagerPage() {
           )}
         </div>
       </div>
+
+      <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+        <DialogContent className="bg-card border-border shadow-lg max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">Withdraw Liquidity</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {selectedPosition && (
+                <>
+                  Remove liquidity from {selectedPosition.baseToken.symbol}/{selectedPosition.quoteToken.symbol} pool
+                  <br />
+                  <span className="text-yellow-400 text-xs">⚠️ This will incur gas fees on the Base network</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPosition && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm">Withdrawal Percentage</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {["25", "50", "75", "100"].map((percent) => (
+                    <Button
+                      key={percent}
+                      variant={withdrawPercentage === percent ? "default" : "outline"}
+                      size="sm"
+                      className="min-h-[44px] sm:min-h-[36px]"
+                      onClick={() => setWithdrawPercentage(percent)}
+                    >
+                      {percent}%
+                    </Button>
+                  ))}
+                </div>
+                <Input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={withdrawPercentage}
+                  onChange={(e) => setWithdrawPercentage(e.target.value)}
+                  placeholder="Custom percentage"
+                  className="min-h-[44px] sm:min-h-[36px]"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-xs sm:text-sm font-medium">You will receive:</div>
+                <div className="space-y-1 text-xs sm:text-sm">
+                  <div className="flex justify-between">
+                    <span>{selectedPosition.baseToken.symbol}</span>
+                    <span>{(selectedPosition.baseToken.amount * (Number(withdrawPercentage) / 100)).toFixed(4)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>{selectedPosition.quoteToken.symbol}</span>
+                    <span>{(selectedPosition.quoteToken.amount * (Number(withdrawPercentage) / 100)).toFixed(4)}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex justify-between font-medium">
+                    <span>Total Value</span>
+                    <span>{formatNumber(selectedPosition.totalValue * (Number(withdrawPercentage) / 100))}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowWithdrawModal(false)}
+                  className="flex-1 min-h-[44px] sm:min-h-[36px]"
+                  disabled={isWithdrawing}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleWithdraw}
+                  className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 min-h-[44px] sm:min-h-[36px]"
+                  disabled={isWithdrawing || !selectedPosition.tokenId}
+                >
+                  {isWithdrawing ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Withdrawing...
+                    </>
+                  ) : (
+                    "Withdraw"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

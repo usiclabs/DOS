@@ -82,7 +82,11 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
 
   const handleWithdraw = async () => {
     if (!position.tokenId) {
-      toast.error("Position token ID not available")
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
       return
     }
 
@@ -103,18 +107,42 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
 
       if (result.success) {
         setTransactionHash(result.hash)
-        toast.success(`Successfully withdrew ${withdrawPercentage}% of position`)
+        toast({
+          title: "✅ Liquidity Withdrawn Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>Successfully withdrew {withdrawPercentage}% of your position</p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
         setShowWithdrawModal(false)
 
         setTimeout(() => {
           onUpdate?.()
         }, 3000)
       } else {
-        toast.error(result.error || "Failed to withdraw liquidity")
+        toast({
+          title: "Withdrawal Failed",
+          description: result.error || "Failed to withdraw liquidity",
+          variant: "destructive",
+        })
       }
     } catch (error: any) {
       console.error("[v0] Withdrawal error:", error)
-      toast.error(error.message || "Failed to withdraw liquidity")
+      toast({
+        title: "Withdrawal Failed",
+        description: error.message || "Failed to withdraw liquidity",
+        variant: "destructive",
+      })
     } finally {
       setIsWithdrawing(false)
     }
@@ -122,12 +150,19 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
 
   const handleCollectFees = async () => {
     if (!position.tokenId) {
-      toast.error("Position token ID not available")
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
       return
     }
 
     if (position.feesEarned <= 0) {
-      toast.info("No fees available to collect")
+      toast({
+        title: "No Fees Available",
+        description: "No fees available to collect",
+      })
       return
     }
 
@@ -140,17 +175,41 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
 
       if (result.success) {
         setTransactionHash(result.hash)
-        toast.success("Fees collected successfully!")
+        toast({
+          title: "✅ Fees Collected Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>Your fees have been collected and transferred to your wallet</p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
 
         setTimeout(() => {
           onUpdate?.()
         }, 3000)
       } else {
-        toast.error(result.error || "Failed to collect fees")
+        toast({
+          title: "Fee Collection Failed",
+          description: result.error || "Failed to collect fees",
+          variant: "destructive",
+        })
       }
     } catch (error: any) {
       console.error("[v0] Fee collection error:", error)
-      toast.error(error.message || "Failed to collect fees")
+      toast({
+        title: "Fee Collection Failed",
+        description: error.message || "Failed to collect fees",
+        variant: "destructive",
+      })
     } finally {
       setIsCollectingFees(false)
     }

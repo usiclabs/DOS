@@ -5,6 +5,24 @@ export const DEUS_TOKEN_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e" /
 export const VOTING_EPOCH_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
 export const VOTING_START_DATE = new Date("2025-01-01T00:00:00Z").getTime()
 
+// Known token addresses on Base chain for fallback when pool data has zero addresses
+export const KNOWN_TOKEN_ADDRESSES: Record<string, string> = {
+  DEUS: "0x73582df1cad3187cD0746b7A473d65c06386837e",
+  WETH: "0x4200000000000000000000000000000000000006",
+  ETH: "0x4200000000000000000000000000000000000006", // WETH is used for ETH
+  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  USDT: "0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2",
+  DAI: "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb",
+  WBTC: "0x0555E30da8f98308EdB960aa94C0Db47230d2B9c",
+  ZORA: "0x78a087d713Be963Bf307b18F2Ff8122EF9A63ae9",
+}
+
+// Helper function to get token address by symbol
+export function getTokenAddress(symbol: string): string | null {
+  const upperSymbol = symbol.toUpperCase()
+  return KNOWN_TOKEN_ADDRESSES[upperSymbol] || null
+}
+
 // Calculate current epoch
 export function getCurrentEpoch() {
   const now = Date.now()

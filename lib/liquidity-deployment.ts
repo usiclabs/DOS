@@ -72,6 +72,17 @@ export async function getPoolAddress(
       stateMutability: "view",
       type: "function",
     },
+    {
+      inputs: [
+        { internalType: "address", name: "tokenA", type: "address" },
+        { internalType: "address", name: "tokenB", type: "address" },
+        { internalType: "uint24", name: "fee", type: "uint24" },
+      ],
+      name: "createPool",
+      outputs: [{ internalType: "address", name: "pool", type: "address" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
   ]
 
   const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider)
@@ -132,21 +143,26 @@ export async function deployLiquidity(signer: ethers.Signer, params: DeploymentP
     const amount0Wei = ethers.parseUnits(amount0Desired, 18)
     const amount1Wei = ethers.parseUnits(amount1Desired, 18)
 
-    // Calculate minimum amounts with slippage
-    const slippagePercent = Math.floor(params.slippage * 100)
-    const slippageBps = BigInt(slippagePercent)
-    const basisPoints = 10000n
-    const amount0Min = (amount0Wei * (basisPoints - slippageBps)) / basisPoints
-    const amount1Min = (amount1Wei * (basisPoints - slippageBps)) / basisPoints
-
     // Get pool state
-    const poolAddress = await getPoolAddress(provider, token0, token1, params.feeTier)
+    const { poolAddress, created } = await createPoolIfNeeded(signer, token0, token1, params.feeTier)
+    if (created) {
+      // Wait for the pool to be created and initialized
+      await new Promise((resolve) => setTimeout(resolve, 10000)) // Wait for 10 seconds
+    }
     const poolState = await getPoolState(provider, poolAddress)
+
+    // When adding liquidity with a specific tick range, the actual amounts deposited
+    // depend on the current pool price. Setting minimums to 0 allows the pool to
+    // adjust amounts as needed to match the current price ratio.
+    const amount0Min = 0n
+    const amount1Min = 0n
+    console.log("[v0] Using 0 minimum amounts to allow pool to adjust amounts based on current price")
 
     // Calculate tick range (full range for simplicity)
     const tickSpacing = getTickSpacing(params.feeTier)
-    const tickLower = nearestUsableTick(poolState.tick - 887220, tickSpacing)
-    const tickUpper = nearestUsableTick(poolState.tick + 887220, tickSpacing)
+    const currentTick = Number(poolState.tick)
+    const tickLower = nearestUsableTick(currentTick - 887220, tickSpacing)
+    const tickUpper = nearestUsableTick(currentTick + 887220, tickSpacing)
 
     // Check and approve tokens if needed
     const allowance0 = await checkAllowance(provider, token0, params.userAddress, NONFUNGIBLE_POSITION_MANAGER_ADDRESS)
@@ -195,13 +211,16 @@ export async function deployLiquidity(signer: ethers.Signer, params: DeploymentP
       }
     })
 
+    // Parse the event to access args
+    const parsedEvent = mintEvent ? positionManager.interface.parseLog(mintEvent) : null
+
     return {
       success: true,
       txHash: receipt?.hash,
-      tokenId: mintEvent ? mintEvent.args.tokenId.toString() : undefined,
-      liquidity: mintEvent ? mintEvent.args.liquidity.toString() : undefined,
-      amount0: mintEvent ? ethers.formatUnits(mintEvent.args.amount0, 18) : undefined,
-      amount1: mintEvent ? ethers.formatUnits(mintEvent.args.amount1, 18) : undefined,
+      tokenId: parsedEvent ? parsedEvent.args.tokenId.toString() : undefined,
+      liquidity: parsedEvent ? parsedEvent.args.liquidity.toString() : undefined,
+      amount0: parsedEvent ? ethers.formatUnits(parsedEvent.args.amount0, 18) : undefined,
+      amount1: parsedEvent ? ethers.formatUnits(parsedEvent.args.amount1, 18) : undefined,
     }
   } catch (error: any) {
     console.error("[v0] Liquidity deployment error:", error.message)
@@ -261,4 +280,94 @@ export async function generateDeploymentTxData(params: DeploymentParams): Promis
     data,
     value: "0",
   }
+}
+
+export async function createPoolIfNeeded(
+  signer: ethers.Signer,
+  token0: string,
+  token1: string,
+  feeTier: number,
+): Promise<{ poolAddress: string; created: boolean }> {
+  const provider = signer.provider
+  if (!provider) {
+    throw new Error("Provider not found")
+  }
+
+  const FACTORY_ADDRESS = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" // Uniswap V3 Factory on Base
+  const FACTORY_ABI = [
+    {
+      inputs: [
+        { internalType: "address", name: "tokenA", type: "address" },
+        { internalType: "address", name: "tokenB", type: "address" },
+        { internalType: "uint24", name: "fee", type: "uint24" },
+      ],
+      name: "getPool",
+      outputs: [{ internalType: "address", name: "pool", type: "address" }],
+      stateMutability: "view",
+      type: "function",
+    },
+    {
+      inputs: [
+        { internalType: "address", name: "tokenA", type: "address" },
+        { internalType: "address", name: "tokenB", type: "address" },
+        { internalType: "uint24", name: "fee", type: "uint24" },
+      ],
+      name: "createPool",
+      outputs: [{ internalType: "address", name: "pool", type: "address" }],
+      stateMutability: "nonpayable",
+      type: "function",
+    },
+  ]
+
+  const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider)
+
+  // Check if pool exists
+  const existingPool = await factory.getPool(token0, token1, feeTier)
+
+  if (existingPool !== ethers.ZeroAddress) {
+    console.log("[v0] Pool already exists at:", existingPool)
+
+    const pool = new ethers.Contract(existingPool, UNISWAP_V3_POOL_ABI, provider)
+    try {
+      const slot0 = await pool.slot0()
+      const sqrtPriceX96 = slot0.sqrtPriceX96
+
+      // If sqrtPriceX96 is 0, the pool is not initialized
+      if (sqrtPriceX96 === 0n) {
+        console.log("[v0] Pool exists but is not initialized, initializing now...")
+        const poolWithSigner = pool.connect(signer)
+        const initTx = await poolWithSigner.initialize("79228162514264337593543950336")
+        await initTx.wait()
+        console.log("[v0] Pool initialized with 1:1 price")
+        return { poolAddress: existingPool, created: true }
+      }
+
+      console.log("[v0] Pool is already initialized with sqrtPriceX96:", sqrtPriceX96.toString())
+      return { poolAddress: existingPool, created: false }
+    } catch (error) {
+      console.error("[v0] Error checking pool initialization:", error)
+      // If we can't check, assume it's initialized and let the deployment fail with a better error
+      return { poolAddress: existingPool, created: false }
+    }
+  }
+
+  // Pool doesn't exist, create it
+  console.log("[v0] Pool doesn't exist, creating new pool...")
+  const factoryWithSigner = factory.connect(signer)
+  const tx = await factoryWithSigner.createPool(token0, token1, feeTier)
+  const receipt = await tx.wait()
+
+  // Get the newly created pool address
+  const newPoolAddress = await factory.getPool(token0, token1, feeTier)
+  console.log("[v0] New pool created at:", newPoolAddress)
+
+  // Initialize the pool with a starting price (1:1 ratio)
+  // sqrtPriceX96 = sqrt(price) * 2^96
+  // For 1:1 price, sqrtPriceX96 = 2^96 = 79228162514264337593543950336
+  const pool = new ethers.Contract(newPoolAddress, UNISWAP_V3_POOL_ABI, signer)
+  const initTx = await pool.initialize("79228162514264337593543950336")
+  await initTx.wait()
+  console.log("[v0] Pool initialized with 1:1 price")
+
+  return { poolAddress: newPoolAddress, created: true }
 }

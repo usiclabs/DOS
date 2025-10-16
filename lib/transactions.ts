@@ -15,9 +15,9 @@ const UNISWAP_V3_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1"
 
 // Simplified ABI for the functions we need
 const POSITION_MANAGER_ABI = {
-  decreaseLiquidity: "0x0c49ccbe", // decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))
-  collect: "0xfc6f7865", // collect((uint256,address,uint128,uint128))
-  burn: "0x42966c68", // burn(uint256)
+  decreaseLiquidity: "0c49ccbe", // decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))
+  collect: "fc6f7865", // collect((uint256,address,uint128,uint128))
+  burn: "42966c68", // burn(uint256)
 }
 
 export async function getWalletProvider() {
@@ -140,7 +140,6 @@ export async function withdrawLiquidity(
   try {
     console.log("[v0] Withdrawing liquidity from position:", tokenId)
 
-    // Encode decreaseLiquidity function call
     const functionSelector = POSITION_MANAGER_ABI.decreaseLiquidity
     const tokenIdHex = tokenId.toString(16).padStart(64, "0")
     const liquidityHex = liquidityToRemove.padStart(64, "0")
@@ -152,19 +151,39 @@ export async function withdrawLiquidity(
 
     const data = functionSelector + tokenIdHex + liquidityHex + amount0MinHex + amount1MinHex + deadline
 
-    const result = await sendTransaction({
+    console.log("[v0] Step 1: Calling decreaseLiquidity...")
+    const decreaseResult = await sendTransaction({
       to: UNISWAP_V3_POSITION_MANAGER,
       data: `0x${data}`,
       gasLimit: "0x7A120", // 500,000 gas
     })
 
-    if (result.success) {
-      console.log("[v0] Liquidity withdrawal successful:", result.hash)
-    } else {
-      console.error(`Withdrawal failed: ${result.error}`)
+    if (!decreaseResult.success) {
+      console.error(`[v0] decreaseLiquidity failed: ${decreaseResult.error}`)
+      return decreaseResult
     }
 
-    return result
+    console.log("[v0] Step 1 successful, hash:", decreaseResult.hash)
+
+    console.log("[v0] Step 2: Calling collect to transfer tokens...")
+    const collectResult = await collectFees(tokenId)
+
+    if (!collectResult.success) {
+      console.error(`[v0] collect failed: ${collectResult.error}`)
+      return {
+        hash: decreaseResult.hash,
+        success: false,
+        error: `Liquidity decreased but collection failed: ${collectResult.error}. You can manually collect the tokens later.`,
+      }
+    }
+
+    console.log("[v0] Step 2 successful, hash:", collectResult.hash)
+    console.log("[v0] Liquidity withdrawal complete!")
+
+    return {
+      hash: collectResult.hash,
+      success: true,
+    }
   } catch (error: any) {
     console.error("[v0] Withdrawal error:", error)
     return {

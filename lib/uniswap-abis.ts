@@ -114,6 +114,13 @@ export const UNISWAP_V3_POOL_ABI = [
     stateMutability: "view",
     type: "function",
   },
+  {
+    inputs: [{ internalType: "uint160", name: "sqrtPriceX96", type: "uint160" }],
+    name: "initialize",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
 ] as const
 
 // Uniswap V3 NonfungiblePositionManager address on Base

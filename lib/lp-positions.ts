@@ -55,14 +55,30 @@ const PRICE_CACHE_DURATION = 60000 // 1 minute
 
 async function batchRpcCalls(calls: Array<{ to: string; data: string }>): Promise<string[]> {
   try {
-    const results = await Promise.all(
-      calls.map((call) =>
-        rpcCall("eth_call", [call, "latest"]).catch((error) => {
-          console.error("[v0] Batch call failed:", error)
-          return "0x"
-        }),
-      ),
-    )
+    // Process calls in smaller chunks to avoid rate limiting
+    const chunkSize = 3 // Process 3 calls at a time
+    const results: string[] = []
+
+    for (let i = 0; i < calls.length; i += chunkSize) {
+      const chunk = calls.slice(i, i + chunkSize)
+
+      const chunkResults = await Promise.all(
+        chunk.map((call) =>
+          rpcCall("eth_call", [call, "latest"]).catch((error) => {
+            console.error("[v0] Batch call failed:", error)
+            return "0x"
+          }),
+        ),
+      )
+
+      results.push(...chunkResults)
+
+      // Add delay between chunks to avoid rate limiting
+      if (i + chunkSize < calls.length) {
+        await new Promise((resolve) => setTimeout(resolve, 1000)) // 1 second delay between chunks
+      }
+    }
+
     return results
   } catch (error) {
     console.error("[v0] Batch RPC calls failed:", error)
@@ -261,7 +277,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
     console.log(`[v0] Found ${balance} V3 position NFTs`)
 
     const positions: LPPosition[] = []
-    const batchSize = 2
+    const batchSize = 3
     const maxPositions = Math.min(balance, 50)
 
     for (let batchStart = 0; batchStart < maxPositions; batchStart += batchSize) {
@@ -279,9 +295,13 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
 
       const tokenIdResults = await batchRpcCalls(tokenIdCalls)
 
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
       const positionDataCalls = []
+      const tokenIds = []
       for (let i = 0; i < tokenIdResults.length; i++) {
         const tokenId = Number.parseInt(tokenIdResults[i], 16)
+        tokenIds.push(tokenId)
         positionDataCalls.push({
           to: UNISWAP_V3_POSITION_MANAGER,
           data: `0x99fbab88${tokenId.toString(16).padStart(64, "0")}`,
@@ -290,9 +310,24 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
 
       const positionDataResults = await batchRpcCalls(positionDataCalls)
 
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      const validPositions: Array<{
+        index: number
+        tokenId: number
+        token0: string
+        token1: string
+        fee: number
+        tickLower: number
+        tickUpper: number
+        liquidity: string
+        tokensOwed0: string
+        tokensOwed1: string
+      }> = []
+
       for (let i = 0; i < positionDataResults.length; i++) {
         try {
-          const tokenId = Number.parseInt(tokenIdResults[i], 16)
+          const tokenId = tokenIds[i]
           const positionData = positionDataResults[i]
 
           if (!positionData || positionData === "0x") {
@@ -301,6 +336,13 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
           }
 
           const cleanData = positionData.slice(2)
+          const liquidity = "0x" + cleanData.slice(480, 512)
+
+          if (BigInt(liquidity) === 0n) {
+            console.log(`[v0] Skipping position ${tokenId}: zero liquidity`)
+            continue
+          }
+
           const token0 = "0x" + cleanData.slice(152, 192)
           const token1 = "0x" + cleanData.slice(216, 256)
           const fee = Number.parseInt(cleanData.slice(314, 320), 16)
@@ -316,39 +358,86 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
               ? Number.parseInt(tickUpperHex, 16) - 0x1000000
               : Number.parseInt(tickUpperHex, 16)
 
-          const liquidity = "0x" + cleanData.slice(480, 512)
           const tokensOwed0 = "0x" + cleanData.slice(672, 704)
           const tokensOwed1 = "0x" + cleanData.slice(736, 768)
 
-          if (BigInt(liquidity) === 0n) {
-            console.log(`[v0] Skipping position ${tokenId}: zero liquidity`)
-            continue
-          }
+          validPositions.push({
+            index: i,
+            tokenId,
+            token0,
+            token1,
+            fee,
+            tickLower,
+            tickUpper,
+            liquidity,
+            tokensOwed0,
+            tokensOwed1,
+          })
+        } catch (error) {
+          console.error("[v0] Error parsing position data:", error)
+        }
+      }
 
-          const poolAddressData = await rpcCall("eth_call", [
-            {
-              to: UNISWAP_V3_FACTORY,
-              data: `0x1698ee82${token0.slice(2).padStart(64, "0")}${token1.slice(2).padStart(64, "0")}${fee.toString(16).padStart(64, "0")}`,
-            },
-            "latest",
-          ])
+      if (validPositions.length === 0) {
+        console.log("[v0] No valid positions in this batch")
+        continue
+      }
 
-          const poolAddress = "0x" + poolAddressData.slice(-40)
+      const poolAddressCalls = validPositions.map((pos) => ({
+        to: UNISWAP_V3_FACTORY,
+        data: `0x1698ee82${pos.token0.slice(2).padStart(64, "0")}${pos.token1.slice(2).padStart(64, "0")}${pos.fee.toString(16).padStart(64, "0")}`,
+      }))
 
-          if (poolAddress === "0x0000000000000000000000000000000000000000") {
-            console.log(`[v0] Skipping position ${tokenId}: invalid pool address`)
-            continue
-          }
+      const poolAddressResults = await batchRpcCalls(poolAddressCalls)
 
-          const poolShare = 0.001
+      await new Promise((resolve) => setTimeout(resolve, 500))
 
-          const slot0DataReal = await rpcCall("eth_call", [
-            {
-              to: poolAddress,
-              data: "0x3850c7bd",
-            },
-            "latest",
-          ])
+      const validPoolPositions: Array<{
+        position: (typeof validPositions)[0]
+        poolAddress: string
+      }> = []
+
+      for (let i = 0; i < poolAddressResults.length; i++) {
+        const poolAddress = "0x" + poolAddressResults[i].slice(-40)
+
+        if (poolAddress === "0x0000000000000000000000000000000000000000") {
+          console.log(`[v0] Skipping position ${validPositions[i].tokenId}: invalid pool address`)
+          continue
+        }
+
+        validPoolPositions.push({
+          position: validPositions[i],
+          poolAddress,
+        })
+      }
+
+      const slot0Calls = validPoolPositions.map((vpp) => ({
+        to: vpp.poolAddress,
+        data: "0x3850c7bd",
+      }))
+
+      const slot0Results = await batchRpcCalls(slot0Calls)
+
+      await new Promise((resolve) => setTimeout(resolve, 500))
+
+      const uniqueTokens = new Set<string>()
+      for (const vpp of validPoolPositions) {
+        uniqueTokens.add(vpp.position.token0.toLowerCase())
+        uniqueTokens.add(vpp.position.token1.toLowerCase())
+      }
+
+      const tokenDataPromises = Array.from(uniqueTokens).map(async (tokenAddress) => {
+        const [metadata, price] = await Promise.all([getTokenMetadata(tokenAddress), getTokenPrice(tokenAddress)])
+        return { tokenAddress, metadata, price }
+      })
+
+      const tokenDataResults = await Promise.all(tokenDataPromises)
+      const tokenDataMap = new Map(tokenDataResults.map((td) => [td.tokenAddress.toLowerCase(), td]))
+
+      for (let i = 0; i < validPoolPositions.length; i++) {
+        try {
+          const { position, poolAddress } = validPoolPositions[i]
+          const slot0DataReal = slot0Results[i]
 
           const slot0Clean = slot0DataReal.slice(2)
           const sqrtPriceX96 = BigInt("0x" + slot0Clean.slice(0, 64))
@@ -359,24 +448,25 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
               ? Number.parseInt(tickHex, 16) - 0x1000000
               : Number.parseInt(tickHex, 16)
 
-          const inRange = currentTick >= tickLower && currentTick <= tickUpper
+          const inRange = currentTick >= position.tickLower && currentTick <= position.tickUpper
 
-          const liquidityBigInt = BigInt(liquidity)
+          const liquidityBigInt = BigInt(position.liquidity)
 
           const { amount0, amount1 } = getTokenAmountsFromLiquidity(
             liquidityBigInt,
             sqrtPriceX96,
-            tickLower,
-            tickUpper,
+            position.tickLower,
+            position.tickUpper,
             currentTick,
           )
 
-          const [token0Meta, token1Meta, token0Price, token1Price] = await Promise.all([
-            getTokenMetadata(token0),
-            getTokenMetadata(token1),
-            getTokenPrice(token0),
-            getTokenPrice(token1),
-          ])
+          const token0Data = tokenDataMap.get(position.token0.toLowerCase())!
+          const token1Data = tokenDataMap.get(position.token1.toLowerCase())!
+
+          const token0Meta = token0Data.metadata
+          const token1Meta = token1Data.metadata
+          const token0Price = token0Data.price
+          const token1Price = token1Data.price
 
           const decimals0 = BigInt(10) ** BigInt(token0Meta.decimals)
           const decimals1 = BigInt(10) ** BigInt(token1Meta.decimals)
@@ -389,8 +479,8 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
           const amount1Remainder = amount1 % decimals1
           const amount1Decimal = Number(amount1Whole) + Number(amount1Remainder) / Number(decimals1)
 
-          const fees0BigInt = BigInt(tokensOwed0)
-          const fees1BigInt = BigInt(tokensOwed1)
+          const fees0BigInt = BigInt(position.tokensOwed0)
+          const fees1BigInt = BigInt(position.tokensOwed1)
 
           const fees0Whole = fees0BigInt / decimals0
           const fees0Remainder = fees0BigInt % decimals0
@@ -409,13 +499,15 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
           const token1Value = totalAmount1 * token1Price
           const totalValue = token0Value + token1Value
 
-          console.log(`[v0] Position ${tokenId}: ${token0Meta.symbol}/${token1Meta.symbol} = $${totalValue.toFixed(2)}`)
+          console.log(
+            `[v0] Position ${position.tokenId}: ${token0Meta.symbol}/${token1Meta.symbol} = $${totalValue.toFixed(2)}`,
+          )
 
           const positionValue = amount0Decimal * token0Price + amount1Decimal * token1Price
 
           let currentApr = 0
           if (inRange && positionValue > 0) {
-            const feeMultiplier = fee / 10000
+            const feeMultiplier = position.fee / 10000
             const baseApr = feeMultiplier * 50
             currentApr = Math.min(baseApr, 100)
           }
@@ -424,23 +516,25 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
           const initialValue = positionValue
 
           const isDeusPool =
-            token0.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ||
-            token1.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
+            position.token0.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ||
+            position.token1.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
+
+          const poolShare = 0.001
 
           positions.push({
-            id: `uniswap-v3-${tokenId}`,
-            tokenId,
-            poolId: `${token0Meta.symbol}/${token1Meta.symbol}-${(fee / 10000).toFixed(2)}%`,
+            id: `uniswap-v3-${position.tokenId}`,
+            tokenId: position.tokenId,
+            poolId: `${token0Meta.symbol}/${token1Meta.symbol}-${(position.fee / 10000).toFixed(2)}%`,
             pairAddress: poolAddress,
             baseToken: {
-              address: token0,
+              address: position.token0,
               symbol: token0Meta.symbol,
               name: token0Meta.name,
               amount: totalAmount0,
               value: token0Value,
             },
             quoteToken: {
-              address: token1,
+              address: position.token1,
               symbol: token1Meta.symbol,
               name: token1Meta.name,
               amount: totalAmount1,
@@ -449,7 +543,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
             dexId: "Uniswap V3",
             poolType: "v3",
             isDeusPool,
-            feeTier: `${(fee / 10000).toFixed(2)}%`,
+            feeTier: `${(position.fee / 10000).toFixed(2)}%`,
             liquidityTokens: Number(liquidityBigInt / BigInt(1e15)) / 1000,
             totalValue,
             initialValue,
@@ -460,8 +554,8 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
             poolShare,
             entryDate: new Date().toISOString(),
             lastUpdated: new Date().toISOString(),
-            tickLower,
-            tickUpper,
+            tickLower: position.tickLower,
+            tickUpper: position.tickUpper,
             inRange,
           })
         } catch (error) {
@@ -470,7 +564,8 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
       }
 
       if (batchEnd < maxPositions) {
-        await new Promise((resolve) => setTimeout(resolve, 2000))
+        console.log("[v0] Waiting 3 seconds before next batch to avoid rate limiting...")
+        await new Promise((resolve) => setTimeout(resolve, 3000))
       }
     }
 
