@@ -42,7 +42,7 @@ export function BackgroundMusicPlayer() {
 
   return (
     <div
-      className="fixed bottom-6 left-6 z-50 flex items-center gap-2 rounded-full bg-background/80 backdrop-blur-sm border border-white/10 p-2 shadow-lg transition-all duration-300"
+      className="fixed bottom-24 left-6 z-50 flex items-center gap-2 rounded-full bg-background/80 backdrop-blur-sm border border-white/10 p-2 shadow-lg transition-all duration-300"
       onMouseEnter={() => setShowControls(true)}
       onMouseLeave={() => setShowControls(false)}
     >
