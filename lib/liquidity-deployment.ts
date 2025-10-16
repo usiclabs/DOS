@@ -161,8 +161,25 @@ export async function deployLiquidity(signer: ethers.Signer, params: DeploymentP
     // Calculate tick range (full range for simplicity)
     const tickSpacing = getTickSpacing(params.feeTier)
     const currentTick = Number(poolState.tick)
-    const tickLower = nearestUsableTick(currentTick - 887220, tickSpacing)
-    const tickUpper = nearestUsableTick(currentTick + 887220, tickSpacing)
+    const MIN_TICK = -887272
+    const MAX_TICK = 887272
+    let tickLower = nearestUsableTick(currentTick - 887220, tickSpacing)
+    let tickUpper = nearestUsableTick(currentTick + 887220, tickSpacing)
+
+    // Clamp to bounds first
+    tickLower = Math.max(tickLower, MIN_TICK)
+    tickUpper = Math.min(tickUpper, MAX_TICK)
+
+    // If clamping pushed us to a boundary, ensure we're still on a usable tick
+    // by rounding INWARD (toward zero) instead of to nearest
+    if (tickLower <= MIN_TICK) {
+      tickLower = Math.ceil(MIN_TICK / tickSpacing) * tickSpacing
+    }
+    if (tickUpper >= MAX_TICK) {
+      tickUpper = Math.floor(MAX_TICK / tickSpacing) * tickSpacing
+    }
+
+    console.log("[v0] Calculated tick range (clamped to bounds):", { tickLower, tickUpper, MIN_TICK, MAX_TICK })
 
     // Check and approve tokens if needed
     const allowance0 = await checkAllowance(provider, token0, params.userAddress, NONFUNGIBLE_POSITION_MANAGER_ADDRESS)
@@ -253,8 +270,23 @@ export async function generateDeploymentTxData(params: DeploymentParams): Promis
   const amount1Min = (amount1Wei * (basisPoints - slippageBps)) / basisPoints
 
   const tickSpacing = getTickSpacing(params.feeTier)
-  const tickLower = nearestUsableTick(-887220, tickSpacing)
-  const tickUpper = nearestUsableTick(887220, tickSpacing)
+  const MIN_TICK = -887272
+  const MAX_TICK = 887272
+  let tickLower = nearestUsableTick(-887220, tickSpacing)
+  let tickUpper = nearestUsableTick(887220, tickSpacing)
+
+  // Clamp to bounds first
+  tickLower = Math.max(tickLower, MIN_TICK)
+  tickUpper = Math.min(tickUpper, MAX_TICK)
+
+  // If clamping pushed us to a boundary, ensure we're still on a usable tick
+  // by rounding INWARD (toward zero) instead of to nearest
+  if (tickLower <= MIN_TICK) {
+    tickLower = Math.ceil(MIN_TICK / tickSpacing) * tickSpacing
+  }
+  if (tickUpper >= MAX_TICK) {
+    tickUpper = Math.floor(MAX_TICK / tickSpacing) * tickSpacing
+  }
 
   const deadlineTimestamp = Math.floor(Date.now() / 1000) + 60 * 20
 
@@ -319,6 +351,19 @@ export async function createPoolIfNeeded(
     },
   ]
 
+  const POOL_CREATED_EVENT_ABI = {
+    anonymous: false,
+    inputs: [
+      { indexed: true, internalType: "address", name: "token0", type: "address" },
+      { indexed: true, internalType: "address", name: "token1", type: "address" },
+      { indexed: true, internalType: "uint24", name: "fee", type: "uint24" },
+      { indexed: false, internalType: "int24", name: "tickSpacing", type: "int24" },
+      { indexed: false, internalType: "address", name: "pool", type: "address" },
+    ],
+    name: "PoolCreated",
+    type: "event",
+  }
+
   const factory = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider)
 
   // Check if pool exists
@@ -357,8 +402,35 @@ export async function createPoolIfNeeded(
   const tx = await factoryWithSigner.createPool(token0, token1, feeTier)
   const receipt = await tx.wait()
 
-  // Get the newly created pool address
-  const newPoolAddress = await factory.getPool(token0, token1, feeTier)
+  let newPoolAddress = ethers.ZeroAddress
+
+  if (receipt && receipt.logs) {
+    const iface = new ethers.Interface([POOL_CREATED_EVENT_ABI])
+
+    for (const log of receipt.logs) {
+      try {
+        const parsed = iface.parseLog({ topics: log.topics as string[], data: log.data })
+        if (parsed && parsed.name === "PoolCreated") {
+          newPoolAddress = parsed.args.pool
+          console.log("[v0] Pool address extracted from PoolCreated event:", newPoolAddress)
+          break
+        }
+      } catch (e) {
+        // Not the event we're looking for, continue
+        continue
+      }
+    }
+  }
+
+  if (newPoolAddress === ethers.ZeroAddress) {
+    console.log("[v0] Failed to extract pool address from event, falling back to getPool...")
+    newPoolAddress = await factory.getPool(token0, token1, feeTier)
+  }
+
+  if (newPoolAddress === ethers.ZeroAddress) {
+    throw new Error("Failed to create pool. The pool address returned is zero. Please try again.")
+  }
+
   console.log("[v0] New pool created at:", newPoolAddress)
 
   // Initialize the pool with a starting price (1:1 ratio)

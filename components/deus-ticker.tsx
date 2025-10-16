@@ -4,9 +4,10 @@ import { useState, useEffect } from "react"
 import { TrendingUp, TrendingDown, Users, DollarSign, BarChart3, AlertCircle, Wifi, WifiOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTickerStore } from "@/lib/ticker-store"
-import { DeployModal } from "@/components/deploy-modal"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { AnimatePresence, motion } from "framer-motion"
+import { getTokenAddress } from "@/lib/constants"
+import { DeployModal } from "@/components/deploy-modal" // Import DeployModal component
 
 export function DeusTicker() {
   const [isPaused, setIsPaused] = useState(false)
@@ -53,17 +54,25 @@ export function DeusTicker() {
   }
 
   const handlePairClick = (pair: any) => {
+    const baseAddress = pair.baseAddress || getTokenAddress(pair.base)
+    const quoteAddress = pair.quoteAddress || getTokenAddress(pair.quote)
+
+    if (!baseAddress || !quoteAddress) {
+      console.warn(`[v0] Cannot open deploy modal for ${pair.base}/${pair.quote}: Token addresses cannot be resolved`)
+      return
+    }
+
     // Convert ticker pair data to pool data format expected by DeployModal
     const poolData = {
       id: `${pair.base}-${pair.quote}`,
       pairAddress: "0x0000000000000000000000000000000000000000", // Placeholder
       baseToken: {
-        address: "0x0000000000000000000000000000000000000000", // Placeholder
+        address: baseAddress,
         symbol: pair.base,
         name: pair.base,
       },
       quoteToken: {
-        address: "0x0000000000000000000000000000000000000000", // Placeholder
+        address: quoteAddress,
         symbol: pair.quote,
         name: pair.quote,
       },
@@ -251,7 +260,7 @@ export function DeusTicker() {
                             {pair.dexId && <span className="capitalize">{pair.dexId}</span>}
                             {pair.apy24h && <span className="ml-2">APY: {pair.apy24h.toFixed(1)}%</span>}
                           </div>
-                          <div className="text-xs text-accent mt-1">Tap to deploy liquidity →</div>
+                          <div className="text-xs text-primary mt-1">Tap to deploy liquidity →</div>
                         </button>
                       ))}
                     </div>

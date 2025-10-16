@@ -63,7 +63,15 @@ interface DeusTickerData {
   marketCapUsd?: number
   fdvUsd?: number
   holders?: number
-  topPairs: { base: string; quote: string; feeTier?: string; apy24h?: number; dexId?: string }[]
+  topPairs: {
+    base: string
+    baseAddress: string
+    quote: string
+    quoteAddress: string
+    feeTier?: string
+    apy24h?: number
+    dexId?: string
+  }[]
   lastUpdatedISO: string
   status: "live" | "degraded" | "error"
 }
@@ -205,7 +213,9 @@ export async function GET() {
           fdvUsd: bestPair.fdv,
           topPairs: basePairs.slice(0, 3).map((pair) => ({
             base: pair.baseToken?.symbol || "UNKNOWN",
+            baseAddress: pair.baseToken?.address || "",
             quote: pair.quoteToken?.symbol || "UNKNOWN",
+            quoteAddress: pair.quoteToken?.address || "",
             dexId: pair.dexId,
             apy24h: calculateAPY(pair.volume?.h24 || 0, pair.liquidity?.usd || 0),
           })),

@@ -108,6 +108,8 @@ export async function detectPoolFeeTier(
 ): Promise<{ fee: number; poolAddress: string } | null> {
   console.log("[v0] Detecting pool fee tier for:", { tokenA, tokenB })
 
+  const MIN_LIQUIDITY = BigInt("100000000000000") // 0.0001 ETH worth of liquidity minimum
+
   const pools: Array<{ fee: number; poolAddress: string; liquidity: bigint }> = []
 
   for (const fee of FEE_TIERS) {
@@ -147,7 +149,11 @@ export async function detectPoolFeeTier(
           const liquidity = BigInt(liquidityResult)
           console.log("[v0] Found pool:", { fee, poolAddress, liquidity: liquidity.toString() })
 
-          pools.push({ fee, poolAddress, liquidity })
+          if (liquidity >= MIN_LIQUIDITY) {
+            pools.push({ fee, poolAddress, liquidity })
+          } else {
+            console.log(`[v0] Skipping pool with insufficient liquidity: ${liquidity.toString()}`)
+          }
         } catch (error) {
           console.error(`[v0] Error getting liquidity for pool ${poolAddress}:`, error)
         }
@@ -158,7 +164,7 @@ export async function detectPoolFeeTier(
   }
 
   if (pools.length === 0) {
-    console.log("[v0] No pool found for token pair")
+    console.log("[v0] No pool with sufficient liquidity found for token pair")
     return null
   }
 
@@ -171,6 +177,155 @@ export async function detectPoolFeeTier(
   })
 
   return { fee: bestPool.fee, poolAddress: bestPool.poolAddress }
+}
+
+/**
+ * Find the best pool for swapping to a target token
+ * Tries multiple base tokens (WETH, DEUS) and returns the pool with best liquidity
+ * Optionally accepts a poolHint from Dexscreener to validate and use if it has sufficient liquidity
+ */
+export async function findBestSwapPool(
+  targetToken: string,
+  baseTokens: string[] = [UNISWAP_V3_ADDRESSES.WETH, "0x73582df1cad3187cD0746b7A473d65c06386837e"], // WETH and DEUS
+  poolHint?: string,
+): Promise<{ baseToken: string; fee: number; poolAddress: string } | null> {
+  console.log("[v0] Finding best swap pool for target token:", targetToken)
+  console.log("[v0] Checking base tokens:", baseTokens)
+
+  if (poolHint && poolHint !== "0x0000000000000000000000000000000000000000") {
+    console.log("[v0] Validating pool hint from Dexscreener:", poolHint)
+    try {
+      // First, try to verify this is actually a Uniswap V3 pool by checking if it matches factory pools
+      let isValidUniswapV3Pool = false
+      let matchedBaseToken: string | null = null
+      let matchedFee: number | null = null
+
+      for (const baseToken of baseTokens) {
+        for (const fee of FEE_TIERS) {
+          try {
+            const data = encodeAbiParameters(
+              [{ type: "address" }, { type: "address" }, { type: "uint24" }],
+              [baseToken as `0x${string}`, targetToken as `0x${string}`, fee],
+            )
+
+            const functionSelector = "0x1698ee82" // getPool(address,address,uint24)
+            const callData = functionSelector + data.slice(2)
+
+            const result = await rpcCall("eth_call", [
+              {
+                to: UNISWAP_V3_ADDRESSES.FACTORY,
+                data: callData,
+              },
+              "latest",
+            ])
+
+            const poolAddress = "0x" + result.slice(-40)
+
+            if (poolAddress.toLowerCase() === poolHint.toLowerCase()) {
+              isValidUniswapV3Pool = true
+              matchedBaseToken = baseToken
+              matchedFee = fee
+              console.log("[v0] Pool hint is a valid Uniswap V3 pool:", { baseToken, fee, poolAddress })
+              break
+            }
+          } catch (error) {
+            // Continue checking other combinations
+          }
+        }
+        if (isValidUniswapV3Pool) break
+      }
+
+      if (isValidUniswapV3Pool && matchedBaseToken && matchedFee !== null) {
+        // Now check liquidity
+        try {
+          const liquidityResult = await rpcCall("eth_call", [
+            {
+              to: poolHint,
+              data: "0x1a686502", // liquidity()
+            },
+            "latest",
+          ])
+
+          const liquidity = BigInt(liquidityResult)
+          const MIN_LIQUIDITY = BigInt("100000000000000") // 0.0001 ETH worth
+
+          if (liquidity >= MIN_LIQUIDITY) {
+            console.log("[v0] Pool hint has sufficient liquidity:", liquidity.toString())
+            return { baseToken: matchedBaseToken, fee: matchedFee, poolAddress: poolHint }
+          } else {
+            console.log("[v0] Pool hint has insufficient liquidity:", liquidity.toString())
+          }
+        } catch (error) {
+          console.log("[v0] Failed to check pool hint liquidity:", error)
+        }
+      } else {
+        console.log("[v0] Pool hint is not a Uniswap V3 pool (likely Aerodrome or other DEX), skipping hint")
+      }
+    } catch (error) {
+      console.log("[v0] Pool hint validation failed:", error)
+    }
+  }
+
+  const poolResults: Array<{ baseToken: string; fee: number; poolAddress: string; liquidity: bigint }> = []
+
+  for (const baseToken of baseTokens) {
+    console.log(`[v0] Checking ${baseToken} / ${targetToken} pools...`)
+    try {
+      const poolInfo = await detectPoolFeeTier(baseToken, targetToken)
+
+      if (poolInfo) {
+        // Get liquidity for comparison
+        try {
+          const liquidityResult = await rpcCall("eth_call", [
+            {
+              to: poolInfo.poolAddress,
+              data: "0x1a686502", // liquidity()
+            },
+            "latest",
+          ])
+
+          const liquidity = BigInt(liquidityResult)
+          poolResults.push({
+            baseToken,
+            fee: poolInfo.fee,
+            poolAddress: poolInfo.poolAddress,
+            liquidity,
+          })
+
+          console.log(`[v0] Found pool for ${baseToken}:`, {
+            fee: poolInfo.fee,
+            poolAddress: poolInfo.poolAddress,
+            liquidity: liquidity.toString(),
+          })
+        } catch (error) {
+          console.error(`[v0] Error getting liquidity for pool ${poolInfo.poolAddress}:`, error)
+        }
+      }
+    } catch (error) {
+      console.error(`[v0] Error detecting pools for ${baseToken}:`, error)
+    }
+  }
+
+  if (poolResults.length === 0) {
+    console.log("[v0] No pools found for any base token")
+    return null
+  }
+
+  // Select pool with best liquidity
+  const bestPool = poolResults.reduce((best, current) => (current.liquidity > best.liquidity ? current : best))
+
+  console.log("[v0] Selected best pool:", {
+    baseToken: bestPool.baseToken,
+    fee: bestPool.fee,
+    poolAddress: bestPool.poolAddress,
+    liquidity: bestPool.liquidity.toString(),
+  })
+
+  return {
+    baseToken: bestPool.baseToken,
+    fee: bestPool.fee,
+    poolAddress: bestPool.poolAddress,
+  }
 }
 
 /**
@@ -274,7 +429,9 @@ export function buildSwapTransaction(
     deadline,
   })
 
-  const isEthSwap = tokenIn === "0x0000000000000000000000000000000000000000"
+  const isEthSwap =
+    tokenIn === "0x0000000000000000000000000000000000000000" ||
+    tokenIn.toLowerCase() === UNISWAP_V3_ADDRESSES.WETH.toLowerCase()
 
   if (isEthSwap) {
     // Universal Router commands: WRAP_ETH = 0x0b, V3_SWAP_EXACT_IN = 0x00
@@ -366,6 +523,14 @@ export function buildSwapTransaction(
 
   const functionSelector = "0x414bf389" // exactInputSingle
   const data = functionSelector + params.slice(2)
+
+  console.log("[v0] SwapRouter transaction data:", {
+    to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,
+    tokenIn,
+    tokenOut,
+    fee,
+    value: "0",
+  })
 
   return {
     to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,

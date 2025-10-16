@@ -78,6 +78,8 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
   const [positionId, setPositionId] = useState<string | null>(null)
   const [estimatedValue, setEstimatedValue] = useState<string | null>(null)
   const [actualAmounts, setActualAmounts] = useState<{ base: string; quote: string } | null>(null)
+  const [canResolveTokens, setCanResolveTokens] = useState(true)
+  const [tokenResolutionError, setTokenResolutionError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!isOpen) {
@@ -96,14 +98,43 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
       setPositionId(null)
       setEstimatedValue(null)
       setActualAmounts(null)
+      setCanResolveTokens(true)
+      setTokenResolutionError(null)
     } else {
       console.log("[v0] Deploy modal opened for pool:", pool)
+      if (pool) {
+        const baseTokenAddress =
+          pool.baseToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.baseToken.symbol)
+            : pool.baseToken.address
+
+        const quoteTokenAddress =
+          pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.quoteToken.symbol)
+            : pool.quoteToken.address
+
+        if (!baseTokenAddress || !quoteTokenAddress) {
+          const missingTokens = []
+          if (!baseTokenAddress) missingTokens.push(pool.baseToken.symbol)
+          if (!quoteTokenAddress) missingTokens.push(pool.quoteToken.symbol)
+
+          console.warn("[v0] Cannot resolve token addresses for:", missingTokens.join(", "))
+
+          setCanResolveTokens(false)
+          setTokenResolutionError(
+            `Cannot find token address${missingTokens.length > 1 ? "es" : ""} for: ${missingTokens.join(", ")}. This pool may not exist on Base chain or the token${missingTokens.length > 1 ? "s are" : " is"} not supported.`,
+          )
+        } else {
+          setCanResolveTokens(true)
+          setTokenResolutionError(null)
+        }
+      }
     }
   }, [isOpen, pool])
 
   useEffect(() => {
     const fetchBalances = async () => {
-      if (!pool || !isOpen) return
+      if (!pool || !isOpen || !canResolveTokens) return
 
       console.log("[v0] Fetching token balances for pool:", pool.baseToken.symbol, "/", pool.quoteToken.symbol)
 
@@ -119,17 +150,6 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
             : pool.quoteToken.address
 
         if (!baseTokenAddress || !quoteTokenAddress) {
-          console.error("[v0] Could not resolve token addresses:", {
-            baseToken: pool.baseToken.symbol,
-            baseAddress: baseTokenAddress,
-            quoteToken: pool.quoteToken.symbol,
-            quoteAddress: quoteTokenAddress,
-          })
-          toast({
-            title: "Unknown token addresses",
-            description: `Cannot fetch balances for ${pool.baseToken.symbol}/${pool.quoteToken.symbol}. Token addresses are not available.`,
-            variant: "destructive",
-          })
           return
         }
 
@@ -180,7 +200,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     }
 
     fetchBalances()
-  }, [pool, isOpen, toast])
+  }, [pool, isOpen, toast, canResolveTokens]) // Include canResolveTokens in dependency array
 
   useEffect(() => {
     const estimateGas = async () => {
@@ -255,8 +275,33 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
       return
     }
 
+    // when the price range is outside the current price
+    const baseAmountNum = Number.parseFloat(baseAmount)
+    const quoteAmountNum = Number.parseFloat(quoteAmount)
+
+    if (baseAmountNum < 0 || quoteAmountNum < 0) {
+      console.log("[v0] Validation failed: Negative amounts")
+      toast({
+        title: "Invalid amounts",
+        description: "Token amounts cannot be negative",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // At least one amount must be greater than zero
+    if (baseAmountNum === 0 && quoteAmountNum === 0) {
+      console.log("[v0] Validation failed: Both amounts are zero")
+      toast({
+        title: "Invalid amounts",
+        description: "At least one token amount must be greater than zero",
+        variant: "destructive",
+      })
+      return
+    }
+
     if (tokenBalances) {
-      if (Number.parseFloat(baseAmount) > Number.parseFloat(tokenBalances.base)) {
+      if (baseAmountNum > Number.parseFloat(tokenBalances.base)) {
         console.log("[v0] Validation failed: Insufficient base token balance")
         toast({
           title: "Insufficient balance",
@@ -265,7 +310,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         })
         return
       }
-      if (Number.parseFloat(quoteAmount) > Number.parseFloat(tokenBalances.quote)) {
+      if (quoteAmountNum > Number.parseFloat(tokenBalances.quote)) {
         console.log("[v0] Validation failed: Insufficient quote token balance")
         toast({
           title: "Insufficient balance",
@@ -315,7 +360,8 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
   }
 
   const handleDeploy = async () => {
-    if (!pool) return
+    // Add check for token resolution before proceeding
+    if (!pool || !canResolveTokens) return
 
     setIsDeploying(true)
     setStep("approving")
@@ -622,6 +668,9 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     setPositionId(null)
     setEstimatedValue(null)
     setActualAmounts(null)
+    // Reset token resolution state on reset
+    setCanResolveTokens(true)
+    setTokenResolutionError(null)
     onClose()
   }
 
@@ -646,6 +695,24 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         <div className="overflow-y-auto flex-1 pr-2 -mr-2">
           {step === "input" && (
             <div className="space-y-6">
+              {!canResolveTokens && tokenResolutionError && (
+                <Card className="glass-card border-red-500/20 bg-red-500/5">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm flex items-center space-x-2 text-red-400">
+                      <AlertTriangle className="h-4 w-4" />
+                      <span>Pool Not Available</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm text-gray-300">{tokenResolutionError}</p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      This pool may be a hypothetical pool or the tokens may not be deployed on Base chain yet. Please
+                      try a different pool.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+
               <Tabs value={deploymentMode} onValueChange={(v) => setDeploymentMode(v as any)}>
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="wallet" className="flex items-center gap-2">
@@ -743,6 +810,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                     placeholder="0.0"
                     value={baseAmount}
                     onChange={(e) => setBaseAmount(e.target.value)}
+                    disabled={!canResolveTokens}
                   />
                 </div>
 
@@ -761,6 +829,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                     placeholder="0.0"
                     value={quoteAmount}
                     onChange={(e) => setQuoteAmount(e.target.value)}
+                    disabled={!canResolveTokens}
                   />
                 </div>
 
@@ -768,7 +837,12 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-sm">Price Range</CardTitle>
-                      <Button variant="ghost" size="sm" onClick={() => setUseFullRange(!useFullRange)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setUseFullRange(!useFullRange)}
+                        disabled={!canResolveTokens}
+                      >
                         {useFullRange ? "Custom Range" : "Full Range"}
                       </Button>
                     </div>
@@ -799,6 +873,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                           max={100}
                           step={5}
                           className="w-full"
+                          disabled={!canResolveTokens}
                         />
                         <p className="text-xs text-gray-400">
                           <Info className="h-3 w-3 inline mr-1" />
@@ -821,6 +896,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                         variant={slippage === value ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSlippage(value)}
+                        disabled={!canResolveTokens}
                       >
                         {value}%
                       </Button>
@@ -831,6 +907,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                       step="0.1"
                       value={slippage}
                       onChange={(e) => setSlippage(e.target.value)}
+                      disabled={!canResolveTokens}
                     />
                   </div>
                 </div>
@@ -881,7 +958,11 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                 <Button variant="outline" onClick={onClose} className="flex-1 bg-transparent">
                   Cancel
                 </Button>
-                <Button onClick={handlePreview} className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90">
+                <Button
+                  onClick={handlePreview}
+                  className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
+                  disabled={!canResolveTokens}
+                >
                   Preview
                 </Button>
               </div>

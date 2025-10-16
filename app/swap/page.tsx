@@ -4,11 +4,13 @@ import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowDownUp, Settings, RefreshCw, ChevronDown, Wallet } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ArrowDownUp, Settings, RefreshCw, ChevronDown, Wallet, Sparkles } from "lucide-react"
 import { useWalletContext } from "@/contexts/wallet-context"
 import { StickyHeader } from "@/components/sticky-header"
 import { useToast } from "@/hooks/use-toast"
 import { DeusTicker } from "@/components/deus-ticker"
+import { TokenDiscoverMode } from "@/components/token-discover-mode"
 import { motion } from "framer-motion"
 import { createPublicClient, http } from "viem"
 import { base } from "viem/chains"
@@ -629,155 +631,178 @@ export default function SwapPage() {
 
       <div className="flex items-center justify-center min-h-[80vh] px-4 py-8">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
-          <Card className="glass-card p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold">Swap</h2>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowSettings(!showSettings)}
-                className="hover:bg-white/5"
-              >
-                <Settings className="w-5 h-5" />
-              </Button>
-            </div>
+          <Tabs defaultValue="swap" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="swap" className="flex items-center gap-2">
+                <ArrowDownUp className="w-4 h-4" />
+                Swap
+              </TabsTrigger>
+              <TabsTrigger value="discover" className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                Discover
+              </TabsTrigger>
+            </TabsList>
 
-            {showSettings && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                className="mb-6 p-4 rounded-lg bg-white/5 border border-white/10"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Slippage Tolerance</span>
-                  <div className="flex items-center gap-2">
-                    <Input value={slippage} onChange={(e) => setSlippage(e.target.value)} className="w-20 text-right" />
-                    <span className="text-sm">%</span>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            <div className="space-y-2 mb-2">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Sell</span>
-                {fromToken && <span>Balance: {fromToken.balance.toFixed(6)}</span>}
-              </div>
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between mb-3">
-                  <Input
-                    type="number"
-                    placeholder="0.0"
-                    value={fromAmount}
-                    onChange={(e) => setFromAmount(e.target.value)}
-                    className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
-                  />
-                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
-                    <span className="text-xl">{fromToken?.logo}</span>
-                    <span className="font-medium">{fromToken?.symbol}</span>
-                    <ChevronDown className="w-4 h-4" />
+            <TabsContent value="swap">
+              <Card className="glass-card p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold">Swap</h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowSettings(!showSettings)}
+                    className="hover:bg-white/5"
+                  >
+                    <Settings className="w-5 h-5" />
                   </Button>
                 </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-1">
-                    {[25, 50, 75, 100].map((percent) => (
-                      <Button
-                        key={percent}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handlePercentage(percent)}
-                        className="text-xs hover:bg-white/10"
-                      >
-                        {percent === 100 ? "MAX" : `${percent}%`}
-                      </Button>
-                    ))}
-                  </div>
-                  {fromToken && fromAmount && (
-                    <span className="text-sm text-muted-foreground">
-                      ${(Number.parseFloat(fromAmount) * fromToken.price).toFixed(2)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
 
-            <div className="flex justify-center -my-2 relative z-10">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full bg-background border-4 border-background hover:bg-white/5"
-              >
-                <ArrowDownUp className="w-5 h-5 text-accent" />
-              </Button>
-            </div>
-
-            <div className="space-y-2 mt-2">
-              <div className="flex items-center justify-between text-sm text-muted-foreground">
-                <span>Buy</span>
-                {toToken && <span>Balance: {toToken.balance.toFixed(6)}</span>}
-              </div>
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="text-2xl font-bold text-white">
-                    {isLoading ? <RefreshCw className="w-6 h-6 animate-spin" /> : toAmount || "0.0"}
-                  </div>
-                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
-                    <span className="text-xl">{toToken?.logo}</span>
-                    <span className="font-medium">{toToken?.symbol}</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </div>
-                {toToken && toAmount && (
-                  <div className="text-sm text-muted-foreground text-right">
-                    ${(Number.parseFloat(toAmount) * toToken.price).toFixed(2)}
-                  </div>
+                {showSettings && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    className="mb-6 p-4 rounded-lg bg-white/5 border border-white/10"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Slippage Tolerance</span>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          value={slippage}
+                          onChange={(e) => setSlippage(e.target.value)}
+                          className="w-20 text-right"
+                        />
+                        <span className="text-sm">%</span>
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
-              </div>
-            </div>
 
-            <Button
-              onClick={handleSwap}
-              disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
-              className="w-full mt-6 bg-accent hover:bg-accent/90 text-white font-medium"
-              size="lg"
-            >
-              {cooldownRemaining > 0 ? (
-                `Wait ${cooldownRemaining}s to avoid rate limiting`
-              ) : isSwapping ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Confirming in wallet...
-                </>
-              ) : isLoading ? (
-                <>
-                  <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                "Swap"
-              )}
-            </Button>
+                <div className="space-y-2 mb-2">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Sell</span>
+                    {fromToken && <span>Balance: {fromToken.balance.toFixed(6)}</span>}
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <Input
+                        type="number"
+                        placeholder="0.0"
+                        value={fromAmount}
+                        onChange={(e) => setFromAmount(e.target.value)}
+                        className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                      />
+                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
+                        <span className="text-xl">{fromToken?.logo}</span>
+                        <span className="font-medium">{fromToken?.symbol}</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="flex gap-1">
+                        {[25, 50, 75, 100].map((percent) => (
+                          <Button
+                            key={percent}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handlePercentage(percent)}
+                            className="text-xs hover:bg-white/10"
+                          >
+                            {percent === 100 ? "MAX" : `${percent}%`}
+                          </Button>
+                        ))}
+                      </div>
+                      {fromToken && fromAmount && (
+                        <span className="text-sm text-muted-foreground">
+                          ${(Number.parseFloat(fromAmount) * fromToken.price).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
-            {toAmount && !isLoading && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 space-y-2 text-sm"
-              >
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Rate</span>
-                  <span>
-                    1 {fromToken?.symbol} = {(Number.parseFloat(toAmount) / Number.parseFloat(fromAmount)).toFixed(6)}{" "}
-                    {toToken?.symbol}
-                  </span>
+                <div className="flex justify-center -my-2 relative z-10">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full bg-background border-4 border-background hover:bg-white/5"
+                  >
+                    <ArrowDownUp className="w-5 h-5 text-accent" />
+                  </Button>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Slippage</span>
-                  <span>{slippage}%</span>
+
+                <div className="space-y-2 mt-2">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Buy</span>
+                    {toToken && <span>Balance: {toToken.balance.toFixed(6)}</span>}
+                  </div>
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="text-2xl font-bold text-white">
+                        {isLoading ? <RefreshCw className="w-6 h-6 animate-spin" /> : toAmount || "0.0"}
+                      </div>
+                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
+                        <span className="text-xl">{toToken?.logo}</span>
+                        <span className="font-medium">{toToken?.symbol}</span>
+                        <ChevronDown className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {toToken && toAmount && (
+                      <div className="text-sm text-muted-foreground text-right">
+                        ${(Number.parseFloat(toAmount) * toToken.price).toFixed(2)}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </motion.div>
-            )}
-          </Card>
+
+                <Button
+                  onClick={handleSwap}
+                  disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
+                  className="w-full mt-6 bg-accent hover:bg-accent/90 text-white font-medium"
+                  size="lg"
+                >
+                  {cooldownRemaining > 0 ? (
+                    `Wait ${cooldownRemaining}s to avoid rate limiting`
+                  ) : isSwapping ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Confirming in wallet...
+                    </>
+                  ) : isLoading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    "Swap"
+                  )}
+                </Button>
+
+                {toAmount && !isLoading && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 space-y-2 text-sm"
+                  >
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Rate</span>
+                      <span>
+                        1 {fromToken?.symbol} ={" "}
+                        {(Number.parseFloat(toAmount) / Number.parseFloat(fromAmount)).toFixed(6)} {toToken?.symbol}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Slippage</span>
+                      <span>{slippage}%</span>
+                    </div>
+                  </motion.div>
+                )}
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="discover">
+              <TokenDiscoverMode />
+            </TabsContent>
+          </Tabs>
         </motion.div>
       </div>
     </div>

@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { detectPoolFeeTier, getSwapQuote, UNISWAP_V3_ADDRESSES } from "@/lib/uniswap-v3-swap"
+import { getSwapQuote, UNISWAP_V3_ADDRESSES, findBestSwapPool } from "@/lib/uniswap-v3-swap"
 import { parseUnits, formatUnits } from "viem"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
 export async function POST(request: NextRequest) {
   try {
-    const { fromToken, toToken, amount, userAddress, liveDEUSPrice } = await request.json()
+    const { fromToken, toToken, amount, userAddress, liveDEUSPrice, poolHint } = await request.json()
 
-    console.log("[v0] Swap quote request:", { fromToken, toToken, amount, userAddress })
+    console.log("[v0] Swap quote request:", { fromToken, toToken, amount, userAddress, poolHint })
 
     // Validate required parameters
     if (!fromToken || !toToken || !amount || !userAddress) {
@@ -15,32 +16,34 @@ export async function POST(request: NextRequest) {
 
     const fromAmountNum = Number.parseFloat(amount)
 
-    // Normalize ETH address to WETH for Uniswap V3
-    const tokenIn = fromToken === "0x0000000000000000000000000000000000000000" ? UNISWAP_V3_ADDRESSES.WETH : fromToken
+    console.log("[v0] Finding best pool for token pair...")
+    const bestPool = await findBestSwapPool(toToken, [UNISWAP_V3_ADDRESSES.WETH, DEUS_TOKEN_ADDRESS], poolHint)
 
-    // Step 1: Detect which fee tier has a pool
-    console.log("[v0] Detecting pool for token pair...")
-    const poolInfo = await detectPoolFeeTier(tokenIn, toToken)
-
-    if (!poolInfo) {
+    if (!bestPool) {
       console.error("[v0] No Uniswap V3 pool found for token pair")
       return NextResponse.json(
         {
           error: "NO_LIQUIDITY",
           message:
-            "No Uniswap V3 liquidity pool found for this token pair on Base chain. The DEUS token may not have active trading pools.",
+            "No Uniswap V3 liquidity pool found for this token pair on Base chain. The token may not have active trading pools with WETH or DEUS.",
           suggestion:
-            "Please verify the DEUS token address is correct. You can check available pools on Uniswap or Dexscreener.",
+            "Please verify the token address is correct. You can check available pools on Uniswap or Dexscreener.",
         },
         { status: 404 },
       )
     }
 
-    console.log("[v0] Found pool with fee tier:", poolInfo.fee, "at address:", poolInfo.poolAddress)
+    console.log("[v0] Found best pool:", {
+      baseToken: bestPool.baseToken,
+      fee: bestPool.fee,
+      poolAddress: bestPool.poolAddress,
+    })
+
+    const tokenIn = bestPool.baseToken
 
     // Step 2: Get quote from Uniswap V3 Quoter
     const amountInWei = parseUnits(amount, 18).toString()
-    const quote = await getSwapQuote(tokenIn, toToken, amountInWei, poolInfo.fee)
+    const quote = await getSwapQuote(tokenIn, toToken, amountInWei, bestPool.fee)
 
     if (!quote) {
       console.error("[v0] Failed to get quote from Uniswap V3 Quoter")
@@ -62,7 +65,9 @@ export async function POST(request: NextRequest) {
     const deusPrice = liveDEUSPrice || 0.00007765
     let fromTokenPrice = 3200 // Default ETH price
 
-    if (fromToken === "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") {
+    if (tokenIn.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()) {
+      fromTokenPrice = deusPrice
+    } else if (fromToken === "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") {
       fromTokenPrice = 1 // USDC
     }
 
@@ -79,23 +84,23 @@ export async function POST(request: NextRequest) {
 
     const quoteResponse = {
       fromToken: {
-        address: fromToken,
-        symbol: getTokenSymbol(fromToken),
-        logo: getTokenLogo(fromToken),
+        address: tokenIn, // Use actual base token (WETH or DEUS)
+        symbol: getTokenSymbol(tokenIn),
+        logo: getTokenLogo(tokenIn),
         price: fromTokenPrice,
       },
       toToken: {
         address: toToken,
-        symbol: "DEUS",
-        logo: "⚡",
+        symbol: "TOKEN",
+        logo: "🪙",
         price: deusPrice,
       },
       fromAmount: fromAmountNum,
       toAmount,
       rate,
       priceImpact: displayPriceImpact,
-      fee: poolInfo.fee / 10000, // Convert basis points to percentage
-      route: `${getTokenSymbol(fromToken)} → DEUS (Uniswap V3)`,
+      fee: bestPool.fee / 10000, // Convert basis points to percentage
+      route: `${getTokenSymbol(tokenIn)} → ${getTokenSymbol(toToken)} (Uniswap V3)`,
       estimatedGas: Number(quote.gasEstimate) * 0.000000001, // Convert to ETH (approximate)
       validUntil: Date.now() + 120000, // 2 minutes validity
       dexes: ["Uniswap V3"],
@@ -103,12 +108,12 @@ export async function POST(request: NextRequest) {
       minAmountOut: toAmount * (1 - slippageTolerance / 100),
       // Store Uniswap V3 data for execution
       uniswapV3Data: {
-        tokenIn: fromToken, // Use original address, not converted WETH
+        tokenIn: tokenIn, // Use actual base token
         tokenOut: toToken,
-        fee: poolInfo.fee,
+        fee: bestPool.fee,
         amountIn: amountInWei,
         amountOutMinimum: ((BigInt(quote.amountOut) * BigInt(5)) / BigInt(100)).toString(),
-        poolAddress: poolInfo.poolAddress,
+        poolAddress: bestPool.poolAddress,
       },
     }
 
@@ -135,7 +140,7 @@ function getTokenSymbol(address: string): string {
     "0x4200000000000000000000000000000000000006": "WETH",
     "0x73582df1cad3187cD0746b7A473d65c06386837e": "DEUS",
   }
-  return tokenMap[address] || "UNKNOWN"
+  return tokenMap[address.toLowerCase()] || "TOKEN"
 }
 
 function getTokenLogo(address: string): string {
@@ -145,5 +150,5 @@ function getTokenLogo(address: string): string {
     "0x4200000000000000000000000000000000000006": "Ξ",
     "0x73582df1cad3187cD0746b7A473d65c06386837e": "⚡",
   }
-  return logoMap[address] || "🪙"
+  return logoMap[address.toLowerCase()] || "🪙"
 }
