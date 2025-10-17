@@ -1,8 +1,37 @@
 import { NextResponse } from "next/server"
+import { OpenAI } from "openai"
 import { fetchDexscreenerPools } from "@/lib/pool-data"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+})
+
+const SYSTEM_PROMPT = `You are DOS-LIQUID, an expert AI liquidity strategist for the DEUS Operating System (D.O.S.) DeFi platform on Base chain.
+
+Your role is to help users:
+- Analyze liquidity pools and their performance metrics
+- Recommend optimal allocation strategies based on risk tolerance
+- Explain DeFi concepts like impermanent loss, APY, and liquidity provision
+- Guide users through liquidity deployment decisions
+- Provide data-driven insights using live blockchain data
+
+Key concepts:
+- APR (Annual Percentage Rate): Fee earnings from trading volume
+- APY (Annual Percentage Yield): Compounded returns including fees
+- Impermanent Loss (IL): Loss compared to holding tokens due to price divergence
+- TVL (Total Value Locked): Total liquidity in a pool
+- Volatility: Price fluctuation risk affecting IL
+
+Risk levels:
+- Conservative: Low volatility (<5%), stable pairs, lower APY
+- Moderate: Medium volatility (5-15%), balanced risk/reward
+- Aggressive: High volatility (>15%), higher APY but more IL risk
+
+Always provide specific numbers, percentages, and actionable recommendations based on live data.
+Be concise, professional, and focus on helping users make informed decisions.`
 
 async function fetchLivePoolData() {
   try {
@@ -27,220 +56,273 @@ async function fetchLivePoolData() {
   }
 }
 
-// Rule-based intent detection
-function detectIntent(message: string) {
-  const lowerMessage = message.toLowerCase()
+const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
+  {
+    type: "function",
+    function: {
+      name: "analyze_pools",
+      description: "Fetch and analyze current liquidity pools with live metrics including APY, TVL, volume, and risk",
+      parameters: {
+        type: "object",
+        properties: {
+          filterDeusOnly: {
+            type: "boolean",
+            description: "Whether to filter for DEUS pools only",
+          },
+          minApy: {
+            type: "number",
+            description: "Minimum APY threshold to filter pools",
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "recommend_allocation",
+      description: "Generate an optimal allocation strategy across multiple pools based on amount and risk tolerance",
+      parameters: {
+        type: "object",
+        properties: {
+          amount: {
+            type: "number",
+            description: "Total amount in USD to allocate",
+          },
+          riskTolerance: {
+            type: "string",
+            enum: ["conservative", "moderate", "aggressive"],
+            description: "User's risk tolerance level",
+          },
+        },
+        required: ["amount", "riskTolerance"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "calculate_impermanent_loss",
+      description: "Calculate impermanent loss for a given price change scenario",
+      parameters: {
+        type: "object",
+        properties: {
+          priceChangePercent: {
+            type: "number",
+            description: "Price change percentage (e.g., 50 for 50% increase)",
+          },
+        },
+        required: ["priceChangePercent"],
+      },
+    },
+  },
+]
 
-  if (
-    lowerMessage.includes("analyze") ||
-    lowerMessage.includes("performance") ||
-    lowerMessage.includes("metrics") ||
-    lowerMessage.includes("pools")
-  ) {
-    return "analyze_pools"
-  }
+async function handleFunctionCall(functionName: string, args: any) {
+  console.log(`[v0] AI calling function: ${functionName} with args:`, args)
 
-  if (
-    lowerMessage.includes("allocation") ||
-    lowerMessage.includes("recommend") ||
-    lowerMessage.includes("distribute") ||
-    lowerMessage.includes("invest")
-  ) {
-    return "recommend_allocation"
-  }
+  switch (functionName) {
+    case "analyze_pools": {
+      const pools = await fetchLivePoolData()
+      let filteredPools = pools
 
-  if (
-    lowerMessage.includes("impermanent loss") ||
-    lowerMessage.includes("il") ||
-    lowerMessage.includes("risk") ||
-    lowerMessage.includes("explain")
-  ) {
-    return "explain_il"
-  }
+      if (args.filterDeusOnly) {
+        filteredPools = pools.filter((p: any) => p.isDeusPool)
+      }
 
-  if (lowerMessage.includes("apy") || lowerMessage.includes("high") || lowerMessage.includes("best")) {
-    return "best_apy"
-  }
+      if (args.minApy) {
+        filteredPools = filteredPools.filter((p: any) => p.netApy >= args.minApy)
+      }
 
-  if (lowerMessage.includes("deploy") || lowerMessage.includes("add liquidity")) {
-    return "deploy"
-  }
+      const topPools = filteredPools.sort((a: any, b: any) => b.netApy - a.netApy).slice(0, 5)
 
-  return "general"
-}
-
-// Extract parameters from message
-function extractParameters(message: string) {
-  const lowerMessage = message.toLowerCase()
-
-  // Extract amount (e.g., "$10k", "10000", "10k")
-  const amountMatch = message.match(/\$?(\d+(?:,\d{3})*(?:\.\d+)?)\s*k?/i)
-  let amount = 10000 // default
-  if (amountMatch) {
-    amount = Number.parseFloat(amountMatch[1].replace(/,/g, ""))
-    if (lowerMessage.includes("k") && amount < 1000) {
-      amount *= 1000
+      return {
+        pools: topPools,
+        totalPools: filteredPools.length,
+        avgApy: filteredPools.reduce((sum: number, p: any) => sum + p.netApy, 0) / filteredPools.length,
+      }
     }
-  }
 
-  // Extract risk tolerance
-  let riskTolerance: "conservative" | "moderate" | "aggressive" = "moderate"
-  if (lowerMessage.includes("conservative") || lowerMessage.includes("safe") || lowerMessage.includes("low risk")) {
-    riskTolerance = "conservative"
-  } else if (lowerMessage.includes("aggressive") || lowerMessage.includes("high risk")) {
-    riskTolerance = "aggressive"
-  }
+    case "recommend_allocation": {
+      const allPools = await fetchLivePoolData()
+      const { amount, riskTolerance } = args
 
-  return { amount, riskTolerance }
-}
+      let suitablePools = allPools.filter(
+        (p: any) => p.risk === riskTolerance || (riskTolerance === "moderate" && p.risk === "conservative"),
+      )
 
-async function handleAnalyzePools() {
-  const pools = await fetchLivePoolData()
-  const deusPools = pools.filter((p: any) => p.isDeusPool)
+      // Prefer DEUS pools
+      const deusPools = suitablePools.filter((p: any) => p.isDeusPool)
+      if (deusPools.length > 0) {
+        suitablePools = [...deusPools, ...suitablePools.filter((p: any) => !p.isDeusPool)]
+      }
 
-  const topPools = pools.slice(0, 5)
+      suitablePools.sort((a: any, b: any) => b.netApy - a.netApy)
 
-  let response = "📊 **DEUS Pool Performance Analysis**\n\n"
+      const allocations = suitablePools.slice(0, 3).map((pool: any, index: number) => {
+        const percentage = index === 0 ? 50 : index === 1 ? 30 : 20
+        return {
+          pool: `${pool.baseToken}/${pool.quoteToken}`,
+          percentage,
+          amount: (amount * percentage) / 100,
+          expectedApr: pool.feeApr,
+          netApy: pool.netApy,
+          risk: pool.risk,
+          liquidity: pool.liquidity,
+        }
+      })
 
-  if (deusPools.length > 0) {
-    response += `Found ${deusPools.length} DEUS pools with the following metrics:\n\n`
-  }
+      const weightedApy = allocations.reduce((sum, a) => sum + (a.netApy * a.percentage) / 100, 0)
 
-  topPools.forEach((pool: any, index: number) => {
-    response += `**${index + 1}. ${pool.baseToken}/${pool.quoteToken}**\n`
-    response += `• Fee APR: ${pool.feeApr.toFixed(2)}%\n`
-    response += `• Net APY: ${pool.netApy.toFixed(2)}%\n`
-    response += `• Volatility: ${pool.volatility.toFixed(1)}% (${pool.risk})\n`
-    response += `• Liquidity: $${(pool.liquidity / 1e6).toFixed(2)}M\n`
-    response += `• 24h Volume: $${(pool.volume24h / 1e3).toFixed(0)}K\n\n`
-  })
-
-  response += "\n💡 **Key Insights:**\n"
-  response += `• Highest APY: ${topPools[0]?.baseToken}/${topPools[0]?.quoteToken} at ${topPools[0]?.netApy.toFixed(1)}%\n`
-  response += `• Most liquid: ${pools.sort((a: any, b: any) => b.liquidity - a.liquidity)[0]?.baseToken}/${pools.sort((a: any, b: any) => b.liquidity - a.liquidity)[0]?.quoteToken}\n`
-  response += `• Lowest risk: ${pools.filter((p: any) => p.risk === "conservative")[0]?.baseToken}/${pools.filter((p: any) => p.risk === "conservative")[0]?.quoteToken}\n`
-
-  return { message: response, toolResults: [{ type: "analyze", data: topPools }] }
-}
-
-async function handleRecommendAllocation(amount: number, riskTolerance: string) {
-  const allPools = await fetchLivePoolData()
-  let suitablePools = allPools.filter(
-    (p: any) => p.risk === riskTolerance || (riskTolerance === "moderate" && p.risk === "conservative"),
-  )
-
-  // Prefer DEUS pools
-  const deusPools = suitablePools.filter((p: any) => p.isDeusPool)
-  if (deusPools.length > 0) {
-    suitablePools = [...deusPools, ...suitablePools.filter((p: any) => !p.isDeusPool)]
-  }
-
-  // Sort by net APY
-  suitablePools.sort((a: any, b: any) => b.netApy - a.netApy)
-
-  const allocations = suitablePools.slice(0, 3).map((pool: any, index: number) => {
-    const percentage = index === 0 ? 50 : index === 1 ? 30 : 20
-    return {
-      pool: `${pool.baseToken}/${pool.quoteToken}`,
-      percentage,
-      amount: (amount * percentage) / 100,
-      expectedApr: pool.feeApr,
-      netApy: pool.netApy,
-      risk: pool.risk,
+      return {
+        allocations,
+        weightedApy,
+        totalAmount: amount,
+        riskProfile: riskTolerance,
+        expectedAnnualReturn: (amount * weightedApy) / 100,
+      }
     }
-  })
 
-  const weightedApy = allocations.reduce((sum, a) => sum + (a.netApy * a.percentage) / 100, 0)
+    case "calculate_impermanent_loss": {
+      const { priceChangePercent } = args
+      const priceRatio = 1 + priceChangePercent / 100
 
-  let response = `💰 **Allocation Strategy for $${(amount / 1000).toFixed(1)}K (${riskTolerance})**\n\n`
+      // IL formula: 2 * sqrt(priceRatio) / (1 + priceRatio) - 1
+      const il = (2 * Math.sqrt(priceRatio)) / (1 + priceRatio) - 1
+      const ilPercent = Math.abs(il) * 100
 
-  allocations.forEach((alloc, index) => {
-    response += `**${index + 1}. ${alloc.pool}** - ${alloc.percentage}% ($${(alloc.amount / 1000).toFixed(1)}K)\n`
-    response += `• Expected APR: ${alloc.expectedApr.toFixed(2)}%\n`
-    response += `• Net APY: ${alloc.netApy.toFixed(2)}%\n`
-    response += `• Risk Level: ${alloc.risk}\n\n`
-  })
+      return {
+        priceChange: `${priceChangePercent > 0 ? "+" : ""}${priceChangePercent}%`,
+        impermanentLoss: `${ilPercent.toFixed(2)}%`,
+        severity: ilPercent < 1 ? "low" : ilPercent < 5 ? "moderate" : "high",
+      }
+    }
 
-  response += `\n📈 **Portfolio Metrics:**\n`
-  response += `• Weighted APY: ${weightedApy.toFixed(2)}%\n`
-  response += `• Risk Profile: ${riskTolerance}\n`
-  response += `• Diversification: ${allocations.length} pools\n`
-  response += `• Expected Annual Return: $${((amount * weightedApy) / 100 / 1000).toFixed(2)}K\n`
-
-  return { message: response, toolResults: [{ type: "allocation", data: allocations }] }
-}
-
-async function handleExplainIL() {
-  const response = `📚 **Understanding Impermanent Loss (IL)**\n\n**What is IL?**\nImpermanent Loss occurs when the price ratio of your deposited tokens changes compared to when you deposited them. The bigger the change, the more IL you experience.\n\n**How it works:**\n• If you hold 1 ETH + 2000 USDC in a pool\n• ETH price doubles to $4000\n• The pool rebalances to ~0.707 ETH + 2828 USDC\n• You'd have more $ just holding = that's IL\n\n**IL by Price Change:**\n• 25% change: ~0.6% IL\n• 50% change: ~2.0% IL\n• 100% change: ~5.7% IL\n• 200% change: ~13.4% IL\n• 500% change: ~25.5% IL\n\n**Mitigation Strategies:**\n1. Choose stable pairs (USDC/USDT)\n2. Pick correlated assets (ETH/wstETH)\n3. Ensure fee APR > expected IL\n4. Use concentrated liquidity ranges\n5. Monitor and rebalance regularly\n\n💡 **Pro Tip:** IL is only "impermanent" if prices return to original ratio. Otherwise, it becomes permanent loss.`
-
-  return { message: response, toolResults: [{ type: "education", topic: "impermanent_loss" }] }
-}
-
-async function handleBestAPY() {
-  const pools = await fetchLivePoolData()
-  const topAPY = pools.sort((a: any, b: any) => b.netApy - a.netApy).slice(0, 5)
-
-  let response = `🚀 **Top 5 Pools by APY**\n\n`
-
-  topAPY.forEach((pool: any, index: number) => {
-    response += `**${index + 1}. ${pool.baseToken}/${pool.quoteToken}**\n`
-    response += `• Net APY: ${pool.netApy.toFixed(2)}%\n`
-    response += `• Fee APR: ${pool.feeApr.toFixed(2)}%\n`
-    response += `• Risk: ${pool.risk}\n`
-    response += `• Liquidity: $${(pool.liquidity / 1e6).toFixed(2)}M\n\n`
-  })
-
-  response += `\n⚠️ **Risk Warning:**\nHigher APY often means higher risk. Consider:\n• Volatility and IL risk\n• Liquidity depth\n• Token fundamentals\n• Smart contract audits\n\nBalance yield with risk tolerance!`
-
-  return { message: response, toolResults: [{ type: "ranking", data: topAPY }] }
-}
-
-function handleGeneral() {
-  const response = `👋 **Hello! I'm DOS-LIQUID, your AI liquidity strategist.**\n\nI can help you with:\n\n📊 **Pool Analysis**\n• Analyze DEUS pool performance\n• Compare metrics across pools\n• Identify best opportunities\n\n💰 **Allocation Strategy**\n• Recommend optimal allocations\n• Balance risk and return\n• Diversify across pools\n\n📚 **Education**\n• Explain impermanent loss\n• Understand fee mechanics\n• Learn risk management\n\n🚀 **Deployment**\n• Deploy liquidity with smart parameters\n• Optimize slippage settings\n• Maximize capital efficiency\n\nWhat would you like to know about DEUS liquidity strategies?`
-
-  return { message: response, toolResults: [] }
+    default:
+      return { error: "Unknown function" }
+  }
 }
 
 export async function POST(request: Request) {
   try {
-    const { message } = await request.json()
+    const body = await request.json()
+    const { message, conversationHistory = [] } = body
 
     if (!message || typeof message !== "string") {
+      console.error("[v0] Invalid message received:", message)
       return NextResponse.json({ error: "Invalid message" }, { status: 400 })
     }
 
-    // Detect intent and extract parameters
-    const intent = detectIntent(message)
-    const params = extractParameters(message)
+    console.log("[v0] AI Agent received message:", message)
 
-    // Route to appropriate handler
-    let result
-    switch (intent) {
-      case "analyze_pools":
-        result = await handleAnalyzePools()
-        break
-      case "recommend_allocation":
-        result = await handleRecommendAllocation(params.amount, params.riskTolerance)
-        break
-      case "explain_il":
-        result = await handleExplainIL()
-        break
-      case "best_apy":
-        result = await handleBestAPY()
-        break
-      case "general":
-      default:
-        result = handleGeneral()
-        break
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("[v0] OpenAI API key not found")
+      return NextResponse.json(
+        {
+          message:
+            "I'm currently unable to process requests because the OpenAI API key is not configured. Please contact support.",
+          toolResults: [],
+        },
+        { status: 200 },
+      )
     }
 
-    return NextResponse.json(result)
-  } catch (error) {
-    console.error("Chat API error:", error)
+    const messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...conversationHistory.map((msg: any) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      { role: "user", content: message },
+    ]
+
+    let response
+    try {
+      response = await openai.chat.completions.create({
+        model: "gpt-4-turbo-preview",
+        messages,
+        tools,
+        tool_choice: "auto",
+        temperature: 0.7,
+        max_tokens: 1000,
+      })
+    } catch (openaiError: any) {
+      console.error("[v0] OpenAI API error:", openaiError.message)
+      console.error("[v0] OpenAI error details:", openaiError)
+      return NextResponse.json(
+        {
+          message: `I encountered an error with the AI service: ${openaiError.message}. Please try again in a moment.`,
+          toolResults: [],
+        },
+        { status: 200 },
+      )
+    }
+
+    let assistantMessage = response.choices[0].message
+    const toolResults: any[] = []
+
+    while (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      console.log("[v0] AI requested function calls:", assistantMessage.tool_calls.length)
+
+      messages.push(assistantMessage)
+
+      for (const toolCall of assistantMessage.tool_calls) {
+        const functionName = toolCall.function.name
+        const functionArgs = JSON.parse(toolCall.function.arguments)
+
+        try {
+          const functionResult = await handleFunctionCall(functionName, functionArgs)
+          toolResults.push({ type: functionName, data: functionResult })
+
+          messages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: JSON.stringify(functionResult),
+          })
+        } catch (funcError: any) {
+          console.error(`[v0] Function ${functionName} error:`, funcError)
+          messages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: JSON.stringify({ error: funcError.message }),
+          })
+        }
+      }
+
+      try {
+        response = await openai.chat.completions.create({
+          model: "gpt-4-turbo-preview",
+          messages,
+          temperature: 0.7,
+          max_tokens: 1000,
+        })
+        assistantMessage = response.choices[0].message
+      } catch (openaiError: any) {
+        console.error("[v0] OpenAI API error on follow-up:", openaiError.message)
+        return NextResponse.json(
+          {
+            message: "I gathered the data but encountered an error generating the response. Please try again.",
+            toolResults,
+          },
+          { status: 200 },
+        )
+      }
+    }
+
+    console.log("[v0] AI Agent response generated successfully")
+
+    return NextResponse.json({
+      message: assistantMessage.content || "I apologize, but I couldn't generate a response.",
+      toolResults,
+    })
+  } catch (error: any) {
+    console.error("[v0] Chat API error:", error)
+    console.error("[v0] Error stack:", error.stack)
     return NextResponse.json(
       {
-        message: "I encountered an error processing your request. Please try again or rephrase your question.",
+        message: "I encountered an unexpected error. Please try again or rephrase your question.",
         toolResults: [],
+        error: error.message,
       },
       { status: 200 },
     )

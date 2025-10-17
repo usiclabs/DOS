@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import useSWR from "swr"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,7 +34,9 @@ interface AIInsightsResponse {
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 export function AIInsightsPanel() {
-  const [isExpanded, setIsExpanded] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [hasNewInsights, setHasNewInsights] = useState(false)
+  const previousInsightsRef = useRef<string[]>([])
 
   const { data, error, isLoading } = useSWR<AIInsightsResponse>("/api/ai-insights", fetcher, {
     refreshInterval: 30000, // Refresh every 30 seconds
@@ -44,16 +46,53 @@ export function AIInsightsPanel() {
 
   const insights = data?.insights || []
 
+  useEffect(() => {
+    if (insights.length > 0 && !isExpanded) {
+      const currentInsightIds = insights.map((i) => i.id)
+      const previousInsightIds = previousInsightsRef.current
+
+      // Check if there are new insights (different IDs or more insights)
+      const hasNew =
+        currentInsightIds.length > previousInsightIds.length ||
+        currentInsightIds.some((id) => !previousInsightIds.includes(id))
+
+      if (hasNew && previousInsightIds.length > 0) {
+        setHasNewInsights(true)
+      }
+
+      previousInsightsRef.current = currentInsightIds
+    }
+  }, [insights, isExpanded])
+
+  const handleExpand = () => {
+    setIsExpanded(true)
+    setHasNewInsights(false)
+  }
+
   if (!isExpanded) {
     return (
       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="fixed right-4 top-32 z-50">
-        <Button
-          onClick={() => setIsExpanded(true)}
-          className="glass-card border-accent/30 hover:border-accent/50 p-3"
-          size="icon"
+        <motion.div
+          animate={hasNewInsights ? { x: [0, -5, 5, -5, 5, 0] } : {}}
+          transition={{ duration: 0.5, repeat: hasNewInsights ? Number.POSITIVE_INFINITY : 0, repeatDelay: 3 }}
         >
-          <Brain className="h-5 w-5 text-accent-foreground" />
-        </Button>
+          <Button
+            onClick={handleExpand}
+            className="glass-card border-accent/30 hover:border-accent/50 p-3 relative bg-transparent"
+            size="icon"
+          >
+            <Brain className="h-5 w-5 text-accent-foreground" />
+            {hasNewInsights && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1 h-3 w-3 bg-green-500 rounded-full border-2 border-background"
+              >
+                <span className="absolute inset-0 rounded-full bg-green-500 animate-ping" />
+              </motion.span>
+            )}
+          </Button>
+        </motion.div>
       </motion.div>
     )
   }

@@ -32,7 +32,7 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
       id: "welcome",
       role: "assistant",
       content:
-        "Hello! I'm DOS-LIQUID, your AI liquidity strategist. I can help you:\n\n• Analyze pool performance and risks\n• Recommend optimal allocations\n• Explain impermanent loss\n• Deploy liquidity with smart parameters\n\nWhat would you like to know about DEUS liquidity strategies?",
+        "Hello! I'm DOS-LIQUID, your AI liquidity strategist powered by GPT-4. I can help you:\n\n• Analyze pool performance and risks using live blockchain data\n• Recommend optimal allocations based on your risk tolerance\n• Explain DeFi concepts like impermanent loss\n• Guide you through liquidity deployment decisions\n\nWhat would you like to know about DEUS liquidity strategies?",
       timestamp: new Date(),
     },
   ])
@@ -61,10 +61,18 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
     setIsLoading(true)
 
     try {
+      const conversationHistory = messages.slice(1).map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }))
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input.trim() }),
+        body: JSON.stringify({
+          message: input.trim(),
+          conversationHistory,
+        }),
       })
 
       if (!response.ok) {
@@ -131,19 +139,41 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
     setIsLoading(true)
 
     try {
+      const conversationHistory = messages.slice(1).map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }))
+
+      console.log("[v0] Sending chat request:", { prompt, historyLength: conversationHistory.length })
+
       const response = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: prompt }),
+        body: JSON.stringify({
+          message: prompt,
+          conversationHistory,
+        }),
       })
 
+      console.log("[v0] Chat response status:", response.status)
+
       if (!response.ok) {
-        throw new Error("Failed to get response")
+        const errorText = await response.text()
+        console.error("[v0] Chat API error response:", errorText)
+        throw new Error(`API returned ${response.status}: ${errorText}`)
       }
 
       const data = await response.json()
+      console.log("[v0] Chat response received:", {
+        hasMessage: !!data.message,
+        toolResultsCount: data.toolResults?.length || 0,
+      })
 
-      // Check for deploy modal action in tool results
+      if (data.error) {
+        console.error("[v0] API returned error:", data.error)
+        throw new Error(data.error)
+      }
+
       if (data.toolResults) {
         for (const result of data.toolResults) {
           if (result.result?.action === "OPEN_DEPLOY_MODAL") {
@@ -166,11 +196,13 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
       }
 
       setMessages((prev) => [...prev, assistantMessage])
-    } catch (error) {
-      console.error("Chat error:", error)
+    } catch (error: any) {
+      console.error("[v0] Chat error:", error)
+      console.error("[v0] Error details:", error.message)
+
       toast({
         title: "Error",
-        description: "Failed to get AI response. Please try again.",
+        description: error.message || "Failed to get AI response. Please try again.",
         variant: "destructive",
       })
 
@@ -195,18 +227,18 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
   }
 
   const formatToolResult = (toolResult: any) => {
-    if (!toolResult?.result) return null
+    if (!toolResult?.data) return null
 
-    const { result } = toolResult
+    const { data, type } = toolResult
 
-    if (result.pools) {
+    if (type === "analyze_pools" && data.pools) {
       return (
         <Card className="mt-2 glass-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Pool Analysis</CardTitle>
+            <CardTitle className="text-sm">Live Pool Analysis</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {result.pools.map((pool: any, index: number) => (
+            {data.pools.map((pool: any, index: number) => (
               <div key={index} className="flex justify-between items-center text-sm">
                 <div>
                   <span className="font-medium">
@@ -218,7 +250,7 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
                 </div>
                 <div className="text-right">
                   <div className="text-accent font-medium">{pool.netApy.toFixed(1)}% APY</div>
-                  <div className="text-xs text-muted-foreground">{pool.liquidityFormatted} TVL</div>
+                  <div className="text-xs text-muted-foreground">${(pool.liquidity / 1e6).toFixed(2)}M TVL</div>
                 </div>
               </div>
             ))}
@@ -227,25 +259,25 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
       )
     }
 
-    if (result.allocations) {
+    if (type === "recommend_allocation" && data.allocations) {
       return (
         <Card className="mt-2 glass-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center">
               <TrendingUp className="h-4 w-4 mr-2 text-accent" />
-              Allocation Strategy
+              AI-Generated Allocation Strategy
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div className="text-sm">
               <span className="text-muted-foreground">Expected Weighted APY:</span>
-              <span className="ml-2 font-bold text-accent">{result.expectedWeightedApy}%</span>
+              <span className="ml-2 font-bold text-accent">{data.weightedApy.toFixed(2)}%</span>
             </div>
             <Separator />
-            {result.allocations.map((allocation: any, index: number) => (
+            {data.allocations.map((allocation: any, index: number) => (
               <div key={index} className="flex justify-between items-center text-sm">
                 <div>
-                  <span className="font-medium">{allocation.poolId}</span>
+                  <span className="font-medium">{allocation.pool}</span>
                   <Badge variant="outline" className="ml-2 text-xs">
                     {allocation.percentage}%
                   </Badge>
@@ -261,26 +293,36 @@ export function LiquidityAgent({ onDeployRequest }: LiquidityAgentProps) {
       )
     }
 
-    if (result.impermanentLoss) {
+    if (type === "calculate_impermanent_loss" && data.impermanentLoss) {
       return (
         <Card className="mt-2 glass-card border-yellow-500/20">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm flex items-center text-yellow-400">
               <AlertTriangle className="h-4 w-4 mr-2" />
-              IL Simulation
+              IL Calculation
             </CardTitle>
           </CardHeader>
           <CardContent className="text-sm">
             <div className="space-y-1">
               <div className="flex justify-between">
                 <span>Price Change:</span>
-                <span className="font-medium">{result.priceChange}</span>
+                <span className="font-medium">{data.priceChange}</span>
               </div>
               <div className="flex justify-between">
                 <span>Impermanent Loss:</span>
-                <span className="font-medium text-yellow-400">{result.impermanentLoss}</span>
+                <span className="font-medium text-yellow-400">{data.impermanentLoss}</span>
               </div>
-              <div className="mt-2 text-xs text-muted-foreground">{result.recommendation}</div>
+              <div className="flex justify-between">
+                <span>Severity:</span>
+                <Badge
+                  variant={
+                    data.severity === "low" ? "default" : data.severity === "moderate" ? "secondary" : "destructive"
+                  }
+                  className="text-xs"
+                >
+                  {data.severity}
+                </Badge>
+              </div>
             </div>
           </CardContent>
         </Card>

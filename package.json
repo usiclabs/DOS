@@ -57,6 +57,7 @@
     "lucide-react": "^0.454.0",
     "next": "14.2.16",
     "next-themes": "latest",
+    "openai": "latest",
     "react": "^18",
     "react-day-picker": "^9.8.0",
     "react-dom": "^18",
@@ -71,6 +72,7 @@
     "vaul": "^0.9.9",
     "viem": "latest",
     "wagmi": "latest",
+    "ws": "latest",
     "zod": "^3.25.67",
     "zustand": "latest"
   },

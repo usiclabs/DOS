@@ -128,7 +128,7 @@ export default function HomePage() {
               <motion.div variants={scaleIn} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Button
                   size="lg"
-                  className="btn-premium text-white shadow-2xl hover:shadow-accent/25 transition-all duration-300 px-8 py-4 text-lg font-semibold"
+                  className="btn-premium text-white shadow-2xl hover:shadow-accent/25 transition-all duration-300 px-8 py-4 text-lg font-semibold bg-transparent"
                   onClick={() => (window.location.href = "/swap")}
                 >
                   <Rocket className="h-5 w-5 mr-3" />
