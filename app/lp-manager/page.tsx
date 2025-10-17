@@ -785,14 +785,38 @@ export default function LPManagerPage() {
       return
     }
 
+    if (!selectedPosition.liquidityTokens || selectedPosition.liquidityTokens === 0) {
+      toast({
+        title: "Error",
+        description: "Position has no liquidity to withdraw",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsWithdrawing(true)
 
     try {
       console.log("[v0] Starting withdrawal for position:", selectedPosition.tokenId)
+      console.log("[v0] Position liquidity tokens:", selectedPosition.liquidityTokens)
+      console.log("[v0] Withdrawal percentage:", withdrawPercentage)
 
-      const liquidityToRemove = Math.floor(
-        selectedPosition.liquidityTokens * (Number.parseInt(withdrawPercentage) / 100),
-      ).toString(16)
+      const liquidityAmount = Math.floor(selectedPosition.liquidityTokens * (Number.parseInt(withdrawPercentage) / 100))
+
+      console.log("[v0] Calculated liquidity amount:", liquidityAmount)
+
+      if (liquidityAmount === 0) {
+        toast({
+          title: "Error",
+          description: "Calculated liquidity amount is 0. Try a higher percentage.",
+          variant: "destructive",
+        })
+        setIsWithdrawing(false)
+        return
+      }
+
+      const liquidityToRemove = liquidityAmount.toString(16)
+      console.log("[v0] Liquidity to remove (hex):", liquidityToRemove)
 
       const result = await managePosition(selectedPosition.tokenId, "withdraw", {
         liquidityPercentage: Number.parseInt(withdrawPercentage),

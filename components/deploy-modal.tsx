@@ -8,14 +8,12 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Slider } from "@/components/ui/slider"
 import {
   AlertTriangle,
   Zap,
   ExternalLink,
   Wallet,
-  Copy,
   CheckCircle2,
   Loader2,
   Info,
@@ -23,10 +21,10 @@ import {
   TrendingDown,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useWallet } from "@/contexts/wallet-context"
 import { ethers } from "ethers"
 import {
   deployLiquidity,
-  generateDeploymentTxData,
   type DeploymentParams,
   checkAllowance,
   approveToken,
@@ -63,13 +61,13 @@ interface DeployModalProps {
 
 export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
   const { toast } = useToast()
+  const { isConnected, connectWallet } = useWallet()
   const [baseAmount, setBaseAmount] = useState("")
   const [quoteAmount, setQuoteAmount] = useState("")
   const [slippage, setSlippage] = useState("0.5")
   const [step, setStep] = useState<"input" | "preview" | "approving" | "deploying" | "success">("input")
   const [isDeploying, setIsDeploying] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(null)
-  const [deploymentMode, setDeploymentMode] = useState<"wallet" | "manual">("wallet")
   const [priceRange, setPriceRange] = useState<[number, number]>([20, 80]) // Percentage range
   const [useFullRange, setUseFullRange] = useState(true)
   const [gasEstimate, setGasEstimate] = useState<string | null>(null)
@@ -89,7 +87,6 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
       setSlippage("0.5")
       setIsDeploying(false)
       setTxHash(null)
-      setDeploymentMode("wallet")
       setPriceRange([20, 80])
       setUseFullRange(true)
       setGasEstimate(null)
@@ -256,6 +253,19 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     if (volatility < 5) return { risk: "Low", percentage: volatility * 0.1 }
     if (volatility < 15) return { risk: "Medium", percentage: volatility * 0.15 }
     return { risk: "High", percentage: volatility * 0.2 }
+  }
+
+  const handlePresetPercentage = (percentage: number, tokenType: "base" | "quote") => {
+    if (!tokenBalances) return
+
+    const balance = tokenType === "base" ? tokenBalances.base : tokenBalances.quote
+    const amount = (Number.parseFloat(balance) * percentage) / 100
+
+    if (tokenType === "base") {
+      setBaseAmount(amount.toFixed(6))
+    } else {
+      setQuoteAmount(amount.toFixed(6))
+    }
   }
 
   const handlePreview = () => {
@@ -564,10 +574,9 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
       } else {
         toast({
           title: "No Web3 wallet detected",
-          description: "Please install MetaMask or use manual deployment",
+          description: "Please install MetaMask or another Web3 wallet",
           variant: "destructive",
         })
-        setDeploymentMode("manual")
         setStep("input")
       }
     } catch (error: any) {
@@ -624,34 +633,6 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     }
   }
 
-  const handleCopyTxData = async () => {
-    if (!pool) return
-
-    try {
-      const feeTier = Number.parseFloat(pool.feeTier.replace("%", "")) * 10000
-      const params: DeploymentParams = {
-        token0Address: pool.baseToken.address,
-        token1Address: pool.quoteToken.address,
-        amount0: baseAmount,
-        amount1: quoteAmount,
-        feeTier,
-        slippage: Number.parseFloat(slippage),
-        userAddress: "0x0000000000000000000000000000000000000000",
-      }
-
-      const txData = await generateDeploymentTxData(params)
-      await navigator.clipboard.writeText(JSON.stringify(txData, null, 2))
-      toast({
-        title: "Transaction data copied to clipboard",
-      })
-    } catch (error) {
-      toast({
-        title: "Failed to generate transaction data",
-        variant: "destructive",
-      })
-    }
-  }
-
   const resetModal = () => {
     setStep("input")
     setBaseAmount("")
@@ -659,7 +640,6 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     setSlippage("0.5")
     setIsDeploying(false)
     setTxHash(null)
-    setDeploymentMode("wallet")
     setPriceRange([20, 80])
     setUseFullRange(true)
     setGasEstimate(null)
@@ -713,56 +693,21 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                 </Card>
               )}
 
-              <Tabs value={deploymentMode} onValueChange={(v) => setDeploymentMode(v as any)}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="wallet" className="flex items-center gap-2">
-                    <Wallet className="h-4 w-4" />
-                    Connect Wallet
-                  </TabsTrigger>
-                  <TabsTrigger value="manual" className="flex items-center gap-2">
-                    <ExternalLink className="h-4 w-4" />
-                    Manual Deploy
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="wallet" className="space-y-4 mt-4">
-                  <Card className="border-blue-500/20 bg-blue-500/5">
-                    <CardContent className="pt-6">
+              {!isConnected && (
+                <Card className="border-blue-500/20 bg-blue-500/5">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Wallet className="h-4 w-4 text-blue-400" />
-                        <span className="text-sm">
-                          Connect your wallet to deploy liquidity directly from this interface
-                        </span>
+                        <span className="text-sm">Connect your wallet to deploy liquidity</span>
                       </div>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-
-                <TabsContent value="manual" className="space-y-4 mt-4">
-                  <Card className="border-accent/20 bg-accent/5">
-                    <CardContent className="pt-6 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Deploy via Uniswap interface</span>
-                        <Button size="sm" variant="outline" asChild>
-                          <a
-                            href={`https://app.uniswap.org/add?chain=base&currency0=${pool.baseToken.address}&currency1=${pool.quoteToken.address}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2"
-                          >
-                            Open Uniswap
-                            <ExternalLink className="h-3 w-3" />
-                          </a>
-                        </Button>
-                      </div>
-                      <Button size="sm" variant="ghost" onClick={handleCopyTxData} className="w-full">
-                        <Copy className="h-3 w-3 mr-2" />
-                        Copy Transaction Data
+                      <Button size="sm" onClick={() => connectWallet()} className="bg-accent hover:bg-accent/90">
+                        Connect Wallet
                       </Button>
-                    </CardContent>
-                  </Card>
-                </TabsContent>
-              </Tabs>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               <Card className="glass-card">
                 <CardHeader className="pb-3">
@@ -779,12 +724,12 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
-                      <div className="text-muted-foreground">Fee APR</div>
-                      <div className="font-medium text-accent">{pool.feeApr.toFixed(2)}%</div>
+                      <div className="text-gray-400">Fee APR</div>
+                      <div className="font-medium text-green-400">{pool.feeApr.toFixed(2)}%</div>
                     </div>
                     <div>
-                      <div className="text-muted-foreground">Net APY</div>
-                      <div className="font-medium text-accent">{pool.netApy.toFixed(2)}%</div>
+                      <div className="text-gray-400">Net APY</div>
+                      <div className="font-medium text-green-400">{pool.netApy.toFixed(2)}%</div>
                     </div>
                     <div>
                       <div className="text-muted-foreground">TVL</div>
@@ -810,8 +755,42 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                     placeholder="0.0"
                     value={baseAmount}
                     onChange={(e) => setBaseAmount(e.target.value)}
-                    disabled={!canResolveTokens}
+                    disabled={!canResolveTokens || !isConnected}
                   />
+                  {tokenBalances && (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePresetPercentage(25, "base")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className="flex-1 text-xs"
+                      >
+                        25%
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePresetPercentage(50, "base")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className="flex-1 text-xs"
+                      >
+                        50%
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePresetPercentage(100, "base")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className="flex-1 text-xs"
+                      >
+                        100%
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -829,8 +808,42 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                     placeholder="0.0"
                     value={quoteAmount}
                     onChange={(e) => setQuoteAmount(e.target.value)}
-                    disabled={!canResolveTokens}
+                    disabled={!canResolveTokens || !isConnected}
                   />
+                  {tokenBalances && (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePresetPercentage(25, "quote")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className="flex-1 text-xs"
+                      >
+                        25%
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePresetPercentage(50, "quote")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className="flex-1 text-xs"
+                      >
+                        50%
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handlePresetPercentage(100, "quote")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className="flex-1 text-xs"
+                      >
+                        100%
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <Card className="glass-card">
@@ -841,7 +854,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                         variant="ghost"
                         size="sm"
                         onClick={() => setUseFullRange(!useFullRange)}
-                        disabled={!canResolveTokens}
+                        disabled={!canResolveTokens || !isConnected}
                       >
                         {useFullRange ? "Custom Range" : "Full Range"}
                       </Button>
@@ -873,7 +886,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                           max={100}
                           step={5}
                           className="w-full"
-                          disabled={!canResolveTokens}
+                          disabled={!canResolveTokens || !isConnected}
                         />
                         <p className="text-xs text-gray-400">
                           <Info className="h-3 w-3 inline mr-1" />
@@ -896,7 +909,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                         variant={slippage === value ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSlippage(value)}
-                        disabled={!canResolveTokens}
+                        disabled={!canResolveTokens || !isConnected}
                       >
                         {value}%
                       </Button>
@@ -907,7 +920,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                       step="0.1"
                       value={slippage}
                       onChange={(e) => setSlippage(e.target.value)}
-                      disabled={!canResolveTokens}
+                      disabled={!canResolveTokens || !isConnected}
                     />
                   </div>
                 </div>
@@ -961,7 +974,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                 <Button
                   onClick={handlePreview}
                   className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                  disabled={!canResolveTokens}
+                  disabled={!canResolveTokens || !isConnected}
                 >
                   Preview
                 </Button>
@@ -1035,7 +1048,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                 </Button>
                 <Button
                   onClick={handleDeploy}
-                  disabled={isDeploying}
+                  disabled={isDeploying || !isConnected}
                   className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                 >
                   Deploy Liquidity

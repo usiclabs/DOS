@@ -175,10 +175,6 @@ export function StickyHeader() {
                   </linearGradient>
                 </defs>
               </motion.svg>
-              <div className="flex flex-col">
-                <span className="text-xl font-bold text-white tracking-tight">D.O.S.</span>
-                <span className="text-xs text-gray-400 tracking-wide">DEUS Operating System</span>
-              </div>
             </Link>
 
             {/* Desktop Navigation */}
