@@ -29,13 +29,17 @@ const staggerContainer = {
 
 export default function PoolsPage() {
   const { data: poolStats } = useSWR("/api/pools?limit=100", fetcher, {
-    refreshInterval: 180000,
+    refreshInterval: 300000, // Increased refresh interval from 180s to 300s (5 minutes)
     revalidateOnFocus: false,
+    revalidateOnReconnect: false, // Don't refresh on reconnect
+    dedupingInterval: 60000, // Dedupe requests within 60 seconds
   })
 
   const { data: deusPoolStats } = useSWR("/api/pools?deusOnly=true&limit=100", fetcher, {
-    refreshInterval: 180000,
+    refreshInterval: 300000, // Increased refresh interval from 180s to 300s (5 minutes)
     revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 60000,
   })
 
   const deusPoolCount = deusPoolStats?.totalCount || 0

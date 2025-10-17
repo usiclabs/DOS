@@ -161,8 +161,10 @@ export function PoolsTable() {
     zoraCreators ? `/api/pools/zora-creators?timeFilter=${zoraTimeFilter}` : null,
     fetcher,
     {
-      refreshInterval: 180000, // 3 minutes instead of 1 minute
-      revalidateOnFocus: false, // Don't refresh when user switches tabs
+      refreshInterval: 300000, // 5 minutes instead of 3
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false, // Don't refresh on reconnect
+      dedupingInterval: 60000, // Dedupe requests within 60 seconds
     },
   )
 
@@ -179,8 +181,11 @@ export function PoolsTable() {
   })
 
   const { data, error, isLoading } = useSWR<PoolsResponse>(`/api/pools?${queryParams}`, fetcher, {
-    refreshInterval: isAnyDrawerOpen ? 0 : 180000, // Pause refresh when drawer is open, otherwise 3 minutes
-    revalidateOnFocus: false, // Don't refresh when user switches tabs
+    refreshInterval: isAnyDrawerOpen ? 0 : 300000, // 5 minutes instead of 3, pause when drawer open
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false, // Don't refresh on reconnect
+    dedupingInterval: 60000, // Dedupe requests within 60 seconds
+    revalidateIfStale: false, // Don't revalidate stale data automatically
   })
 
   const sortedPools = data?.pools
@@ -263,8 +268,15 @@ export function PoolsTable() {
     const profitScore = calculateProfitScore(pool)
 
     const handleOpenChange = (open: boolean) => {
+      console.log("[v0] Drawer open state changed:", open)
       setIsOpen(open)
       setIsAnyDrawerOpen(open)
+    }
+
+    const handleCardTap = () => {
+      console.log("[v0] Card tapped, opening drawer")
+      setIsOpen(true)
+      setIsAnyDrawerOpen(true)
     }
 
     return (
@@ -273,29 +285,22 @@ export function PoolsTable() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.02,
-              y: -4,
-              boxShadow: isPriority
-                ? "0 20px 40px -12px rgba(var(--accent-rgb), 0.3)"
-                : "0 20px 40px -12px rgba(255, 255, 255, 0.1)",
-            }}
-            whileTap={{ scale: 0.98 }}
             transition={{
               type: "spring",
               stiffness: 400,
               damping: 25,
               mass: 0.5,
             }}
+            onTouchStart={handleCardTap}
             className={`glass-card p-4 rounded-xl border ${
               isPriority
                 ? "border-accent/50 shadow-lg shadow-accent/20 bg-gradient-to-br from-accent/5 to-transparent"
                 : "border-white/5 hover:border-accent/30"
-            } hover:shadow-2xl transition-all duration-300 cursor-pointer relative overflow-hidden group`}
+            } hover:shadow-2xl transition-all duration-300 cursor-pointer relative overflow-hidden group active:scale-[0.98]`}
           >
             {/* Animated gradient overlay on hover */}
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0"
+              className="absolute inset-0 bg-gradient-to-r from-accent/0 via-accent/5 to-accent/0 pointer-events-none"
               initial={{ x: "-100%" }}
               whileHover={{ x: "100%" }}
               transition={{ duration: 0.6, ease: "easeInOut" }}
@@ -394,7 +399,7 @@ export function PoolsTable() {
           </motion.div>
         </SheetTrigger>
 
-        <SheetContent side="bottom" className="h-[85vh] glass-card border-t border-white/10">
+        <SheetContent side="bottom" className="h-[85vh] backdrop-blur-2xl bg-black/80 border-t border-white/10">
           <SheetHeader>
             <SheetTitle className="text-xl">
               {pool.baseToken.symbol}/{pool.quoteToken.symbol}
@@ -566,8 +571,15 @@ export function PoolsTable() {
     const [isOpen, setIsOpen] = useState(false)
 
     const handleOpenChange = (open: boolean) => {
+      console.log("[v0] Zora drawer open state changed:", open)
       setIsOpen(open)
       setIsAnyDrawerOpen(open)
+    }
+
+    const handleCardTap = () => {
+      console.log("[v0] Zora card tapped, opening drawer")
+      setIsOpen(true)
+      setIsAnyDrawerOpen(true)
     }
 
     return (
@@ -576,22 +588,17 @@ export function PoolsTable() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            whileHover={{
-              scale: 1.02,
-              y: -4,
-              boxShadow: "0 20px 40px -12px rgba(168, 85, 247, 0.4)",
-            }}
-            whileTap={{ scale: 0.98 }}
             transition={{
               type: "spring",
               stiffness: 400,
               damping: 25,
             }}
-            className="glass-card p-4 rounded-xl border border-purple-500/30 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer relative overflow-hidden group bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-transparent"
+            onTouchStart={handleCardTap}
+            className="glass-card p-4 rounded-xl border border-purple-500/30 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer relative overflow-hidden group bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-transparent active:scale-[0.98]"
           >
             {/* Animated gradient overlay */}
             <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/10 to-purple-500/0"
+              className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-pink-500/10 to-purple-500/0 pointer-events-none"
               initial={{ x: "-100%" }}
               whileHover={{ x: "100%" }}
               transition={{ duration: 0.8, ease: "easeInOut" }}
@@ -659,7 +666,7 @@ export function PoolsTable() {
           </motion.div>
         </SheetTrigger>
 
-        <SheetContent side="bottom" className="h-[85vh] glass-card border-t border-purple-500/20">
+        <SheetContent side="bottom" className="h-[85vh] backdrop-blur-2xl bg-black/80 border-t border-purple-500/20">
           <SheetHeader>
             <SheetTitle className="text-xl">ZORA/{opp.creatorToken.symbol}</SheetTitle>
           </SheetHeader>
@@ -704,7 +711,7 @@ export function PoolsTable() {
                     <span className="text-sm text-gray-100">Creator Token</span>
                     <div className="text-right">
                       <div className="font-semibold">{opp.creatorToken.symbol}</div>
-                      <div className="text-xs text-gray-400">{opp.creatorToken.name}</div>
+                      <div className="text-sm text-gray-400">{opp.creatorToken.name}</div>
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
@@ -830,7 +837,7 @@ export function PoolsTable() {
                 </Button>
               </motion.div>
             </SheetTrigger>
-            <SheetContent side="bottom" className="h-[90vh] glass-card border-t border-white/10">
+            <SheetContent side="bottom" className="h-[90vh] backdrop-blur-2xl bg-black/80 border-t border-white/10">
               <SheetHeader>
                 <div className="flex items-center justify-between">
                   <SheetTitle className="flex items-center gap-2">
