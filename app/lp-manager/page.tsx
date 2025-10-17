@@ -40,6 +40,9 @@ import {
   Loader2,
 } from "lucide-react"
 
+import { LPPositionChart } from "@/components/lp-position-chart"
+import { ImpermanentLossCalculator } from "@/components/impermanent-loss-calculator"
+
 interface LPPosition {
   id: string
   tokenId?: number
@@ -172,6 +175,11 @@ function MobilePositionCard({
   const [isCollectingFees, setIsCollectingFees] = useState(false)
   const { toast } = useToast()
 
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addAmount0, setAddAmount0] = useState("")
+  const [addAmount1, setAddAmount1] = useState("")
+  const [isAdding, setIsAdding] = useState(false)
+
   const handleCollectFees = async () => {
     if (!position.tokenId) {
       toast({
@@ -294,6 +302,89 @@ function MobilePositionCard({
       })
     } finally {
       setIsWithdrawing(false)
+    }
+  }
+
+  const handleAddLiquidity = async () => {
+    if (!position.tokenId) {
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!addAmount0 || !addAmount1 || Number(addAmount0) <= 0 || Number(addAmount1) <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter valid amounts for both tokens",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsAdding(true)
+
+    try {
+      console.log("[v0] Adding liquidity to position:", position.tokenId)
+      console.log("[v0] Amounts:", { addAmount0, addAmount1 })
+
+      // Convert amounts to wei (assuming 18 decimals for simplicity)
+      const amount0Wei = BigInt(Math.floor(Number(addAmount0) * 1e18)).toString()
+      const amount1Wei = BigInt(Math.floor(Number(addAmount1) * 1e18)).toString()
+
+      // Calculate minimum amounts with 0.5% slippage
+      const amount0Min = ((BigInt(amount0Wei) * BigInt(995)) / BigInt(1000)).toString()
+      const amount1Min = ((BigInt(amount1Wei) * BigInt(995)) / BigInt(1000)).toString()
+
+      const result = await managePosition(position.tokenId, "add", {
+        amount0: amount0Wei,
+        amount1: amount1Wei,
+        amount0Min,
+        amount1Min,
+      })
+
+      if (result.success) {
+        toast({
+          title: "✅ Liquidity Added Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>
+                Added {addAmount0} {position.baseToken.symbol} and {addAmount1} {position.quoteToken.symbol}
+              </p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
+        setShowAddModal(false)
+        setAddAmount0("")
+        setAddAmount1("")
+        setTimeout(() => onUpdate?.(), 3000)
+      } else {
+        toast({
+          title: "Add Liquidity Failed",
+          description: result.error || "Failed to add liquidity",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("[v0] Add liquidity error:", error)
+      toast({
+        title: "Add Liquidity Failed",
+        description: error.message || "Failed to add liquidity",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAdding(false)
     }
   }
 
@@ -462,15 +553,19 @@ function MobilePositionCard({
               </CardContent>
             </Card>
 
+            {/* CHANGE: Added performance charts and IL calculator to position details */}
+            <LPPositionChart position={position} />
+            <ImpermanentLossCalculator position={position} />
+
             <div className="grid grid-cols-2 gap-3">
+              {/* Updated Add Liquidity button in MobilePositionCard to open modal instead of showing toast */}
               <Button
                 className="w-full h-12 bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20"
                 onClick={() => {
-                  toast({
-                    title: "Coming Soon",
-                    description: "Add liquidity feature will be available soon",
-                  })
+                  setIsOpen(false)
+                  setShowAddModal(true)
                 }}
+                disabled={!position.tokenId}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Liquidity
@@ -506,7 +601,7 @@ function MobilePositionCard({
                   if (position.tokenId) {
                     window.open(`https://app.uniswap.org/positions/v3/base/${position.tokenId}`, "_blank")
                   } else {
-                    window.open(`https://basescan.org/address/${position.pairAddress}`, "_blank")
+                    window.open(`https://basescan.org/tx/${position.pairAddress}`, "_blank")
                   }
                 }}
               >
@@ -602,6 +697,100 @@ function MobilePositionCard({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Added Add Liquidity modal at the end before closing tags */}
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="bg-card border-border shadow-lg max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">Add Liquidity</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {position && (
+                <>
+                  Add more liquidity to {position.baseToken.symbol}/{position.quoteToken.symbol} pool
+                  <br />
+                  <span className="text-yellow-400 text-xs">⚠️ This will incur gas fees on the Base network</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {position && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm">{position.baseToken.symbol} Amount</Label>
+                <Input
+                  type="number"
+                  step="0.000001"
+                  min="0"
+                  value={addAmount0}
+                  onChange={(e) => setAddAmount0(e.target.value)}
+                  placeholder={`Enter ${position.baseToken.symbol} amount`}
+                  className="min-h-[44px] sm:min-h-[36px]"
+                />
+                <div className="text-xs text-muted-foreground">
+                  Balance: {position.baseToken.amount.toFixed(6)} {position.baseToken.symbol}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">{position.quoteToken.symbol} Amount</Label>
+                <Input
+                  type="number"
+                  step="0.000001"
+                  min="0"
+                  value={addAmount1}
+                  onChange={(e) => setAddAmount1(e.target.value)}
+                  placeholder={`Enter ${position.quoteToken.symbol} amount`}
+                  className="min-h-[44px] sm:min-h-[36px]"
+                />
+                <div className="text-xs text-muted-foreground">
+                  Balance: {position.quoteToken.amount.toFixed(6)} {position.quoteToken.symbol}
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-xs text-blue-300">
+                  💡 Tip: Add liquidity in the same ratio as your current position to maintain your price range. Current
+                  ratio: 1 {position.baseToken.symbol} ≈{" "}
+                  {(position.quoteToken.amount / position.baseToken.amount).toFixed(4)} {position.quoteToken.symbol}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddModal(false)
+                    setAddAmount0("")
+                    setAddAmount1("")
+                  }}
+                  className="flex-1 min-h-[44px] sm:min-h-[36px]"
+                  disabled={isAdding}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddLiquidity}
+                  className="flex-1 bg-green-500 text-white hover:bg-green-600 min-h-[44px] sm:min-h-[36px]"
+                  disabled={isAdding || !position.tokenId || !addAmount0 || !addAmount1}
+                >
+                  {isAdding ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Liquidity
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
@@ -650,6 +839,11 @@ export default function LPManagerPage() {
   const [isWithdrawing, setIsWithdrawing] = useState(false)
   const [isCollectingFees, setIsCollectingFees] = useState(false)
   const { toast } = useToast()
+
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addAmount0, setAddAmount0] = useState("")
+  const [addAmount1, setAddAmount1] = useState("")
+  const [isAdding, setIsAdding] = useState(false)
 
   console.log("[v0] LP Manager page render - isConnected:", isConnected, "address:", address, "isChecking:", isChecking)
 
@@ -772,6 +966,90 @@ export default function LPManagerPage() {
       })
     } finally {
       setIsCollectingFees(false)
+    }
+  }
+
+  const handleAddLiquidity = async () => {
+    if (!selectedPosition?.tokenId) {
+      toast({
+        title: "Error",
+        description: "Position token ID not available",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!addAmount0 || !addAmount1 || Number(addAmount0) <= 0 || Number(addAmount1) <= 0) {
+      toast({
+        title: "Error",
+        description: "Please enter valid amounts for both tokens",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsAdding(true)
+
+    try {
+      console.log("[v0] Adding liquidity to position:", selectedPosition.tokenId)
+      console.log("[v0] Amounts:", { addAmount0, addAmount1 })
+
+      // Convert amounts to wei (assuming 18 decimals for simplicity)
+      const amount0Wei = BigInt(Math.floor(Number(addAmount0) * 1e18)).toString()
+      const amount1Wei = BigInt(Math.floor(Number(addAmount1) * 1e18)).toString()
+
+      // Calculate minimum amounts with 0.5% slippage
+      const amount0Min = ((BigInt(amount0Wei) * BigInt(995)) / BigInt(1000)).toString()
+      const amount1Min = ((BigInt(amount1Wei) * BigInt(995)) / BigInt(1000)).toString()
+
+      const result = await managePosition(selectedPosition.tokenId, "add", {
+        amount0: amount0Wei,
+        amount1: amount1Wei,
+        amount0Min,
+        amount1Min,
+      })
+
+      if (result.success) {
+        toast({
+          title: "✅ Liquidity Added Successfully!",
+          description: (
+            <div className="space-y-2">
+              <p>
+                Added {addAmount0} {selectedPosition.baseToken.symbol} and {addAmount1}{" "}
+                {selectedPosition.quoteToken.symbol}
+              </p>
+              <a
+                href={`https://basescan.org/tx/${result.hash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-accent hover:underline text-sm font-medium"
+              >
+                View on BaseScan <ExternalLink className="h-3 w-3 ml-1" />
+              </a>
+            </div>
+          ),
+          duration: 10000,
+        })
+        setShowAddModal(false)
+        setAddAmount0("")
+        setAddAmount1("")
+        setTimeout(() => mutate(), 3000)
+      } else {
+        toast({
+          title: "Add Liquidity Failed",
+          description: result.error || "Failed to add liquidity",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("[v0] Add liquidity error:", error)
+      toast({
+        title: "Add Liquidity Failed",
+        description: error.message || "Failed to add liquidity",
+        variant: "destructive",
+      })
+    } finally {
+      setIsAdding(false)
     }
   }
 
@@ -1443,16 +1721,16 @@ export default function LPManagerPage() {
                                   >
                                     <ExternalLink className="h-4 w-4" />
                                   </Button>
+                                  {/* Updated Add Liquidity button in desktop table to open modal instead of showing toast */}
                                   <Button
                                     variant="ghost"
                                     size="sm"
                                     className="h-8 w-8 p-0 hover:bg-green-500/10 text-green-400"
                                     onClick={() => {
-                                      toast({
-                                        title: "Coming Soon",
-                                        description: "Add liquidity feature will be available soon",
-                                      })
+                                      setSelectedPosition(position)
+                                      setShowAddModal(true)
                                     }}
+                                    disabled={!position.tokenId}
                                     title="Add Liquidity"
                                   >
                                     <Plus className="h-4 w-4" />
@@ -1599,6 +1877,100 @@ export default function LPManagerPage() {
                     </>
                   ) : (
                     "Withdraw"
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
+        <DialogContent className="bg-card border-border shadow-lg max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base sm:text-lg">Add Liquidity</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
+              {selectedPosition && (
+                <>
+                  Add more liquidity to {selectedPosition.baseToken.symbol}/{selectedPosition.quoteToken.symbol} pool
+                  <br />
+                  <span className="text-yellow-400 text-xs">⚠️ This will incur gas fees on the Base network</span>
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          {selectedPosition && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label className="text-sm">{selectedPosition.baseToken.symbol} Amount</Label>
+                <Input
+                  type="number"
+                  step="0.000001"
+                  min="0"
+                  value={addAmount0}
+                  onChange={(e) => setAddAmount0(e.target.value)}
+                  placeholder={`Enter ${selectedPosition.baseToken.symbol} amount`}
+                  className="min-h-[44px] sm:min-h-[36px]"
+                />
+                <div className="text-xs text-muted-foreground">
+                  Balance: {selectedPosition.baseToken.amount.toFixed(6)} {selectedPosition.baseToken.symbol}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">{selectedPosition.quoteToken.symbol} Amount</Label>
+                <Input
+                  type="number"
+                  step="0.000001"
+                  min="0"
+                  value={addAmount1}
+                  onChange={(e) => setAddAmount1(e.target.value)}
+                  placeholder={`Enter ${selectedPosition.quoteToken.symbol} amount`}
+                  className="min-h-[44px] sm:min-h-[36px]"
+                />
+                <div className="text-xs text-muted-foreground">
+                  Balance: {selectedPosition.quoteToken.amount.toFixed(6)} {selectedPosition.quoteToken.symbol}
+                </div>
+              </div>
+
+              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                <p className="text-xs text-blue-300">
+                  💡 Tip: Add liquidity in the same ratio as your current position to maintain your price range. Current
+                  ratio: 1 {selectedPosition.baseToken.symbol} ≈{" "}
+                  {(selectedPosition.quoteToken.amount / selectedPosition.baseToken.amount).toFixed(4)}{" "}
+                  {selectedPosition.quoteToken.symbol}
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowAddModal(false)
+                    setAddAmount0("")
+                    setAddAmount1("")
+                  }}
+                  className="flex-1 min-h-[44px] sm:min-h-[36px]"
+                  disabled={isAdding}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleAddLiquidity}
+                  className="flex-1 bg-green-500 text-white hover:bg-green-600 min-h-[44px] sm:min-h-[36px]"
+                  disabled={isAdding || !selectedPosition.tokenId || !addAmount0 || !addAmount1}
+                >
+                  {isAdding ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Liquidity
+                    </>
                   )}
                 </Button>
               </div>

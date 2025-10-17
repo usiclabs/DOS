@@ -208,8 +208,7 @@ class RpcManager {
 // Create singleton instance
 const rpcManager = new RpcManager()
 
-// Export the manager for adding endpoints
-export { rpcManager }
+export { rpcManager, RpcManager }
 
 export const RPC_CONFIG = {
   BASE_MAINNET: {

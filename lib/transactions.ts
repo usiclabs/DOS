@@ -18,6 +18,7 @@ const POSITION_MANAGER_ABI = {
   decreaseLiquidity: "0c49ccbe", // decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))
   collect: "fc6f7865", // collect((uint256,address,uint128,uint128))
   burn: "42966c68", // burn(uint256)
+  increaseLiquidity: "219f5d17", // increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))
 }
 
 export async function getWalletProvider() {
@@ -281,12 +282,66 @@ export async function burnPosition(tokenId: number): Promise<TransactionResult> 
   }
 }
 
+export async function increaseLiquidity(
+  tokenId: number,
+  amount0Desired: string,
+  amount1Desired: string,
+  amount0Min = "0",
+  amount1Min = "0",
+): Promise<TransactionResult> {
+  try {
+    console.log("[v0] Increasing liquidity for position:", tokenId)
+    console.log("[v0] Amounts:", { amount0Desired, amount1Desired })
+
+    // Encode increaseLiquidity function call
+    // increaseLiquidity((uint256 tokenId, uint256 amount0Desired, uint256 amount1Desired, uint256 amount0Min, uint256 amount1Min, uint256 deadline))
+    const functionSelector = POSITION_MANAGER_ABI.increaseLiquidity
+    const tokenIdHex = tokenId.toString(16).padStart(64, "0")
+    const amount0DesiredHex = BigInt(amount0Desired).toString(16).padStart(64, "0")
+    const amount1DesiredHex = BigInt(amount1Desired).toString(16).padStart(64, "0")
+    const amount0MinHex = BigInt(amount0Min).toString(16).padStart(64, "0")
+    const amount1MinHex = BigInt(amount1Min).toString(16).padStart(64, "0")
+    const deadline = Math.floor(Date.now() / 1000 + 1800)
+      .toString(16)
+      .padStart(64, "0") // 30 minutes
+
+    const data =
+      functionSelector + tokenIdHex + amount0DesiredHex + amount1DesiredHex + amount0MinHex + amount1MinHex + deadline
+
+    console.log("[v0] Calling increaseLiquidity...")
+    const result = await sendTransaction({
+      to: UNISWAP_V3_POSITION_MANAGER,
+      data: `0x${data}`,
+      gasLimit: "0x7A120", // 500,000 gas
+    })
+
+    if (result.success) {
+      console.log("[v0] Liquidity increase successful:", result.hash)
+    } else {
+      console.error(`Liquidity increase failed: ${result.error}`)
+    }
+
+    return result
+  } catch (error: any) {
+    console.error("[v0] Liquidity increase error:", error)
+    return {
+      hash: "",
+      success: false,
+      error: error.message,
+    }
+  }
+}
+
 export async function managePosition(
   tokenId: number,
-  action: "withdraw" | "collect" | "burn",
+  action: "withdraw" | "collect" | "burn" | "add",
   params?: {
     liquidityPercentage?: number
     liquidityAmount?: string
+    amount0?: string
+    amount1?: string
+    amount0Min?: string
+    amount1Min?: string
   },
 ): Promise<TransactionResult> {
   try {
@@ -304,6 +359,12 @@ export async function managePosition(
 
       case "burn":
         return await burnPosition(tokenId)
+
+      case "add":
+        if (!params?.amount0 || !params?.amount1) {
+          throw new Error("Token amounts required for adding liquidity")
+        }
+        return await increaseLiquidity(tokenId, params.amount0, params.amount1, params.amount0Min, params.amount1Min)
 
       default:
         throw new Error(`Unknown action: ${action}`)

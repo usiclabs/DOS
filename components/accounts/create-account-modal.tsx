@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAccounts, type AccountType } from "@/hooks/use-accounts"
 import { useWallet } from "@/hooks/use-wallet"
-import { Lock, TrendingUp, Droplets, Info, WalletIcon } from "lucide-react"
+import { Lock, TrendingUp, Droplets, Info, Wallet } from "lucide-react"
 
 interface CreateAccountModalProps {
   accountType: AccountType
@@ -142,7 +142,7 @@ export function CreateAccountModal({ accountType, trigger }: CreateAccountModalP
           {/* Action Button */}
           {!isConnected ? (
             <Button onClick={() => connectWallet("metamask")} className="w-full bg-accent hover:bg-accent/90">
-              <WalletIcon className="w-4 h-4 mr-2" />
+              <Wallet className="w-4 h-4 mr-2" />
               Connect Wallet
             </Button>
           ) : !accountType.available ? (

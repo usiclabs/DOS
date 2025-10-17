@@ -167,37 +167,37 @@ export default function HelpPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-background/40 backdrop-blur-xl p-6">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="min-h-screen bg-background/40 backdrop-blur-xl p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
           <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold text-white">DEUS Help Center</h1>
-            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            <h1 className="text-3xl md:text-4xl font-bold text-white">DEUS Help Center</h1>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Everything you need to know about using the DEUS Operating System for DeFi trading
             </p>
           </div>
 
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-2xl mx-auto px-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
                 placeholder="Search help articles..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-12 h-12 text-lg bg-card border border-white/5 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.02)]"
+                className="pl-12 h-12 text-base md:text-lg bg-card border border-white/5 shadow-[inset_4px_4px_8px_rgba(0,0,0,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.02)]"
               />
             </div>
           </div>
 
           {searchQuery ? (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white">Search Results</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="space-y-4 px-4">
+              <h2 className="text-xl md:text-2xl font-bold text-white">Search Results</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                 {filteredArticles.map((article, index) => (
                   <Link key={index} href={article.href}>
                     <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] cursor-pointer hover:bg-white/5 transition-all duration-200 h-full">
-                      <CardContent className="p-6">
+                      <CardContent className="p-4 md:p-6">
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between flex-wrap gap-2">
                             <Badge variant="outline" className="text-xs border-white/20">
                               {article.category}
                             </Badge>
@@ -205,7 +205,7 @@ export default function HelpPage() {
                               {article.readTime}
                             </Badge>
                           </div>
-                          <h3 className="font-semibold text-white">{article.title}</h3>
+                          <h3 className="font-semibold text-white text-base md:text-lg">{article.title}</h3>
                           <p className="text-sm text-muted-foreground leading-relaxed">{article.description}</p>
                           <div className="flex items-center justify-end">
                             <ExternalLink className="h-4 w-4 text-muted-foreground" />
@@ -219,15 +219,15 @@ export default function HelpPage() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 px-4">
                 {helpCategories.map((category) => (
                   <Card
                     key={category.id}
                     className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]"
                   >
                     <CardHeader>
-                      <CardTitle className="flex items-center space-x-3 text-white">
-                        <category.icon className="h-6 w-6" />
+                      <CardTitle className="flex items-center space-x-3 text-white text-base md:text-lg">
+                        <category.icon className="h-5 w-5 md:h-6 md:w-6 flex-shrink-0" />
                         <span>{category.title}</span>
                       </CardTitle>
                       <p className="text-sm text-muted-foreground">{category.description}</p>
@@ -236,12 +236,12 @@ export default function HelpPage() {
                       {category.articles.map((article, index) => (
                         <Link key={index} href={article.href}>
                           <div className="p-3 rounded-lg bg-muted/20 hover:bg-muted/30 transition-colors cursor-pointer">
-                            <div className="flex items-start justify-between">
-                              <div className="space-y-1 flex-1">
-                                <h4 className="text-sm font-medium text-white">{article.title}</h4>
-                                <p className="text-xs text-muted-foreground">{article.description}</p>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="space-y-1 flex-1 min-w-0">
+                                <h4 className="text-sm font-medium text-white truncate">{article.title}</h4>
+                                <p className="text-xs text-muted-foreground line-clamp-2">{article.description}</p>
                               </div>
-                              <Badge variant="outline" className="text-xs ml-2 border-white/20">
+                              <Badge variant="outline" className="text-xs ml-2 border-white/20 flex-shrink-0">
                                 {article.readTime}
                               </Badge>
                             </div>
@@ -253,11 +253,11 @@ export default function HelpPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mt-8 md:mt-12 px-4">
                 <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]">
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-white">
-                      <Video className="h-5 w-5" />
+                    <CardTitle className="flex items-center space-x-2 text-white text-base md:text-lg">
+                      <Video className="h-5 w-5 flex-shrink-0" />
                       <span>Video Tutorials</span>
                     </CardTitle>
                   </CardHeader>
@@ -273,8 +273,8 @@ export default function HelpPage() {
 
                 <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]">
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-white">
-                      <MessageCircle className="h-5 w-5" />
+                    <CardTitle className="flex items-center space-x-2 text-white text-base md:text-lg">
+                      <MessageCircle className="h-5 w-5 flex-shrink-0" />
                       <span>Live Support</span>
                     </CardTitle>
                   </CardHeader>
@@ -288,8 +288,8 @@ export default function HelpPage() {
 
                 <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]">
                   <CardHeader>
-                    <CardTitle className="flex items-center space-x-2 text-white">
-                      <ExternalLink className="h-5 w-5" />
+                    <CardTitle className="flex items-center space-x-2 text-white text-base md:text-lg">
+                      <ExternalLink className="h-5 w-5 flex-shrink-0" />
                       <span>Community</span>
                     </CardTitle>
                   </CardHeader>

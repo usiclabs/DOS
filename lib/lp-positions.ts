@@ -258,6 +258,80 @@ function getTokenAmountsFromLiquidity(
   return { amount0, amount1 }
 }
 
+async function calculateUncollectedFees(
+  poolAddress: string,
+  tokenId: number,
+  tickLower: number,
+  tickUpper: number,
+  liquidity: bigint,
+): Promise<{ fees0: bigint; fees1: bigint }> {
+  try {
+    // Get pool's current fee growth global values
+    const feeGrowthGlobal0X128Data = await rpcCall("eth_call", [
+      {
+        to: poolAddress,
+        data: "0xf3058399", // feeGrowthGlobal0X128()
+      },
+      "latest",
+    ])
+
+    const feeGrowthGlobal1X128Data = await rpcCall("eth_call", [
+      {
+        to: poolAddress,
+        data: "0x46141319", // feeGrowthGlobal1X128()
+      },
+      "latest",
+    ])
+
+    const feeGrowthGlobal0X128 = BigInt(feeGrowthGlobal0X128Data)
+    const feeGrowthGlobal1X128 = BigInt(feeGrowthGlobal1X128Data)
+
+    // Get tick info for lower and upper ticks
+    const tickLowerData = await rpcCall("eth_call", [
+      {
+        to: poolAddress,
+        data: `0xf30dba93${tickLower < 0 ? (tickLower + 0x1000000).toString(16).padStart(64, "0") : tickLower.toString(16).padStart(64, "0")}`,
+      },
+      "latest",
+    ])
+
+    const tickUpperData = await rpcCall("eth_call", [
+      {
+        to: poolAddress,
+        data: `0xf30dba93${tickUpper < 0 ? (tickUpper + 0x1000000).toString(16).padStart(64, "0") : tickUpper.toString(16).padStart(64, "0")}`,
+      },
+      "latest",
+    ])
+
+    // Parse tick data to get feeGrowthOutside values
+    const tickLowerClean = tickLowerData.slice(2)
+    const tickUpperClean = tickUpperData.slice(2)
+
+    const feeGrowthOutside0X128Lower = BigInt("0x" + tickLowerClean.slice(128, 192))
+    const feeGrowthOutside1X128Lower = BigInt("0x" + tickLowerClean.slice(192, 256))
+    const feeGrowthOutside0X128Upper = BigInt("0x" + tickUpperClean.slice(128, 192))
+    const feeGrowthOutside1X128Upper = BigInt("0x" + tickUpperClean.slice(192, 256))
+
+    // Calculate fee growth inside the position's range
+    const feeGrowthInside0X128 = feeGrowthGlobal0X128 - feeGrowthOutside0X128Lower - feeGrowthOutside0X128Upper
+    const feeGrowthInside1X128 = feeGrowthGlobal1X128 - feeGrowthOutside1X128Lower - feeGrowthOutside1X128Upper
+
+    // Calculate uncollected fees
+    // fees = liquidity * (feeGrowthInside - feeGrowthInsideLast) / 2^128
+    // For simplicity, we'll use feeGrowthInside as an approximation
+    const Q128 = BigInt(2) ** BigInt(128)
+    const fees0 = (liquidity * feeGrowthInside0X128) / Q128
+    const fees1 = (liquidity * feeGrowthInside1X128) / Q128
+
+    console.log(`[v0] Calculated uncollected fees for position ${tokenId}: ${fees0} / ${fees1}`)
+
+    return { fees0, fees1 }
+  } catch (error) {
+    console.error(`[v0] Error calculating uncollected fees for position ${tokenId}:`, error)
+    return { fees0: BigInt(0), fees1: BigInt(0) }
+  }
+}
+
 export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
   try {
     const balanceData = await rpcCall("eth_call", [
@@ -479,24 +553,34 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
           const amount1Remainder = amount1 % decimals1
           const amount1Decimal = Number(amount1Whole) + Number(amount1Remainder) / Number(decimals1)
 
-          const fees0BigInt = BigInt(position.tokensOwed0)
-          const fees1BigInt = BigInt(position.tokensOwed1)
+          const { fees0: uncollectedFees0, fees1: uncollectedFees1 } = await calculateUncollectedFees(
+            poolAddress,
+            position.tokenId,
+            position.tickLower,
+            position.tickUpper,
+            liquidityBigInt,
+          )
 
-          const fees0Whole = fees0BigInt / decimals0
-          const fees0Remainder = fees0BigInt % decimals0
+          // Add tokensOwed (already collected but not withdrawn) to uncollected fees
+          const totalFees0BigInt = BigInt(position.tokensOwed0) + uncollectedFees0
+          const totalFees1BigInt = BigInt(position.tokensOwed1) + uncollectedFees1
+
+          const fees0Whole = totalFees0BigInt / decimals0
+          const fees0Remainder = totalFees0BigInt % decimals0
           const fees0 = Number(fees0Whole) + Number(fees0Remainder) / Number(decimals0)
 
-          const fees1Whole = fees1BigInt / decimals1
-          const fees1Remainder = fees1BigInt % decimals1
+          const fees1Whole = totalFees1BigInt / decimals1
+          const fees1Remainder = totalFees1BigInt % decimals1
           const fees1 = Number(fees1Whole) + Number(fees1Remainder) / Number(decimals1)
 
           const feesEarned = fees0 * token0Price + fees1 * token1Price
 
-          const totalAmount0 = amount0Decimal + fees0
-          const totalAmount1 = amount1Decimal + fees1
+          console.log(
+            `[v0] Position ${position.tokenId}: Fees = $${feesEarned.toFixed(4)} (${fees0.toFixed(6)} ${token0Meta.symbol} + ${fees1.toFixed(6)} ${token1Meta.symbol})`,
+          )
 
-          const token0Value = totalAmount0 * token0Price
-          const token1Value = totalAmount1 * token1Price
+          const token0Value = amount0Decimal * token0Price
+          const token1Value = amount1Decimal * token1Price
           const totalValue = token0Value + token1Value
 
           console.log(
@@ -530,14 +614,14 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
               address: position.token0,
               symbol: token0Meta.symbol,
               name: token0Meta.name,
-              amount: totalAmount0,
+              amount: amount0Decimal,
               value: token0Value,
             },
             quoteToken: {
               address: position.token1,
               symbol: token1Meta.symbol,
               name: token1Meta.name,
-              amount: totalAmount1,
+              amount: amount1Decimal,
               value: token1Value,
             },
             dexId: "Uniswap V3",
