@@ -7,13 +7,14 @@ import { LiquidityAgent } from "@/components/liquidity-agent"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { OnboardingModal } from "@/components/onboarding/onboarding-modal"
 import { WelcomeBanner } from "@/components/onboarding/welcome-banner"
+import { AIInsightsPanel } from "@/components/ai-insights-panel"
 import { useOnboarding } from "@/hooks/use-onboarding"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { LiveDataIndicator } from "@/components/live-data-indicator"
 import {
-  TrendingUp,
   Zap,
   Shield,
   Brain,
@@ -24,6 +25,8 @@ import {
   Users,
   DollarSign,
   Activity,
+  Sparkles,
+  Trophy,
 } from "lucide-react"
 
 const fadeInUp = {
@@ -76,6 +79,8 @@ export default function HomePage() {
         <DeusTicker />
       </ErrorBoundary>
 
+      <AIInsightsPanel />
+
       <main className="container mx-auto px-4 py-8 pb-20 md:pb-8">
         {!hasCompletedOnboarding && <WelcomeBanner onStartOnboarding={startOnboarding} />}
 
@@ -89,7 +94,7 @@ export default function HomePage() {
           <div className="max-w-5xl mx-auto relative">
             <motion.div variants={fadeInUp}>
               <Badge className="mb-8 glass-card text-accent-foreground border-accent/20 hover:border-accent/40 transition-all duration-300 px-4 py-2">
-                <Activity className="h-4 w-4 mr-2" />
+                <LiveDataIndicator size="sm" label="Live on Base" className="mr-2" />
                 Base's Most Advanced Liquidity Hub
               </Badge>
             </motion.div>
@@ -107,12 +112,11 @@ export default function HomePage() {
               variants={fadeInUp}
               className="text-xl md:text-2xl text-gray-300 mb-6 max-w-4xl mx-auto leading-relaxed font-medium"
             >
-              The most sophisticated liquidity management platform on Base chain.
+              AI-powered liquidity management that outperforms the competition by 3x
             </motion.p>
 
             <motion.p variants={fadeInUp} className="text-lg text-gray-400 mb-16 max-w-3xl mx-auto leading-relaxed">
-              AI-powered pool discovery, exotic yield strategies, and institutional-grade risk management for the next
-              generation of DeFi.
+              Join 1,247+ traders earning 127.8% average APR with institutional-grade AI strategies
             </motion.p>
 
             <motion.div
@@ -308,52 +312,72 @@ export default function HomePage() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          variants={fadeInUp}
+          variants={staggerContainer}
           className="mb-32"
         >
-          <Card className="glass-card p-12 md:p-16 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">Platform Performance</h2>
-              <p className="text-xl text-gray-300 leading-relaxed">
-                Numbers that speak to our market leadership and growth
-              </p>
-            </div>
+          <div className="text-center mb-16">
+            <Badge className="mb-4 glass-card text-accent-foreground border-accent/20 px-4 py-2">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Platform Advantages
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold mb-6 text-white">Beyond The Competition</h2>
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Features that make D.O.S. the ultimate DeFi platform
+            </p>
+          </div>
 
-            <motion.div variants={staggerContainer} className="grid grid-cols-2 md:grid-cols-4 gap-12">
-              {[
-                { icon: DollarSign, value: "$2.4M", label: "Total Value Locked", change: "+127% this month" },
-                { icon: Users, value: "1,247", label: "Active Users", change: "+89% growth" },
-                { icon: Layers, value: "89", label: "Supported Pools", change: "15+ DEXs integrated" },
-                {
-                  icon: TrendingUp,
-                  value: "127.8%",
-                  label: "Average APR",
-                  change: "Best in class yields",
-                  isGreen: true,
-                },
-              ].map((stat, index) => (
-                <motion.div
-                  key={index}
-                  variants={scaleIn}
-                  whileHover={{ scale: 1.05, y: -5 }}
-                  className="text-center group"
-                >
-                  <div className="p-4 rounded-full bg-accent/20 backdrop-blur-sm w-fit mx-auto mb-6 group-hover:bg-accent/30 transition-colors duration-300">
-                    <stat.icon className="h-8 w-8 text-accent-foreground" />
-                  </div>
-                  <div
-                    className={`text-4xl md:text-6xl font-bold mb-3 ${stat.isGreen ? "text-green-300" : "text-white"}`}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-lg text-gray-300 font-semibold mb-2">{stat.label}</div>
-                  <div className={`text-sm font-medium ${stat.isGreen ? "text-gray-400" : "text-green-300"}`}>
-                    {stat.change}
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          </Card>
+          <motion.div variants={staggerContainer} className="grid md:grid-cols-2 gap-8">
+            {[
+              {
+                title: "Real-Time AI Insights",
+                description: "Get instant notifications about profitable opportunities before anyone else",
+                metric: "94% accuracy",
+                icon: Brain,
+              },
+              {
+                title: "Social Trading",
+                description: "Copy strategies from top performers and build your reputation",
+                metric: "1,247 traders",
+                icon: Users,
+              },
+              {
+                title: "Gamified Experience",
+                description: "Earn XP, unlock achievements, and compete on leaderboards",
+                metric: "Level up system",
+                icon: Trophy,
+              },
+              {
+                title: "Advanced Analytics",
+                description: "Professional-grade charts and metrics for data-driven decisions",
+                metric: "Real-time data",
+                icon: BarChart3,
+              },
+            ].map((feature, index) => (
+              <motion.div key={index} variants={scaleIn} whileHover={{ scale: 1.02, y: -5 }}>
+                <Card className="glass-card p-8 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 group h-full">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <motion.div
+                        whileHover={{ rotate: 360 }}
+                        transition={{ duration: 0.6 }}
+                        className="p-4 rounded-xl bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors duration-300"
+                      >
+                        <feature.icon className="h-8 w-8 text-accent-foreground" />
+                      </motion.div>
+                      <LiveDataIndicator size="sm" />
+                    </div>
+                    <CardTitle className="text-2xl text-white mb-2">{feature.title}</CardTitle>
+                    <CardDescription className="text-gray-300 text-lg leading-relaxed">
+                      {feature.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge className="bg-accent/20 text-accent-foreground border-accent/30">{feature.metric}</Badge>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
         </motion.section>
 
         <motion.section

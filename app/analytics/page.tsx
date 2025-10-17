@@ -11,6 +11,7 @@ import { DeusTicker } from "@/components/deus-ticker"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { LoadingSkeleton } from "@/components/loading-skeleton"
 import { ErrorState } from "@/components/error-state"
+import { LiveDataIndicator } from "@/components/live-data-indicator" // Import LiveDataIndicator component
 
 interface AnalyticsData {
   overview: {
@@ -224,17 +225,14 @@ export default function AnalyticsPage() {
                 Live insights into DEUS DeFi ecosystem performance and metrics
               </p>
               <div className="flex items-center space-x-4 mt-4">
-                <Badge variant="outline" className="glass-card border-green-500/30 text-green-300">
-                  <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
-                  Live Data
-                </Badge>
+                <LiveDataIndicator label="Live Data" />
                 <Badge variant="outline" className="glass-card border-orange-500/30 text-orange-300">
                   DEUS Ecosystem
                 </Badge>
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+              <LiveDataIndicator size="sm" />
               <div className="text-sm text-gray-300">Updated: {new Date().toLocaleTimeString()}</div>
             </div>
           </motion.div>
@@ -298,7 +296,12 @@ export default function AnalyticsPage() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className={`text-2xl font-bold text-${stat.color}-300 mb-1`}>{stat.value}</div>
+                    <div
+                      className={`text-xl sm:text-2xl font-bold text-${stat.color}-300 mb-1 truncate`}
+                      title={stat.value}
+                    >
+                      {stat.value}
+                    </div>
                     {stat.change && (
                       <div
                         className={`text-sm ${safeData.overview.deusChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
