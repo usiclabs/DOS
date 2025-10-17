@@ -210,7 +210,7 @@ export function DeusTicker() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed top-[calc(5rem+5.5rem)] left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-b border-white/20 overflow-hidden"
+            className="fixed top-[calc(5rem+3rem)] left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-b border-white/20 overflow-hidden"
           >
             <div className="p-4">
               <div className="container mx-auto">

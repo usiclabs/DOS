@@ -22,7 +22,6 @@ const navItems = [
   { href: "/treasury", label: "Treasury" },
   { href: "/swap", label: "Swap" },
   { href: "/token-factory", label: "Token Factory" },
-  { href: "/settings", label: "Settings" },
 ]
 
 const NavItem = memo(
@@ -34,7 +33,7 @@ const NavItem = memo(
         <Button
           variant="ghost"
           className={cn(
-            "text-gray-300 hover:text-white hover:bg-accent/20 font-medium transition-all duration-300 px-6 py-3 rounded-xl",
+            "text-gray-300 hover:text-white hover:bg-accent/20 font-medium transition-all duration-300 px-4 py-2 rounded-xl text-sm",
             isActive && "text-white bg-accent/30 shadow-lg border border-accent/30",
           )}
           aria-current={isActive ? "page" : undefined}
@@ -111,7 +110,7 @@ export function StickyHeader() {
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
             {/* Logo */}
-            <Link href="/" className="flex items-center group" aria-label="DEUS Operating System Home">
+            <Link href="/" className="flex items-center gap-3 group" aria-label="DEUS Operating System Home">
               <motion.svg
                 width="48"
                 height="48"
@@ -176,10 +175,14 @@ export function StickyHeader() {
                   </linearGradient>
                 </defs>
               </motion.svg>
+              <div className="flex flex-col">
+                <span className="text-xl font-bold text-white tracking-tight">D.O.S.</span>
+                <span className="text-xs text-gray-400 tracking-wide">DEUS Operating System</span>
+              </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-2" role="navigation" aria-label="Main navigation">
+            <nav className="hidden lg:flex items-center space-x-1" role="navigation" aria-label="Main navigation">
               {navItems.map((item) => (
                 <NavItem key={item.href} item={item} pathname={pathname} />
               ))}
