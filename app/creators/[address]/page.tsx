@@ -257,7 +257,9 @@ export default function CreatorProfilePage({ params }: { params: { address: stri
                           <div className="p-6 space-y-4">
                             <div className="flex items-center gap-3">
                               <div className="relative w-12 h-12 rounded-full border-2 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0">
-                                {holding.coin.image && holding.coin.image !== "" ? (
+                                {holding.coin.image &&
+                                typeof holding.coin.image === "string" &&
+                                holding.coin.image.trim() !== "" ? (
                                   <Image
                                     src={holding.coin.image || "/placeholder.svg"}
                                     alt={holding.coin.name}
