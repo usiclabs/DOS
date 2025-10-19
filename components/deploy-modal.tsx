@@ -342,37 +342,74 @@ export function DeployModal({
   }
 
   const calculateBalancedAmount = (inputAmount: string, inputToken: "base" | "quote") => {
-    if (!tokenPrices || !inputAmount || Number.parseFloat(inputAmount) <= 0) return
+    if (!inputAmount || Number.parseFloat(inputAmount) <= 0) return
 
     const amount = Number.parseFloat(inputAmount)
-    const inputPrice = inputToken === "base" ? tokenPrices.base : tokenPrices.quote
-    const outputPrice = inputToken === "base" ? tokenPrices.quote : tokenPrices.base
 
-    if (inputPrice === 0 || outputPrice === 0) return
+    // If we have valid USD prices, use them for 50/50 USD value split
+    if (tokenPrices && tokenPrices.base > 0 && tokenPrices.quote > 0) {
+      const inputPrice = inputToken === "base" ? tokenPrices.base : tokenPrices.quote
+      const outputPrice = inputToken === "base" ? tokenPrices.quote : tokenPrices.base
 
-    // Calculate USD value of input
-    const inputUsdValue = amount * inputPrice
+      // Calculate USD value of input
+      const inputUsdValue = amount * inputPrice
 
-    // In advanced mode, use custom ratio
-    if (advancedMode) {
-      const outputRatio = inputToken === "base" ? (100 - customRatio) / customRatio : customRatio / (100 - customRatio)
-      const outputUsdValue = inputUsdValue * outputRatio
-      const outputAmount = outputUsdValue / outputPrice
+      // In advanced mode, use custom ratio
+      if (advancedMode) {
+        const outputRatio =
+          inputToken === "base" ? (100 - customRatio) / customRatio : customRatio / (100 - customRatio)
+        const outputUsdValue = inputUsdValue * outputRatio
+        const outputAmount = outputUsdValue / outputPrice
 
-      if (inputToken === "base") {
-        setQuoteAmount(outputAmount.toFixed(6))
+        if (inputToken === "base") {
+          setQuoteAmount(outputAmount.toFixed(6))
+        } else {
+          setBaseAmount(outputAmount.toFixed(6))
+        }
       } else {
-        setBaseAmount(outputAmount.toFixed(6))
+        // Standard mode: 50/50 split by USD value
+        const outputAmount = inputUsdValue / outputPrice
+
+        if (inputToken === "base") {
+          setQuoteAmount(outputAmount.toFixed(6))
+        } else {
+          setBaseAmount(outputAmount.toFixed(6))
+        }
       }
     } else {
-      // Standard mode: 50/50 split by USD value
-      const outputAmount = inputUsdValue / outputPrice
+      // Fallback: Use pool price ratio when USD prices are unavailable
+      // For creator coins, assume a reasonable ratio based on pool data
+      console.log("[v0] USD prices unavailable, using fallback ratio calculation")
 
-      if (inputToken === "base") {
-        setQuoteAmount(outputAmount.toFixed(6))
+      // Use pool's price data as fallback
+      const poolPriceRatio = pool?.priceUsd || 0.00001 // Fallback to small value if no price
+
+      if (advancedMode) {
+        // In advanced mode, use custom ratio
+        const ratio = inputToken === "base" ? (100 - customRatio) / customRatio : customRatio / (100 - customRatio)
+        const outputAmount = amount * ratio
+
+        if (inputToken === "base") {
+          setQuoteAmount(outputAmount.toFixed(6))
+        } else {
+          setBaseAmount(outputAmount.toFixed(6))
+        }
       } else {
-        setBaseAmount(outputAmount.toFixed(6))
+        // Standard mode: Use 1:1 ratio as fallback for 50/50 split
+        // This ensures users can still proceed even without price data
+        if (inputToken === "base") {
+          setQuoteAmount(amount.toFixed(6))
+        } else {
+          setBaseAmount(amount.toFixed(6))
+        }
       }
+
+      // Show warning to user
+      toast({
+        title: "Price data unavailable",
+        description: "Using estimated ratio. You can adjust amounts manually in Advanced mode.",
+        variant: "default",
+      })
     }
   }
 
@@ -1213,6 +1250,34 @@ export function DeployModal({
                   </div>
                 </div>
               </div>
+
+              {isLoadingPrices && (
+                <Card className="glass-card border-blue-500/20 bg-blue-500/5">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-blue-400">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Loading token prices for auto-balancing...</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {!isLoadingPrices && tokenPrices && (tokenPrices.base === 0 || tokenPrices.quote === 0) && (
+                <Card className="glass-card border-yellow-500/20 bg-yellow-500/5">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start gap-2 text-sm">
+                      <AlertTriangle className="h-4 w-4 text-yellow-400 mt-0.5" />
+                      <div>
+                        <p className="text-yellow-400 font-medium">Price data unavailable</p>
+                        <p className="text-gray-400 text-xs mt-1">
+                          USD prices couldn't be fetched for one or both tokens. Using estimated ratios. Switch to
+                          Advanced mode to set custom amounts.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {estimatedValue && tokenPrices && baseAmount && quoteAmount && (
                 <Card className="glass-card border-blue-500/20 bg-blue-500/5">

@@ -188,7 +188,7 @@ export function TreasuryContribution() {
             <p className="text-gray-300 mb-6 text-sm md:text-base">Connect your wallet to contribute</p>
             <Button
               onClick={handleConnectWallet}
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 h-12 px-8 text-base font-semibold"
+              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 h-12 px-8 text-base font-semibold bg-[rgba(220,90,63,1)]"
             >
               Connect Wallet
             </Button>
