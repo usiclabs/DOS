@@ -125,18 +125,26 @@ export async function GET(request: Request) {
         "0x2626664c2603336e57b271c5c0b26f421741e481", // Uniswap V3 Router
         "0x4752ba5dbc23f44d87826276bf6fd6b1c372ad24", // BaseSwap Router
         "0x327df1e6de05895d2ab08513aadd9313fe505d86", // Aerodrome Router
+        "0x03a520b32c04bf3beef7beb72e919cf822ed34f1", // Uniswap V3 Position Manager (NFT)
+        "0xc36442b4a4522e871399cd717abdd847ab11fe88", // Uniswap V3 Position Manager
         "0x0000000000000000000000000000000000000000", // Null address
       ]
 
-      // Filter for buy transactions (transfers TO user wallets)
+      // Filter for buy transactions (transfers TO user wallets, excluding liquidity operations)
       const recentBuys = data.result.transfers
         .filter((tx) => {
           const blockNum = Number.parseInt(tx.blockNum, 16)
           const lastBlock = Number.parseInt(lastBlockHex, 16)
           const isNewBlock = blockNum > lastBlock
           const isToUser = !knownDexAddresses.includes(tx.to.toLowerCase())
+          const isFromUser = !knownDexAddresses.includes(tx.from.toLowerCase())
           const hasValue = tx.value && tx.value > 0
-          return isNewBlock && isToUser && hasValue
+
+          // Exclude transactions where both from and to are not DEX contracts
+          // (these are likely liquidity operations or transfers, not buys)
+          const isLikelyBuy = !isFromUser && isToUser
+
+          return isNewBlock && isLikelyBuy && hasValue
         })
         .map((tx) => ({
           hash: tx.hash,

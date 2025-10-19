@@ -86,7 +86,7 @@ export function BuyNotifications() {
                     href={`https://basescan.org/tx/${tx.hash}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-1 text-xs text-accent hover:underline mt-2"
+                    className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 hover:underline mt-2"
                   >
                     View on BaseScan <ExternalLink className="h-3 w-3" />
                   </a>

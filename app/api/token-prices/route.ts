@@ -83,21 +83,20 @@ export async function POST(request: NextRequest) {
       const zoraResults = await Promise.all(zoraPricePromises)
 
       zoraResults.forEach(({ address, price }) => {
-        zoraCoinPrices[address] = price
+        zoraCoinPrices[address.toLowerCase()] = price
       })
     }
 
-    // Combine results
-    const combinedPrices: Record<string, number> = {}
+    const combinedPrices: Record<string, { price: number }> = {}
 
-    // Add standard token prices
+    // Add standard token prices (already in correct format from fetchTokenPrices)
     Object.entries(standardPricesResult.prices).forEach(([symbol, priceData]) => {
-      combinedPrices[symbol] = priceData.price
+      combinedPrices[symbol.toLowerCase()] = priceData
     })
 
-    // Add Zora coin prices
+    // Add Zora coin prices (convert to correct format)
     Object.entries(zoraCoinPrices).forEach(([address, price]) => {
-      combinedPrices[address] = price
+      combinedPrices[address.toLowerCase()] = { price }
     })
 
     console.log("[v0] Combined prices:", combinedPrices)
