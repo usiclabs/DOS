@@ -224,7 +224,7 @@ export default function CreatorsPage() {
           {/* Creator Coins Grid */}
           {!loading && (
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-400px)] pr-2"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
@@ -425,7 +425,7 @@ export default function CreatorsPage() {
         </motion.div>
         {/* Floating Action Button for creating coins */}
         <motion.div
-          className="fixed bottom-8 right-8 z-50"
+          className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50 w-3/4 md:bottom-8 md:right-8 md:left-auto md:translate-x-0 md:w-auto"
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.5, type: "spring", stiffness: 260, damping: 20 }}
@@ -433,9 +433,10 @@ export default function CreatorsPage() {
           <Button
             onClick={() => setIsCreateCoinModalOpen(true)}
             size="lg"
-            className="h-16 w-16 rounded-full shadow-2xl shadow-orange-500/50 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-orange-500/70 transition-all duration-300 hover:scale-110"
+            className="w-full md:w-auto md:h-16 md:w-16 md:rounded-full h-12 rounded-2xl shadow-2xl shadow-orange-500/30 glass-card backdrop-blur-xl bg-white/10 border border-white/20 hover:bg-white/20 hover:border-orange-500/50 hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105 text-base font-semibold text-white"
           >
-            <Plus className="w-8 h-8" />
+            <Plus className="w-5 h-5 mr-2 md:mr-0 md:w-8 md:h-8" />
+            <span className="md:hidden">Create a token</span>
           </Button>
         </motion.div>
       </div>
