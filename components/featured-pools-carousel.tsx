@@ -27,7 +27,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
     if (isHovered) return
     const timer = setInterval(() => {
       handleNext()
-    }, 5000)
+    }, 8500) // Increased auto-advance interval from 5000ms to 8500ms for better metric review time
     return () => clearInterval(timer)
   }, [currentIndex, isHovered])
 
@@ -111,7 +111,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="relative h-[500px] md:h-[550px] rounded-2xl md:rounded-3xl overflow-hidden group"
+          className="relative h-[600px] md:h-[600px] rounded-2xl md:rounded-3xl overflow-hidden group"
         >
           <div className="absolute inset-0 rounded-2xl md:rounded-3xl p-[1px] bg-gradient-to-r from-orange-500/30 via-red-500/30 to-orange-500/30 group-hover:from-orange-500/50 group-hover:via-red-500/50 group-hover:to-orange-500/50 transition-all duration-700" />
 
@@ -142,49 +142,49 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     backgroundImage: `url(${
                       currentPool.bannerImage ||
                       currentPool.tokenImages?.base ||
-                      "/placeholder.svg?height=550&width=1200"
+                      "/placeholder.svg?height=600&width=1200"
                     })`,
-                    filter: currentPool.bannerImage ? "blur(8px)" : "blur(40px)",
-                    transform: "scale(1.1)",
-                    opacity: currentPool.bannerImage ? 0.4 : 0.3,
+                    filter: currentPool.bannerImage ? "blur(12px)" : "blur(50px)",
+                    transform: "scale(1.15)",
+                    opacity: currentPool.bannerImage ? 0.35 : 0.25,
                   }}
                 />
                 {/* Gradient overlays for readability */}
-                <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/70 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent" />
               </div>
 
               {/* Content */}
-              <div className="relative h-full flex flex-col justify-between p-4 md:p-12">
+              <div className="relative h-full flex flex-col justify-between p-6 md:p-16">
                 {/* Top section */}
                 <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2 md:gap-4">
+                  <div className="flex items-center gap-3 md:gap-6">
                     <div className="flex items-center -space-x-3 md:-space-x-4">
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="relative w-12 h-12 md:w-20 md:h-20 rounded-full border-2 md:border-4 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-orange-500/20"
+                        className="relative w-14 h-14 md:w-24 md:h-24 rounded-full border-2 md:border-4 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-orange-500/20"
                       >
                         <img
-                          src={currentPool.tokenImages?.base || "/placeholder.svg?height=80&width=80"}
+                          src={currentPool.tokenImages?.base || "/placeholder.svg?height=96&width=96"}
                           alt={currentPool.baseToken.symbol}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = "/placeholder.svg?height=80&width=80"
+                            e.currentTarget.src = "/placeholder.svg?height=96&width=96"
                           }}
                         />
                       </motion.div>
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="relative w-12 h-12 md:w-20 md:h-20 rounded-full border-2 md:border-4 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-orange-500/20"
+                        className="relative w-14 h-14 md:w-24 md:h-24 rounded-full border-2 md:border-4 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-orange-500/20"
                       >
                         <img
-                          src={currentPool.tokenImages?.quote || "/placeholder.svg?height=80&width=80"}
+                          src={currentPool.tokenImages?.quote || "/placeholder.svg?height=96&width=96"}
                           alt={currentPool.quoteToken.symbol}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.src = "/placeholder.svg?height=80&width=80"
+                            e.currentTarget.src = "/placeholder.svg?height=96&width=96"
                           }}
                         />
                       </motion.div>
@@ -196,23 +196,23 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
-                        className="text-xl md:text-4xl font-bold text-white mb-1 md:mb-2"
+                        className="text-2xl md:text-5xl font-bold text-white mb-2 md:mb-3"
                       >
                         {currentPool.baseToken.symbol}/{currentPool.quoteToken.symbol}
                       </motion.h3>
-                      <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-                        <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 backdrop-blur-sm text-xs md:text-sm px-2 py-0.5">
+                      <div className="flex items-center gap-2 md:gap-3 flex-wrap">
+                        <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 backdrop-blur-sm text-xs md:text-base px-3 py-1 md:px-4 md:py-1.5">
                           {currentPool.dexId.toUpperCase()}
                         </Badge>
                         {currentPool.isDeusPool && (
-                          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-lg shadow-orange-500/30 text-xs md:text-sm px-2 py-0.5">
-                            <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
+                          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-lg shadow-orange-500/30 text-xs md:text-base px-3 py-1 md:px-4 md:py-1.5">
+                            <Sparkles className="w-3 h-3 md:w-4 md:h-4 mr-1.5" />
                             DEUS Pool
                           </Badge>
                         )}
                         <Badge
                           variant="outline"
-                          className="text-white border-white/30 backdrop-blur-sm text-xs md:text-sm px-2 py-0.5"
+                          className="text-white border-white/30 backdrop-blur-sm text-xs md:text-base px-3 py-1 md:px-4 md:py-1.5"
                         >
                           {currentPool.feeTier}
                         </Badge>
@@ -222,19 +222,19 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                 </div>
 
                 {/* Center section - Hero APY */}
-                <div className="flex-1 flex items-center justify-center py-4 md:py-8">
+                <div className="flex-1 flex items-center justify-center py-6 md:py-12">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
                     className="text-center"
                   >
-                    <div className="text-xs md:text-base text-gray-300 mb-2 md:mb-3 flex items-center justify-center gap-1.5 md:gap-2">
-                      <TrendingUp className="w-4 h-4 md:w-5 md:h-5" />
+                    <div className="text-sm md:text-lg text-gray-300 mb-3 md:mb-4 flex items-center justify-center gap-2 md:gap-3">
+                      <TrendingUp className="w-5 h-5 md:w-6 md:h-6" />
                       Net APY
                     </div>
                     <motion.div
-                      className="text-6xl md:text-9xl font-black mb-3 md:mb-6"
+                      className="text-7xl md:text-[10rem] font-black mb-4 md:mb-8"
                       whileHover={{ scale: 1.03 }}
                       transition={{ duration: 0.4, ease: "easeOut" }}
                       animate={{
@@ -250,27 +250,27 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                         {currentPool.netApy.toFixed(1)}%
                       </span>
                     </motion.div>
-                    <p className="text-gray-300 text-xs md:text-lg font-medium px-4">
+                    <p className="text-gray-300 text-sm md:text-xl font-medium px-4">
                       Earn fees while providing liquidity
                     </p>
                   </motion.div>
                 </div>
 
                 {/* Bottom section - Metrics and CTA */}
-                <div className="space-y-3 md:space-y-4">
-                  <div className="grid grid-cols-3 gap-2 md:gap-4">
+                <div className="space-y-4 md:space-y-6">
+                  <div className="grid grid-cols-3 gap-3 md:gap-6">
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
                       whileHover={{ scale: 1.03, y: -3 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-2.5 md:p-4 border border-white/10 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
+                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
                     >
-                      <div className="flex items-center gap-1 md:gap-2 text-gray-400 text-[10px] md:text-sm mb-0.5 md:mb-1">
-                        <Droplets className="w-3 h-3 md:w-4 md:h-4" />
-                        <span className="hidden sm:inline">TVL</span>
+                      <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 text-xs md:text-sm mb-1 md:mb-2">
+                        <Droplets className="w-3.5 h-3.5 md:w-5 md:h-5" />
+                        <span>TVL</span>
                       </div>
-                      <div className="text-base md:text-2xl font-bold text-white truncate">
+                      <div className="text-lg md:text-3xl font-bold text-white truncate">
                         {formatNumber(currentPool.liquidity)}
                       </div>
                     </motion.div>
@@ -280,13 +280,13 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
                       whileHover={{ scale: 1.03, y: -3 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-2.5 md:p-4 border border-white/10 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
+                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
                     >
-                      <div className="flex items-center gap-1 md:gap-2 text-gray-400 text-[10px] md:text-sm mb-0.5 md:mb-1">
-                        <Activity className="w-3 h-3 md:w-4 md:h-4" />
-                        <span className="hidden sm:inline">24h Vol</span>
+                      <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 text-xs md:text-sm mb-1 md:mb-2">
+                        <Activity className="w-3.5 h-3.5 md:w-5 md:h-5" />
+                        <span>24h Vol</span>
                       </div>
-                      <div className="text-base md:text-2xl font-bold text-white truncate">
+                      <div className="text-lg md:text-3xl font-bold text-white truncate">
                         {formatNumber(currentPool.volume24h)}
                       </div>
                     </motion.div>
@@ -296,13 +296,13 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
                       whileHover={{ scale: 1.03, y: -3 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-2.5 md:p-4 border border-white/10 hover:border-green-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
+                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-green-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
                     >
-                      <div className="flex items-center gap-1 md:gap-2 text-gray-400 text-[10px] md:text-sm mb-0.5 md:mb-1">
-                        <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
-                        <span className="hidden sm:inline">Fee APR</span>
+                      <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 text-xs md:text-sm mb-1 md:mb-2">
+                        <TrendingUp className="w-3.5 h-3.5 md:w-5 md:h-5" />
+                        <span>Fee APR</span>
                       </div>
-                      <div className="text-base md:text-2xl font-bold text-green-400 truncate">
+                      <div className="text-lg md:text-3xl font-bold text-green-400 truncate">
                         {currentPool.feeApr.toFixed(1)}%
                       </div>
                     </motion.div>
@@ -316,10 +316,10 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     <Button
                       size="lg"
                       onClick={handleDeploy}
-                      className="relative w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-sm md:text-lg h-12 md:h-16 rounded-xl md:rounded-2xl shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 transition-all duration-400 hover:scale-[1.02] active:scale-[0.98] group"
+                      className="relative w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-base md:text-xl h-14 md:h-20 rounded-xl md:rounded-2xl shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 transition-all duration-400 hover:scale-[1.02] active:scale-[0.98] group"
                     >
                       <span className="relative flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                        <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />
                         Deploy Liquidity Now
                       </span>
                     </Button>
@@ -331,7 +331,8 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
         </div>
       </div>
 
-      <div className="flex justify-center gap-1.5 md:gap-2 mt-4 md:mt-6">
+      {/* Dot indicators */}
+      <div className="flex justify-center gap-2 md:gap-3 mt-5 md:mt-8">
         {topPools.map((_, index) => (
           <motion.button
             key={index}
@@ -339,10 +340,10 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
             whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className={`h-1.5 md:h-2 rounded-full transition-all duration-400 ${
+            className={`h-2 md:h-2.5 rounded-full transition-all duration-400 ${
               index === currentIndex
-                ? "bg-gradient-to-r from-orange-500 to-red-500 w-6 md:w-8 shadow-lg shadow-orange-500/50"
-                : "bg-white/40 w-1.5 md:w-2 hover:bg-white/60 hover:w-3 md:hover:w-4"
+                ? "bg-gradient-to-r from-orange-500 to-red-500 w-8 md:w-10 shadow-lg shadow-orange-500/50"
+                : "bg-white/40 w-2 md:w-2.5 hover:bg-white/60 hover:w-4 md:hover:w-5"
             }`}
           />
         ))}
