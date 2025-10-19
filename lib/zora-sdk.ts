@@ -16,7 +16,7 @@ import {
   createCoin,
 } from "@zoralabs/coins-sdk"
 import { createWalletClient, custom } from "viem"
-import { base } from "viem/chains"
+import { base, baseSepolia } from "viem/chains"
 
 const ZORA_API_KEY = "zora_api_a3bdc55dcf5cb9e9974348e5576525f6f4b1c81686700bf8cf52c088fef51207"
 
@@ -262,22 +262,45 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
       throw new Error("Coin deployment must be called from the browser")
     }
 
-    // Get wallet client from browser
+    if (!(window as any).ethereum) {
+      throw new Error("No Ethereum provider found. Please install MetaMask or another wallet.")
+    }
+
+    const chainIdHex = await (window as any).ethereum.request({ method: "eth_chainId" })
+    const currentChainId = Number.parseInt(chainIdHex, 16)
+
+    console.log("[v0] Current chain ID:", currentChainId)
+
+    let selectedChain
+    if (currentChainId === 8453) {
+      selectedChain = base
+    } else if (currentChainId === 84532) {
+      selectedChain = baseSepolia
+    } else {
+      throw new Error(
+        `Wrong network. Please switch to Base network. Current chain ID: ${currentChainId}, Required: 8453 (Base) or 84532 (Base Sepolia)`,
+      )
+    }
+
+    console.log("[v0] Using chain:", selectedChain.name, "with ID:", selectedChain.id)
+
     const walletClient = createWalletClient({
-      chain: base,
+      chain: selectedChain,
       transport: custom((window as any).ethereum),
     })
 
     const [account] = await walletClient.getAddresses()
 
-    // Create the coin using Zora SDK
+    console.log("[v0] Wallet account:", account)
+    console.log("[v0] Wallet client chain:", walletClient.chain?.id)
+
     const result = await createCoin({
       walletClient,
       account,
       name: params.name,
       symbol: params.symbol,
       uri: params.uri,
-      chainId: params.chainId || 8453,
+      chain: selectedChain, // Pass chain object instead of chainId
       owners: params.owners || [account],
       payoutRecipient: params.payoutRecipient,
       platformReferrer: params.platformReferrer,
@@ -285,7 +308,7 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
       initialPurchase: params.initialPurchase,
     })
 
-    console.log("[v0] Successfully deployed coin via Zora SDK")
+    console.log("[v0] Successfully deployed coin via Zora SDK:", result)
 
     return {
       success: true,

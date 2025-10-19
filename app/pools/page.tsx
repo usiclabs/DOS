@@ -158,7 +158,7 @@ export default function PoolsPage() {
       }
     }
 
-    return pools
+    return pools.filter((pool) => (pool.volume24h || 0) > 100)
   })()
 
   return (

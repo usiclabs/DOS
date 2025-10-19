@@ -100,11 +100,13 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
 
           const hasValidPool =
             (quote.uniswapV3Data && (quote.uniswapV3Data.poolAddress || quote.uniswapV3Data.isMultiHop)) ||
-            quote.uniswapV4Data
+            quote.uniswapV4Data ||
+            quote.zoraTradeData
           setHasDirectPool(hasValidPool)
 
           console.log("[v0] Swap route:", quote.route)
           console.log("[v0] Has valid pool:", hasValidPool)
+          console.log("[v0] Is Zora trade:", !!quote.zoraTradeData)
           console.log("[v0] Is V4:", !!quote.uniswapV4Data)
           console.log("[v0] Is multi-hop:", quote.uniswapV3Data?.isMultiHop)
         } else {
@@ -195,7 +197,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
 
       const quote = await quoteResponse.json()
 
-      if (!quote.uniswapV3Data && !quote.uniswapV4Data) {
+      if (!quote.uniswapV3Data && !quote.uniswapV4Data && !quote.zoraTradeData) {
         throw new Error("No liquidity pool available for this token pair")
       }
 

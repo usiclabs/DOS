@@ -53,13 +53,22 @@ interface PoolData {
   volatility: number
 }
 
+// Add defaultPairingToken prop and allowPairingToggle prop
 interface DeployModalProps {
   pool: PoolData | null
   isOpen: boolean
   onClose: () => void
+  defaultPairingToken?: "DEUS" | "ETH"
+  allowPairingToggle?: boolean
 }
 
-export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
+export function DeployModal({
+  pool,
+  isOpen,
+  onClose,
+  defaultPairingToken = "ETH",
+  allowPairingToggle = false,
+}: DeployModalProps) {
   const { toast } = useToast()
   const { isConnected, connectWallet } = useWallet()
   const [baseAmount, setBaseAmount] = useState("")
@@ -78,6 +87,11 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
   const [actualAmounts, setActualAmounts] = useState<{ base: string; quote: string } | null>(null)
   const [canResolveTokens, setCanResolveTokens] = useState(true)
   const [tokenResolutionError, setTokenResolutionError] = useState<string | null>(null)
+  const [pairingToken, setPairingToken] = useState<"DEUS" | "ETH">(defaultPairingToken)
+
+  // Assuming DEUS_TOKEN_ADDRESS and WETH_ADDRESS are defined elsewhere, e.g., in constants.ts
+  const DEUS_TOKEN_ADDRESS = "0x4200000000000000000000000000000000000005" // Replace with actual DEUS token address
+  const WETH_ADDRESS = "0x4200000000000000000000000000000000000006" // Replace with actual WETH token address
 
   useEffect(() => {
     if (!isOpen) {
@@ -97,6 +111,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
       setActualAmounts(null)
       setCanResolveTokens(true)
       setTokenResolutionError(null)
+      setPairingToken(defaultPairingToken)
     } else {
       console.log("[v0] Deploy modal opened for pool:", pool)
       if (pool) {
@@ -127,13 +142,13 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         }
       }
     }
-  }, [isOpen, pool])
+  }, [isOpen, pool, defaultPairingToken])
 
   useEffect(() => {
     const fetchBalances = async () => {
       if (!pool || !isOpen || !canResolveTokens) return
 
-      console.log("[v0] Fetching token balances for pool:", pool.baseToken.symbol, "/", pool.quoteToken.symbol)
+      console.log("[v0] Fetching token balances for pool:", pool.baseToken.symbol, "/", pairingToken)
 
       try {
         const baseTokenAddress =
@@ -141,10 +156,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress =
-          pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
-            ? getTokenAddress(pool.quoteToken.symbol)
-            : pool.quoteToken.address
+        const quoteTokenAddress = pairingToken === "DEUS" ? DEUS_TOKEN_ADDRESS : WETH_ADDRESS
 
         if (!baseTokenAddress || !quoteTokenAddress) {
           return
@@ -153,7 +165,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         console.log("[v0] Resolved token addresses:", {
           baseToken: pool.baseToken.symbol,
           baseAddress: baseTokenAddress,
-          quoteToken: pool.quoteToken.symbol,
+          quoteToken: pairingToken,
           quoteAddress: quoteTokenAddress,
         })
 
@@ -179,7 +191,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
 
           console.log("[v0] Token balances fetched:", {
             [pool.baseToken.symbol]: formattedBalances.base,
-            [pool.quoteToken.symbol]: formattedBalances.quote,
+            [pairingToken]: formattedBalances.quote,
           })
 
           setTokenBalances(formattedBalances)
@@ -197,7 +209,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     }
 
     fetchBalances()
-  }, [pool, isOpen, toast, canResolveTokens]) // Include canResolveTokens in dependency array
+  }, [pool, isOpen, toast, canResolveTokens, pairingToken])
 
   useEffect(() => {
     const estimateGas = async () => {
@@ -268,6 +280,14 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     }
   }
 
+  const handlePairingTokenChange = (newToken: "DEUS" | "ETH") => {
+    setPairingToken(newToken)
+    // Reset amounts when switching pairing token
+    setBaseAmount("")
+    setQuoteAmount("")
+    setTokenBalances(null)
+  }
+
   const handlePreview = () => {
     console.log("[v0] Preview clicked - validating inputs:", {
       baseAmount,
@@ -324,7 +344,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         console.log("[v0] Validation failed: Insufficient quote token balance")
         toast({
           title: "Insufficient balance",
-          description: `You don't have enough ${pool.quoteToken.symbol}. You have ${tokenBalances.quote} but need ${quoteAmount}`,
+          description: `You don't have enough ${pairingToken}. You have ${tokenBalances.quote} but need ${quoteAmount}`,
           variant: "destructive",
         })
         return
@@ -402,15 +422,12 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress =
-          pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
-            ? getTokenAddress(pool.quoteToken.symbol)
-            : pool.quoteToken.address
+        const quoteTokenAddress = pairingToken === "DEUS" ? DEUS_TOKEN_ADDRESS : WETH_ADDRESS
 
         if (!baseTokenAddress || !quoteTokenAddress) {
           toast({
             title: "Unknown token addresses",
-            description: `Cannot deploy liquidity for ${pool.baseToken.symbol}/${pool.quoteToken.symbol}. Token addresses are not available.`,
+            description: `Cannot deploy liquidity for ${pool.baseToken.symbol}/${pairingToken}. Token addresses are not available.`,
             variant: "destructive",
           })
           setStep("input")
@@ -421,7 +438,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
         console.log("[v0] Using token addresses:", {
           baseToken: pool.baseToken.symbol,
           baseAddress: baseTokenAddress,
-          quoteToken: pool.quoteToken.symbol,
+          quoteToken: pairingToken,
           quoteAddress: quoteTokenAddress,
         })
 
@@ -465,7 +482,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
 
         if (allowance1 < amount1Wei) {
           toast({
-            title: `Approving ${pool.quoteToken.symbol}...`,
+            title: `Approving ${pairingToken}...`,
             description: "Please confirm the approval in your wallet",
           })
 
@@ -651,6 +668,8 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
     // Reset token resolution state on reset
     setCanResolveTokens(true)
     setTokenResolutionError(null)
+    // Reset pairing token state on reset
+    setPairingToken(defaultPairingToken)
     onClose()
   }
 
@@ -667,8 +686,9 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
             <Zap className="h-5 w-5 text-accent" />
             <span>Deploy Liquidity</span>
           </DialogTitle>
+          {/* Update DialogDescription to use pairingToken */}
           <DialogDescription>
-            Add liquidity to {pool.baseToken.symbol}/{pool.quoteToken.symbol} pool on Uniswap V3
+            Add liquidity to {pool.baseToken.symbol}/{pairingToken} pool on Uniswap V3
           </DialogDescription>
         </DialogHeader>
 
@@ -709,11 +729,52 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                 </Card>
               )}
 
+              {allowPairingToggle && (
+                <Card className="glass-card border-orange-500/20">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Pairing Token</CardTitle>
+                    <CardDescription>Choose which token to pair with {pool.baseToken.symbol}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex gap-2">
+                      <Button
+                        variant={pairingToken === "DEUS" ? "default" : "outline"}
+                        className={
+                          pairingToken === "DEUS" ? "flex-1 bg-gradient-to-r from-orange-500 to-amber-500" : "flex-1"
+                        }
+                        onClick={() => handlePairingTokenChange("DEUS")}
+                        disabled={!canResolveTokens || !isConnected}
+                      >
+                        <span className="mr-2">💎</span>
+                        DEUS
+                      </Button>
+                      <Button
+                        variant={pairingToken === "ETH" ? "default" : "outline"}
+                        className={
+                          pairingToken === "ETH" ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500" : "flex-1"
+                        }
+                        onClick={() => handlePairingTokenChange("ETH")}
+                        disabled={!canResolveTokens || !isConnected}
+                      >
+                        <span className="mr-2">Ξ</span>
+                        ETH
+                      </Button>
+                    </div>
+                    {pairingToken === "DEUS" && (
+                      <p className="text-xs text-muted-foreground mt-3">
+                        <Info className="h-3 w-3 inline mr-1" />
+                        Pairing with DEUS helps strengthen the DEUS ecosystem and provides liquidity for creator tokens
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
               <Card className="glass-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center justify-between">
                     <span>
-                      {pool.baseToken.symbol}/{pool.quoteToken.symbol}
+                      {pool.baseToken.symbol}/{pairingToken}
                     </span>
                     <Badge variant={pool.isDeusPool ? "default" : "secondary"}>
                       {pool.isDeusPool ? "DEUS" : pool.dexId}
@@ -795,7 +856,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="quoteAmount">{pool.quoteToken.symbol} Amount</Label>
+                    <Label htmlFor="quoteAmount">{pairingToken} Amount</Label>
                     {tokenBalances && (
                       <span className="text-xs text-gray-400">
                         Balance: {Number.parseFloat(tokenBalances.quote).toFixed(4)}
@@ -997,7 +1058,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                         {baseAmount} {pool.baseToken.symbol}
                       </div>
                       <div>
-                        {quoteAmount} {pool.quoteToken.symbol}
+                        {quoteAmount} {pairingToken}
                       </div>
                     </div>
                   </div>
@@ -1080,7 +1141,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                       )}
                     </div>
                     <div className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
-                      <span className="text-sm">Approve {pool.quoteToken.symbol}</span>
+                      <span className="text-sm">Approve {pairingToken}</span>
                       {approvalStep === "token1" ? (
                         <Loader2 className="h-4 w-4 animate-spin text-accent" />
                       ) : approvalStep === "complete" ? (
@@ -1171,8 +1232,7 @@ export function DeployModal({ pool, isOpen, onClose }: DeployModalProps) {
                         {pool.baseToken.symbol}
                       </div>
                       <div className="font-medium">
-                        {actualAmounts ? Number.parseFloat(actualAmounts.quote).toFixed(4) : quoteAmount}{" "}
-                        {pool.quoteToken.symbol}
+                        {actualAmounts ? Number.parseFloat(actualAmounts.quote).toFixed(4) : quoteAmount} {pairingToken}
                       </div>
                       {actualAmounts &&
                         (Number.parseFloat(actualAmounts.base).toFixed(4) !==

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DeployModal } from "@/components/deploy-modal"
 import { CreatorSwapModal } from "@/components/creator-swap-modal"
+import { CreateCoinModal } from "@/components/create-coin-modal"
 import {
   TrendingUp,
   TrendingDown,
@@ -22,6 +23,7 @@ import {
   Zap,
   Droplets,
   ArrowRightLeft,
+  Plus,
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -59,9 +61,10 @@ export default function CreatorsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<"all" | "trending" | "new" | "top-volume">("all")
   const [selectedCoin, setSelectedCoin] = useState<any | null>(null)
-  const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
   const [selectedSwapCoin, setSelectedSwapCoin] = useState<ZoraCreatorCoin | null>(null)
+  const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false)
+  const [isCreateCoinModalOpen, setIsCreateCoinModalOpen] = useState(false)
 
   const router = useRouter()
 
@@ -97,7 +100,6 @@ export default function CreatorsPage() {
   }
 
   const handleDeployLiquidity = (coin: ZoraCreatorCoin) => {
-    // Transform coin data to pool format expected by DeployModal
     const poolData = {
       id: coin.address,
       pairAddress: coin.poolAddress || coin.address,
@@ -107,9 +109,9 @@ export default function CreatorsPage() {
         name: coin.name,
       },
       quoteToken: {
-        address: "0x4200000000000000000000000000000000000006", // WETH on Base
-        symbol: "WETH",
-        name: "Wrapped Ether",
+        address: "0x73582df1cad3187cD0746b7A473d65c06386837e", // DEUS on Base
+        symbol: "DEUS",
+        name: "DEUS Finance",
       },
       dexId: "uniswap-v3",
       priceUsd: coin.metrics.price,
@@ -119,7 +121,7 @@ export default function CreatorsPage() {
       netApy: 35, // Estimated APY
       feeTier: "1.0%",
       poolType: "v3" as const,
-      isDeusPool: false,
+      isDeusPool: true, // Mark as DEUS pool for special handling
       volatility: Math.abs(coin.metrics.priceChange24h),
     }
 
@@ -421,9 +423,30 @@ export default function CreatorsPage() {
             </Card>
           )}
         </motion.div>
+        {/* Floating Action Button for creating coins */}
+        <motion.div
+          className="fixed bottom-8 right-8 z-50"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.5, type: "spring", stiffness: 260, damping: 20 }}
+        >
+          <Button
+            onClick={() => setIsCreateCoinModalOpen(true)}
+            size="lg"
+            className="h-16 w-16 rounded-full shadow-2xl shadow-orange-500/50 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 hover:shadow-orange-500/70 transition-all duration-300 hover:scale-110"
+          >
+            <Plus className="w-8 h-8" />
+          </Button>
+        </motion.div>
       </div>
 
-      <DeployModal pool={selectedCoin} isOpen={isDeployModalOpen} onClose={closeDeployModal} />
+      <DeployModal
+        pool={selectedCoin}
+        isOpen={isDeployModalOpen}
+        onClose={closeDeployModal}
+        defaultPairingToken="DEUS"
+        allowPairingToggle={true}
+      />
       {selectedSwapCoin && (
         <CreatorSwapModal
           isOpen={isSwapModalOpen}
@@ -437,6 +460,8 @@ export default function CreatorsPage() {
           }}
         />
       )}
+      {/* CreateCoinModal */}
+      <CreateCoinModal isOpen={isCreateCoinModalOpen} onClose={() => setIsCreateCoinModalOpen(false)} />
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { base } from "viem/chains"
 import { BASE_RPC_URL } from "@/lib/rpc-config"
 import { buildSwapTransaction, buildMultiHopSwapTransaction } from "@/lib/uniswap-v3-swap"
 import { buildV4SwapTransaction } from "@/lib/uniswap-v4-swap"
+import { prepareZoraTradeTransaction } from "@/lib/zora-trade"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,6 +14,7 @@ export async function POST(request: NextRequest) {
       userAddress,
       hasUniswapV3Data: !!quote.uniswapV3Data,
       hasUniswapV4Data: !!quote.uniswapV4Data,
+      hasZoraTradeData: !!quote.zoraTradeData,
     })
 
     // Validate required parameters
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
     }
 
-    if (!quote.uniswapV3Data && !quote.uniswapV4Data) {
+    if (!quote.uniswapV3Data && !quote.uniswapV4Data && !quote.zoraTradeData) {
       return NextResponse.json(
         {
           error: "No transaction data available. Please get a new quote.",
@@ -63,7 +65,10 @@ export async function POST(request: NextRequest) {
 
     let swapTx
 
-    if (quote.uniswapV4Data) {
+    if (quote.zoraTradeData) {
+      console.log("[v0] Building Zora trade transaction...")
+      swapTx = prepareZoraTradeTransaction(quote.zoraTradeData.tradeParams, deadline)
+    } else if (quote.uniswapV4Data) {
       console.log("[v0] Building Uniswap V4 swap transaction...")
       swapTx = buildV4SwapTransaction(
         quote.uniswapV4Data.poolKey,
@@ -113,6 +118,7 @@ export async function POST(request: NextRequest) {
       to: transactionRequest.to,
       value: transactionRequest.value,
       gasLimit: transactionRequest.gasLimit,
+      isZoraTrade: !!quote.zoraTradeData,
       isV4: !!quote.uniswapV4Data,
       isMultiHop: quote.uniswapV3Data?.isMultiHop,
     })
@@ -124,11 +130,13 @@ export async function POST(request: NextRequest) {
         ...quote,
         validUntil: Date.now() + 120000, // 2 minutes
       },
-      message: quote.uniswapV4Data
-        ? "Swap transaction prepared via Uniswap V4"
-        : quote.uniswapV3Data.isMultiHop
-          ? "Multi-hop swap transaction prepared via Uniswap V3"
-          : "Swap transaction prepared via Uniswap V3",
+      message: quote.zoraTradeData
+        ? "Swap transaction prepared via Zora Protocol"
+        : quote.uniswapV4Data
+          ? "Swap transaction prepared via Uniswap V4"
+          : quote.uniswapV3Data.isMultiHop
+            ? "Multi-hop swap transaction prepared via Uniswap V3"
+            : "Swap transaction prepared via Uniswap V3",
     })
   } catch (error) {
     console.error("[v0] Swap execution error:", error)

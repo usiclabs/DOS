@@ -7,14 +7,16 @@ import {
   detectPoolFeeTier,
   ZORA_TOKEN_ADDRESS,
 } from "@/lib/uniswap-v3-swap"
-import { getV4SwapQuote, type PoolKey } from "@/lib/uniswap-v4-swap"
 import { parseUnits, formatUnits } from "viem"
+import { getZoraTradeQuote, type TradeParameters } from "@/lib/zora-trade"
+
+const USDC_ADDRESS = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
 
 export async function POST(request: NextRequest) {
   try {
     const { fromToken, toToken, amount, userAddress, liveDEUSPrice, poolHint, uniswapV4PoolKey } = await request.json()
 
-    console.log("[v0] Swap quote request:", { fromToken, toToken, amount, userAddress, poolHint, uniswapV4PoolKey })
+    console.log("[v0] Swap quote request:", { fromToken, toToken, amount, userAddress, uniswapV4PoolKey })
 
     // Validate required parameters
     if (!fromToken || !toToken || !amount || !userAddress) {
@@ -25,52 +27,42 @@ export async function POST(request: NextRequest) {
     const amountInWei = parseUnits(amount, 18).toString()
 
     if (uniswapV4PoolKey) {
-      console.log("[v0] Using Uniswap V4 pool for Zora creator coin:", uniswapV4PoolKey)
+      console.log("[v0] Using Zora SDK for creator coin trade:", uniswapV4PoolKey)
 
-      const poolKey: PoolKey = {
-        currency0: uniswapV4PoolKey.token0Address,
-        currency1: uniswapV4PoolKey.token1Address,
-        fee: uniswapV4PoolKey.fee,
-        tickSpacing: uniswapV4PoolKey.tickSpacing,
-        hooks: uniswapV4PoolKey.hookAddress,
+      const tradeParams: TradeParameters = {
+        sell: { type: "eth" },
+        buy: {
+          type: "erc20",
+          address: toToken as `0x${string}`,
+        },
+        amountIn: BigInt(amountInWei),
+        slippage: 0.05, // 5% slippage
+        sender: userAddress as `0x${string}`,
       }
 
-      // Determine swap direction (zeroForOne)
-      // If fromToken is ETH/WETH, we need to check which token is currency0
-      const isEthSwap =
-        fromToken === "0x0000000000000000000000000000000000000000" ||
-        fromToken.toLowerCase() === UNISWAP_V3_ADDRESSES.WETH.toLowerCase()
+      const zoraQuote = await getZoraTradeQuote(tradeParams)
 
-      // Determine if we're swapping from currency0 to currency1 or vice versa
-      const zeroForOne = isEthSwap
-        ? poolKey.currency0.toLowerCase() === UNISWAP_V3_ADDRESSES.WETH.toLowerCase()
-        : poolKey.currency0.toLowerCase() === fromToken.toLowerCase()
-
-      console.log("[v0] V4 swap direction:", { zeroForOne, isEthSwap })
-
-      const v4Quote = await getV4SwapQuote(poolKey, amountInWei, zeroForOne)
-
-      if (!v4Quote) {
-        console.error("[v0] Failed to get V4 quote")
+      if (!zoraQuote) {
+        console.error("[v0] Failed to get Zora trade quote")
         return NextResponse.json(
           {
             error: "QUOTE_FAILED",
-            message: "Unable to generate swap quote from Uniswap V4.",
+            message: "Unable to generate swap quote for this creator coin.",
             suggestion: "Try a smaller amount or check back later.",
           },
           { status: 503 },
         )
       }
 
-      const toAmount = Number(formatUnits(BigInt(v4Quote.amountOut), 18))
+      const toAmount = Number(formatUnits(zoraQuote.amountOut, 18))
       const rate = toAmount / fromAmountNum
 
       const quoteResponse = {
         fromToken: {
-          address: isEthSwap ? UNISWAP_V3_ADDRESSES.WETH : fromToken,
-          symbol: isEthSwap ? "ETH" : getTokenSymbol(fromToken),
-          logo: isEthSwap ? "Ξ" : getTokenLogo(fromToken),
-          price: isEthSwap ? 3200 : 0,
+          address: "0x0000000000000000000000000000000000000000",
+          symbol: "ETH",
+          logo: "Ξ",
+          price: 3200,
         },
         toToken: {
           address: toToken,
@@ -81,23 +73,21 @@ export async function POST(request: NextRequest) {
         fromAmount: fromAmountNum,
         toAmount,
         rate,
-        priceImpact: 1,
-        fee: poolKey.fee / 10000,
-        route: `ETH → TOKEN (Uniswap V4)`,
-        estimatedGas: Number(v4Quote.gasEstimate) * 0.000000001,
+        priceImpact: zoraQuote.priceImpact,
+        fee: zoraQuote.fee,
+        route: zoraQuote.route,
+        estimatedGas: Number(zoraQuote.estimatedGas) * 0.000000001,
         validUntil: Date.now() + 120000,
-        dexes: ["Uniswap V4"],
+        dexes: ["Zora Protocol"],
         slippage: 0.5,
         minAmountOut: toAmount * 0.995,
-        uniswapV4Data: {
-          poolKey,
-          amountIn: amountInWei,
-          amountOutMinimum: ((BigInt(v4Quote.amountOut) * BigInt(995)) / BigInt(1000)).toString(),
-          zeroForOne,
+        zoraTradeData: {
+          tradeParams,
+          uniswapV4PoolKey,
         },
       }
 
-      console.log("[v0] V4 swap quote generated:", quoteResponse)
+      console.log("[v0] Zora trade quote generated:", quoteResponse)
       return NextResponse.json(quoteResponse)
     }
 
@@ -106,7 +96,6 @@ export async function POST(request: NextRequest) {
     const directPool = await findBestSwapPool(toToken, [UNISWAP_V3_ADDRESSES.WETH], poolHint)
 
     if (directPool) {
-      // Direct pool exists, use single-hop swap
       console.log("[v0] Found direct pool:", {
         baseToken: directPool.baseToken,
         fee: directPool.fee,
@@ -171,7 +160,6 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] No direct ETH pool found, checking for multi-hop route through ZORA...")
 
-    // Check if WETH → ZORA pool exists
     const wethToZoraPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, ZORA_TOKEN_ADDRESS)
     if (!wethToZoraPool) {
       console.error("[v0] No WETH → ZORA pool found")
@@ -185,7 +173,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if ZORA → Target Token pool exists
     const zoraToTokenPool = await detectPoolFeeTier(ZORA_TOKEN_ADDRESS, toToken)
     if (!zoraToTokenPool) {
       console.error("[v0] No ZORA → Token pool found")
@@ -204,7 +191,6 @@ export async function POST(request: NextRequest) {
       zoraToToken: { fee: zoraToTokenPool.fee, pool: zoraToTokenPool.poolAddress },
     })
 
-    // Get multi-hop quote
     const multiHopQuote = await getMultiHopSwapQuote(
       UNISWAP_V3_ADDRESSES.WETH,
       ZORA_TOKEN_ADDRESS,
