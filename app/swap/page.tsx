@@ -389,14 +389,14 @@ export default function SwapPage() {
       <div className="min-h-screen bg-background">
         <StickyHeader />
         <DeusTicker />
-        <div className="flex items-center justify-center min-h-[80vh] px-4">
+        <div className="flex items-center justify-center min-h-[80vh] px-6">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
             className="w-full max-w-2xl"
           >
             <Card className="glass-card relative overflow-hidden">
-              {/* Floating particles background */}
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {[...Array(20)].map((_, i) => (
                   <motion.div
@@ -420,13 +420,11 @@ export default function SwapPage() {
                 ))}
               </div>
 
-              {/* Premium corner decorations */}
               <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-emerald-500/30 rounded-tl-2xl" />
               <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-emerald-500/30 rounded-tr-2xl" />
               <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-emerald-500/30 rounded-bl-2xl" />
               <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-emerald-500/30 rounded-br-2xl" />
 
-              {/* Animated corner glows */}
               <motion.div
                 className="absolute top-0 left-0 w-32 h-32"
                 animate={{
@@ -483,10 +481,8 @@ export default function SwapPage() {
                 <div className="absolute bottom-0 right-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
               </motion.div>
 
-              <div className="relative p-12 text-center">
-                {/* Large animated icon with glow effects */}
-                <div className="relative w-32 h-32 mx-auto mb-8">
-                  {/* Pulsing glow layers - reduced intensity */}
+              <div className="relative p-16 text-center">
+                <div className="relative w-36 h-36 mx-auto mb-10">
                   <motion.div
                     className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl"
                     animate={{
@@ -513,36 +509,22 @@ export default function SwapPage() {
                     }}
                   />
 
-                  {/* Rotating rings */}
                   <motion.div
-                    className="absolute inset-0 border-2 border-emerald-500/30 rounded-full"
+                    className="absolute inset-0 flex items-center justify-center bg-emerald-500/10 rounded-full border border-emerald-500/20 backdrop-blur-sm"
                     animate={{ rotate: 360 }}
                     transition={{
                       duration: 20,
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "linear",
                     }}
-                  />
-                  <motion.div
-                    className="absolute inset-2 border-2 border-emerald-400/20 rounded-full border-dashed"
-                    animate={{ rotate: -360 }}
-                    transition={{
-                      duration: 15,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "linear",
-                    }}
-                  />
-
-                  {/* Icon container */}
-                  <div className="absolute inset-0 flex items-center justify-center bg-emerald-500/10 rounded-full border border-emerald-500/20 backdrop-blur-sm">
-                    <Wallet className="w-16 h-16 text-emerald-400" />
-                  </div>
+                  >
+                    <Wallet className="w-6 h-6 text-emerald-400" />
+                  </motion.div>
                 </div>
 
-                {/* Heading with text shimmer effect only */}
-                <div className="relative mb-4">
+                <div className="relative mb-6">
                   <motion.h2
-                    className="text-4xl font-bold bg-gradient-to-r from-emerald-200 via-emerald-400 to-emerald-200 bg-clip-text text-transparent bg-[length:200%_100%]"
+                    className="text-5xl font-bold bg-gradient-to-r from-emerald-200 via-emerald-400 to-emerald-200 bg-clip-text text-transparent bg-[length:200%_100%]"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
@@ -560,31 +542,28 @@ export default function SwapPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-gray-300 text-lg mb-8 max-w-md mx-auto leading-relaxed"
+                  className="text-gray-300 text-xl mb-10 max-w-md mx-auto leading-relaxed"
                 >
                   Connect your wallet to swap tokens instantly with the best rates across the DEUS ecosystem
                 </motion.p>
 
-                {/* Connect wallet button */}
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Button
                     onClick={() => connectWallet("metamask")}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-8 py-6 text-lg rounded-xl shadow-lg shadow-emerald-500/20"
+                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-10 py-7 text-xl rounded-2xl shadow-lg shadow-emerald-500/20 transition-all duration-500"
                     size="lg"
                   >
-                    <Wallet className="w-5 h-5 mr-2" />
+                    <Wallet className="w-6 h-6 mr-3" />
                     Connect Wallet
                   </Button>
                 </motion.div>
 
-                {/* Exclusive feature badge */}
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
                   className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20"
                 >
-                  {/* Sparkle animations */}
                   <motion.span
                     animate={{
                       scale: [1, 1.2, 1],
@@ -629,31 +608,36 @@ export default function SwapPage() {
       <StickyHeader />
       <DeusTicker />
 
-      <div className="flex items-center justify-center min-h-[80vh] px-4 py-8">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg">
+      <div className="flex items-center justify-center min-h-[80vh] px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-lg"
+        >
           <Tabs defaultValue="swap" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="swap" className="flex items-center gap-2">
-                <ArrowDownUp className="w-4 h-4" />
+            <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5">
+              <TabsTrigger value="swap" className="flex items-center gap-2 py-3 text-base">
+                <ArrowDownUp className="w-5 h-5" />
                 Swap
               </TabsTrigger>
-              <TabsTrigger value="discover" className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
+              <TabsTrigger value="discover" className="flex items-center gap-2 py-3 text-base">
+                <Sparkles className="w-5 h-5" />
                 Discover
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="swap">
-              <Card className="glass-card p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold">Swap</h2>
+              <Card className="glass-card p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h2 className="text-2xl font-bold">Swap</h2>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowSettings(!showSettings)}
-                    className="hover:bg-white/5"
+                    className="hover:bg-white/5 transition-all duration-300"
                   >
-                    <Settings className="w-5 h-5" />
+                    <Settings className="w-6 h-6" />
                   </Button>
                 </div>
 
@@ -677,12 +661,12 @@ export default function SwapPage() {
                   </motion.div>
                 )}
 
-                <div className="space-y-2 mb-2">
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="space-y-3 mb-3">
+                  <div className="flex items-center justify-between text-base text-muted-foreground">
                     <span>Sell</span>
                     {fromToken && <span>Balance: {fromToken.balance.toFixed(6)}</span>}
                   </div>
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300">
                     <div className="flex items-center justify-between mb-3">
                       <Input
                         type="number"
@@ -731,11 +715,11 @@ export default function SwapPage() {
                 </div>
 
                 <div className="space-y-2 mt-2">
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center justify-between text-base text-muted-foreground">
                     <span>Buy</span>
                     {toToken && <span>Balance: {toToken.balance.toFixed(6)}</span>}
                   </div>
-                  <div className="p-4 rounded-xl bg-white/5 border border-white/10">
+                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-2xl font-bold text-white">
                         {isLoading ? <RefreshCw className="w-6 h-6 animate-spin" /> : toAmount || "0.0"}
@@ -757,7 +741,7 @@ export default function SwapPage() {
                 <Button
                   onClick={handleSwap}
                   disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
-                  className="w-full mt-6 bg-accent hover:bg-accent/90 text-white font-medium"
+                  className="w-full mt-8 bg-accent hover:bg-accent/90 text-white font-medium py-6 text-lg transition-all duration-500"
                   size="lg"
                 >
                   {cooldownRemaining > 0 ? (
