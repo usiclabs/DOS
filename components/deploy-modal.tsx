@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import { useWallet } from "@/contexts/wallet-context"
 import { ethers } from "ethers"
+import confetti from "canvas-confetti"
 import {
   deployLiquidity,
   type DeploymentParams,
@@ -34,7 +35,7 @@ import {
   createPoolIfNeeded,
 } from "@/lib/liquidity-deployment"
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESS, ERC20_ABI } from "@/lib/uniswap-abis"
-import { getTokenAddress } from "@/lib/constants"
+import { getTokenAddress, DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
 interface PoolData {
   id: string
@@ -88,10 +89,14 @@ export function DeployModal({
   const [canResolveTokens, setCanResolveTokens] = useState(true)
   const [tokenResolutionError, setTokenResolutionError] = useState<string | null>(null)
   const [pairingToken, setPairingToken] = useState<"DEUS" | "ETH">(defaultPairingToken)
+  const [tokenPrices, setTokenPrices] = useState<{ base: number; quote: number } | null>(null)
+  const [advancedMode, setAdvancedMode] = useState(false)
+  const [customRatio, setCustomRatio] = useState(50) // 50% = 50/50 split
+  const [isLoadingPrices, setIsLoadingPrices] = useState(false)
 
   // Assuming DEUS_TOKEN_ADDRESS and WETH_ADDRESS are defined elsewhere, e.g., in constants.ts
-  const DEUS_TOKEN_ADDRESS = "0x4200000000000000000000000000000000000005" // Replace with actual DEUS token address
-  const WETH_ADDRESS = "0x4200000000000000000000000000000000000006" // Replace with actual WETH token address
+  // const DEUS_TOKEN_ADDRESS = "0x4200000000000000000000000000000000000005" // OLD - INCORRECT
+  const WETH_ADDRESS = "0x4200000000000000000000000000000000000006" // WETH on Base
 
   useEffect(() => {
     if (!isOpen) {
@@ -112,6 +117,11 @@ export function DeployModal({
       setCanResolveTokens(true)
       setTokenResolutionError(null)
       setPairingToken(defaultPairingToken)
+      // Reset price-related states
+      setTokenPrices(null)
+      setAdvancedMode(false)
+      setCustomRatio(50)
+      setIsLoadingPrices(false)
     } else {
       console.log("[v0] Deploy modal opened for pool:", pool)
       if (pool) {
@@ -238,21 +248,85 @@ export function DeployModal({
   }, [pool, baseAmount, quoteAmount])
 
   useEffect(() => {
-    if (!pool || !baseAmount || !quoteAmount) {
+    const fetchPrices = async () => {
+      if (!pool || !isOpen || !canResolveTokens) return
+
+      setIsLoadingPrices(true)
+      console.log("[v0] Fetching token prices for USD-based balancing")
+
+      try {
+        const baseTokenAddress =
+          pool.baseToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.baseToken.symbol)
+            : pool.baseToken.address
+
+        const quoteTokenAddress = pairingToken === "DEUS" ? DEUS_TOKEN_ADDRESS : WETH_ADDRESS
+
+        if (!baseTokenAddress || !quoteTokenAddress) {
+          return
+        }
+
+        // Fetch prices from the price feeds API
+        const response = await fetch("/api/token-prices", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tokens: [baseTokenAddress, quoteTokenAddress],
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          const prices = {
+            base: data.prices[baseTokenAddress.toLowerCase()]?.price || pool.priceUsd || 0,
+            quote: data.prices[quoteTokenAddress.toLowerCase()]?.price || 1,
+          }
+
+          console.log("[v0] Token prices fetched:", {
+            [pool.baseToken.symbol]: prices.base,
+            [pairingToken]: prices.quote,
+          })
+
+          setTokenPrices(prices)
+        } else {
+          // Fallback to pool price data
+          console.log("[v0] Using fallback prices from pool data")
+          setTokenPrices({
+            base: pool.priceUsd || 0,
+            quote: 1, // Assume quote token is $1 (USDC/ETH approximation)
+          })
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching token prices:", error)
+        // Fallback to pool price data
+        setTokenPrices({
+          base: pool.priceUsd || 0,
+          quote: 1,
+        })
+      } finally {
+        setIsLoadingPrices(false)
+      }
+    }
+
+    fetchPrices()
+  }, [pool, isOpen, canResolveTokens, pairingToken])
+
+  useEffect(() => {
+    if (!pool || !baseAmount || !quoteAmount || !tokenPrices) {
       setEstimatedValue(null)
       return
     }
 
     try {
-      const baseValue = Number.parseFloat(baseAmount) * pool.priceUsd
-      const quoteValue = Number.parseFloat(quoteAmount) * ((pool.priceUsd / pool.liquidity) * pool.volume24h)
+      const baseValue = Number.parseFloat(baseAmount) * tokenPrices.base
+      const quoteValue = Number.parseFloat(quoteAmount) * tokenPrices.quote
       const totalValue = baseValue + quoteValue
 
       setEstimatedValue(totalValue.toFixed(2))
     } catch (error) {
       setEstimatedValue(null)
     }
-  }, [pool, baseAmount, quoteAmount])
+  }, [pool, baseAmount, quoteAmount, tokenPrices])
 
   const formatNumber = (num: number) => {
     if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`
@@ -267,6 +341,41 @@ export function DeployModal({
     return { risk: "High", percentage: volatility * 0.2 }
   }
 
+  const calculateBalancedAmount = (inputAmount: string, inputToken: "base" | "quote") => {
+    if (!tokenPrices || !inputAmount || Number.parseFloat(inputAmount) <= 0) return
+
+    const amount = Number.parseFloat(inputAmount)
+    const inputPrice = inputToken === "base" ? tokenPrices.base : tokenPrices.quote
+    const outputPrice = inputToken === "base" ? tokenPrices.quote : tokenPrices.base
+
+    if (inputPrice === 0 || outputPrice === 0) return
+
+    // Calculate USD value of input
+    const inputUsdValue = amount * inputPrice
+
+    // In advanced mode, use custom ratio
+    if (advancedMode) {
+      const outputRatio = inputToken === "base" ? (100 - customRatio) / customRatio : customRatio / (100 - customRatio)
+      const outputUsdValue = inputUsdValue * outputRatio
+      const outputAmount = outputUsdValue / outputPrice
+
+      if (inputToken === "base") {
+        setQuoteAmount(outputAmount.toFixed(6))
+      } else {
+        setBaseAmount(outputAmount.toFixed(6))
+      }
+    } else {
+      // Standard mode: 50/50 split by USD value
+      const outputAmount = inputUsdValue / outputPrice
+
+      if (inputToken === "base") {
+        setQuoteAmount(outputAmount.toFixed(6))
+      } else {
+        setBaseAmount(outputAmount.toFixed(6))
+      }
+    }
+  }
+
   const handlePresetPercentage = (percentage: number, tokenType: "base" | "quote") => {
     if (!tokenBalances) return
 
@@ -275,8 +384,14 @@ export function DeployModal({
 
     if (tokenType === "base") {
       setBaseAmount(amount.toFixed(6))
+      if (!advancedMode || (advancedMode && amount.toFixed(6))) {
+        calculateBalancedAmount(amount.toFixed(6), "base")
+      }
     } else {
       setQuoteAmount(amount.toFixed(6))
+      if (!advancedMode || (advancedMode && amount.toFixed(6))) {
+        calculateBalancedAmount(amount.toFixed(6), "quote")
+      }
     }
   }
 
@@ -286,6 +401,24 @@ export function DeployModal({
     setBaseAmount("")
     setQuoteAmount("")
     setTokenBalances(null)
+    setTokenPrices(null) // Reset prices as well
+    setAdvancedMode(false) // Reset to standard mode
+    setCustomRatio(50)
+    setIsLoadingPrices(false)
+  }
+
+  const handleBaseAmountChange = (value: string) => {
+    setBaseAmount(value)
+    if (!advancedMode || (advancedMode && value)) {
+      calculateBalancedAmount(value, "base")
+    }
+  }
+
+  const handleQuoteAmountChange = (value: string) => {
+    setQuoteAmount(value)
+    if (!advancedMode || (advancedMode && value)) {
+      calculateBalancedAmount(value, "quote")
+    }
   }
 
   const handlePreview = () => {
@@ -387,6 +520,26 @@ export function DeployModal({
       }
     }
     throw lastError
+  }
+
+  const triggerConfetti = () => {
+    // Fire confetti from multiple angles for a celebration effect
+    const count = 200
+    const defaults = { origin: { y: 0.7 } }
+
+    function fire(particleRatio: number, opts: any) {
+      confetti({
+        ...defaults,
+        ...opts,
+        particleCount: Math.floor(count * particleRatio),
+      })
+    }
+
+    fire(0.25, { spread: 26, startVelocity: 55 })
+    fire(0.2, { spread: 60 })
+    fire(0.35, { spread: 100, decay: 0.91, scalar: 0.8 })
+    fire(0.1, { spread: 120, startVelocity: 25, decay: 0.92, scalar: 1.2 })
+    fire(0.1, { spread: 120, startVelocity: 45 })
   }
 
   const handleDeploy = async () => {
@@ -581,6 +734,7 @@ export function DeployModal({
           }
 
           setStep("success")
+          triggerConfetti()
           toast({
             title: "Liquidity deployed successfully!",
             description: result.tokenId ? `Position NFT ID: ${result.tokenId}` : "Your position has been created",
@@ -670,6 +824,11 @@ export function DeployModal({
     setTokenResolutionError(null)
     // Reset pairing token state on reset
     setPairingToken(defaultPairingToken)
+    // Reset price-related states on reset
+    setTokenPrices(null)
+    setAdvancedMode(false)
+    setCustomRatio(50)
+    setIsLoadingPrices(false)
     onClose()
   }
 
@@ -800,6 +959,58 @@ export function DeployModal({
                 </CardContent>
               </Card>
 
+              <Card className="glass-card border-purple-500/20">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm">Pool Balance Mode</CardTitle>
+                      <CardDescription className="text-xs">
+                        {advancedMode ? "Custom ratio enabled" : "Auto-balanced 50/50 by USD value"}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setAdvancedMode(!advancedMode)}
+                      disabled={!canResolveTokens || !isConnected || isLoadingPrices}
+                    >
+                      {advancedMode ? "Standard" : "Advanced"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                {advancedMode && (
+                  <CardContent>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between text-sm">
+                        <span>{pool.baseToken.symbol}</span>
+                        <span className="font-medium">{customRatio}%</span>
+                        <span>{pairingToken}</span>
+                        <span className="font-medium">{100 - customRatio}%</span>
+                      </div>
+                      <Slider
+                        value={[customRatio]}
+                        onValueChange={(value) => {
+                          setCustomRatio(value[0])
+                          // Recalculate amounts with new ratio
+                          if (baseAmount) {
+                            calculateBalancedAmount(baseAmount, "base")
+                          }
+                        }}
+                        min={10}
+                        max={90}
+                        step={5}
+                        className="w-full"
+                        disabled={!canResolveTokens || !isConnected || isLoadingPrices}
+                      />
+                      <p className="text-xs text-gray-400">
+                        <Info className="h-3 w-3 inline mr-1" />
+                        Lopsided pools may experience higher impermanent loss
+                      </p>
+                    </div>
+                  </CardContent>
+                )}
+              </Card>
+
               <div className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -815,9 +1026,14 @@ export function DeployModal({
                     type="number"
                     placeholder="0.0"
                     value={baseAmount}
-                    onChange={(e) => setBaseAmount(e.target.value)}
-                    disabled={!canResolveTokens || !isConnected}
+                    onChange={(e) => handleBaseAmountChange(e.target.value)}
+                    disabled={!canResolveTokens || !isConnected || isLoadingPrices}
                   />
+                  {tokenPrices && baseAmount && (
+                    <div className="text-xs text-gray-400">
+                      ≈ ${(Number.parseFloat(baseAmount) * tokenPrices.base).toFixed(2)} USD
+                    </div>
+                  )}
                   {tokenBalances && (
                     <div className="flex gap-2">
                       <Button
@@ -825,7 +1041,7 @@ export function DeployModal({
                         size="sm"
                         variant="outline"
                         onClick={() => handlePresetPercentage(25, "base")}
-                        disabled={!canResolveTokens || !isConnected}
+                        disabled={!canResolveTokens || !isConnected || isLoadingPrices}
                         className="flex-1 text-xs"
                       >
                         25%
@@ -835,7 +1051,7 @@ export function DeployModal({
                         size="sm"
                         variant="outline"
                         onClick={() => handlePresetPercentage(50, "base")}
-                        disabled={!canResolveTokens || !isConnected}
+                        disabled={!canResolveTokens || !isConnected || isLoadingPrices}
                         className="flex-1 text-xs"
                       >
                         50%
@@ -845,7 +1061,7 @@ export function DeployModal({
                         size="sm"
                         variant="outline"
                         onClick={() => handlePresetPercentage(100, "base")}
-                        disabled={!canResolveTokens || !isConnected}
+                        disabled={!canResolveTokens || !isConnected || isLoadingPrices}
                         className="flex-1 text-xs"
                       >
                         100%
@@ -868,9 +1084,20 @@ export function DeployModal({
                     type="number"
                     placeholder="0.0"
                     value={quoteAmount}
-                    onChange={(e) => setQuoteAmount(e.target.value)}
-                    disabled={!canResolveTokens || !isConnected}
+                    onChange={(e) => handleQuoteAmountChange(e.target.value)}
+                    disabled={!canResolveTokens || !isConnected || isLoadingPrices || !advancedMode}
                   />
+                  {tokenPrices && quoteAmount && (
+                    <div className="text-xs text-gray-400">
+                      ≈ ${(Number.parseFloat(quoteAmount) * tokenPrices.quote).toFixed(2)} USD
+                    </div>
+                  )}
+                  {!advancedMode && (
+                    <p className="text-xs text-blue-400">
+                      <Info className="h-3 w-3 inline mr-1" />
+                      Auto-calculated to match {pool.baseToken.symbol} USD value
+                    </p>
+                  )}
                   {tokenBalances && (
                     <div className="flex gap-2">
                       <Button
@@ -878,7 +1105,7 @@ export function DeployModal({
                         size="sm"
                         variant="outline"
                         onClick={() => handlePresetPercentage(25, "quote")}
-                        disabled={!canResolveTokens || !isConnected}
+                        disabled={!canResolveTokens || !isConnected || isLoadingPrices || !advancedMode}
                         className="flex-1 text-xs"
                       >
                         25%
@@ -888,7 +1115,7 @@ export function DeployModal({
                         size="sm"
                         variant="outline"
                         onClick={() => handlePresetPercentage(50, "quote")}
-                        disabled={!canResolveTokens || !isConnected}
+                        disabled={!canResolveTokens || !isConnected || isLoadingPrices || !advancedMode}
                         className="flex-1 text-xs"
                       >
                         50%
@@ -898,7 +1125,7 @@ export function DeployModal({
                         size="sm"
                         variant="outline"
                         onClick={() => handlePresetPercentage(100, "quote")}
-                        disabled={!canResolveTokens || !isConnected}
+                        disabled={!canResolveTokens || !isConnected || isLoadingPrices || !advancedMode}
                         className="flex-1 text-xs"
                       >
                         100%
@@ -987,15 +1214,29 @@ export function DeployModal({
                 </div>
               </div>
 
-              {estimatedValue && (
+              {estimatedValue && tokenPrices && baseAmount && quoteAmount && (
                 <Card className="glass-card border-blue-500/20 bg-blue-500/5">
-                  <CardContent className="pt-4">
+                  <CardContent className="pt-4 space-y-2">
                     <div className="flex items-center justify-between text-sm">
                       <span>Estimated Position Value:</span>
                       <span className="font-medium text-blue-400">${estimatedValue}</span>
                     </div>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>{pool.baseToken.symbol} Value:</span>
+                      <span>${(Number.parseFloat(baseAmount) * tokenPrices.base).toFixed(2)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>{pairingToken} Value:</span>
+                      <span>${(Number.parseFloat(quoteAmount) * tokenPrices.quote).toFixed(2)}</span>
+                    </div>
+                    {!advancedMode && (
+                      <div className="flex items-center justify-center text-xs text-green-400 pt-2">
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Balanced 50/50 pool by USD value
+                      </div>
+                    )}
                     {gasEstimate && (
-                      <div className="flex items-center justify-between text-sm mt-2">
+                      <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-white/10">
                         <span>Estimated Gas Fee:</span>
                         <span className="font-medium">{Number.parseFloat(gasEstimate).toFixed(6)} ETH</span>
                       </div>
@@ -1035,7 +1276,7 @@ export function DeployModal({
                 <Button
                   onClick={handlePreview}
                   className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
-                  disabled={!canResolveTokens || !isConnected}
+                  disabled={!canResolveTokens || !isConnected || isLoadingPrices}
                 >
                   Preview
                 </Button>
