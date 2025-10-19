@@ -15,7 +15,7 @@ import {
   getCoin,
   createCoin,
 } from "@zoralabs/coins-sdk"
-import { createWalletClient, custom } from "viem"
+import type { WalletClient } from "viem"
 import { base, baseSepolia } from "viem/chains"
 
 const ZORA_API_KEY = "zora_api_a3bdc55dcf5cb9e9974348e5576525f6f4b1c81686700bf8cf52c088fef51207"
@@ -55,8 +55,8 @@ export interface CreateCoinParams {
   name: string
   symbol: string
   uri: string
-  chainId?: number
-  owners?: string[]
+  walletClient: WalletClient
+  account: string
   payoutRecipient: string
   platformReferrer?: string
   currency?: "ZORA" | "ETH"
@@ -258,50 +258,40 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
   console.log("[v0] Deploying Zora coin with params:", params)
 
   try {
-    if (typeof window === "undefined") {
-      throw new Error("Coin deployment must be called from the browser")
+    const { walletClient, account } = params
+
+    if (!walletClient) {
+      throw new Error("Wallet client is required")
     }
 
-    if (!(window as any).ethereum) {
-      throw new Error("No Ethereum provider found. Please install MetaMask or another wallet.")
-    }
+    const currentChainId = walletClient.chain.id
+    console.log("[v0] Wallet client chain ID:", currentChainId)
+    console.log("[v0] Wallet account:", account)
 
-    const chainIdHex = await (window as any).ethereum.request({ method: "eth_chainId" })
-    const currentChainId = Number.parseInt(chainIdHex, 16)
-
-    console.log("[v0] Current chain ID:", currentChainId)
-
-    let selectedChain
-    if (currentChainId === 8453) {
-      selectedChain = base
-    } else if (currentChainId === 84532) {
-      selectedChain = baseSepolia
-    } else {
+    if (currentChainId !== 8453 && currentChainId !== 84532) {
       throw new Error(
         `Wrong network. Please switch to Base network. Current chain ID: ${currentChainId}, Required: 8453 (Base) or 84532 (Base Sepolia)`,
       )
     }
 
-    console.log("[v0] Using chain:", selectedChain.name, "with ID:", selectedChain.id)
+    // This ensures the chain object structure matches what Zora SDK expects
+    const chainToUse = currentChainId === 8453 ? base : baseSepolia
 
-    const walletClient = createWalletClient({
-      chain: selectedChain,
-      transport: custom((window as any).ethereum),
-    })
+    const zoraSafeWalletClient = {
+      ...walletClient,
+      chain: chainToUse,
+    } as WalletClient
 
-    const [account] = await walletClient.getAddresses()
-
-    console.log("[v0] Wallet account:", account)
-    console.log("[v0] Wallet client chain:", walletClient.chain?.id)
+    console.log("[v0] Using wallet client with chain:", zoraSafeWalletClient.chain.id)
+    console.log("[v0] Chain name:", zoraSafeWalletClient.chain.name)
 
     const result = await createCoin({
-      walletClient,
+      walletClient: zoraSafeWalletClient,
       account,
       name: params.name,
       symbol: params.symbol,
       uri: params.uri,
-      chain: selectedChain, // Pass chain object instead of chainId
-      owners: params.owners || [account],
+      owners: [account],
       payoutRecipient: params.payoutRecipient,
       platformReferrer: params.platformReferrer,
       currency: params.currency || "ETH",

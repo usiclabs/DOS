@@ -37,6 +37,60 @@ export interface ZoraCreatorCoin {
   verified?: boolean
 }
 
+async function fetchDexscreenerPrice(tokenAddress: string): Promise<{
+  price: number
+  priceChange24h: number
+  volume24h: number
+  liquidity: number
+} | null> {
+  try {
+    const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`, {
+      headers: { Accept: "application/json" },
+      next: { revalidate: 60 }, // Cache for 60 seconds
+    })
+
+    if (!response.ok) {
+      console.log(`[v0] Dexscreener API error for ${tokenAddress}:`, response.status)
+      return null
+    }
+
+    const data = await response.json()
+    const pairs = data.pairs || []
+
+    if (pairs.length === 0) {
+      console.log(`[v0] No Dexscreener pairs found for ${tokenAddress}`)
+      return null
+    }
+
+    // Find the best pair (highest liquidity on Base chain)
+    const basePairs = pairs.filter((pair: any) => pair.chainId === "base")
+    if (basePairs.length === 0) {
+      console.log(`[v0] No Base chain pairs found for ${tokenAddress}`)
+      return null
+    }
+
+    const bestPair = basePairs.reduce((best: any, current: any) => {
+      const bestLiq = Number.parseFloat(best.liquidity?.usd || "0")
+      const currentLiq = Number.parseFloat(current.liquidity?.usd || "0")
+      return currentLiq > bestLiq ? current : best
+    })
+
+    const price = Number.parseFloat(bestPair.priceUsd || "0")
+    const priceChange24h = Number.parseFloat(bestPair.priceChange?.h24 || "0")
+    const volume24h = Number.parseFloat(bestPair.volume?.h24 || "0")
+    const liquidity = Number.parseFloat(bestPair.liquidity?.usd || "0")
+
+    console.log(
+      `[v0] Dexscreener data for ${tokenAddress}: price=$${price}, change=${priceChange24h}%, volume=$${volume24h}`,
+    )
+
+    return { price, priceChange24h, volume24h, liquidity }
+  } catch (error) {
+    console.error(`[v0] Error fetching Dexscreener price for ${tokenAddress}:`, error)
+    return null
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
@@ -49,7 +103,9 @@ export async function GET(request: Request) {
     const result = await queryCreatorCoins(filterParam, limit)
     console.log(`[v0] Received ${result.coins.length} coins from Zora SDK`)
 
-    const transformedCoins: ZoraCreatorCoin[] = result.coins.map((coin: any) => {
+    const dexscreenerPrices = await Promise.all(result.coins.map((coin: any) => fetchDexscreenerPrice(coin.address)))
+
+    const transformedCoins: ZoraCreatorCoin[] = result.coins.map((coin: any, index: number) => {
       let imageUrl = null
 
       // Zora returns images as objects with small/medium/large properties
@@ -73,7 +129,18 @@ export async function GET(request: Request) {
         }
       }
 
-      console.log(`[v0] Coin ${coin.name} image:`, imageUrl)
+      const dexData = dexscreenerPrices[index]
+      const priceInUsdc = dexData?.price || Number.parseFloat(coin.tokenPrice?.priceInUsdc || coin.price || "0")
+      const priceChange24h = dexData?.priceChange24h || 0
+      const volume24h = dexData?.volume24h || Number.parseFloat(coin.volume24h || "0")
+      const liquidity = dexData?.liquidity || Number.parseFloat(coin.totalVolume || coin.marketCap || "0") * 0.3
+
+      const marketCap = Number.parseFloat(coin.marketCap || "0")
+
+      // Extract creator profile data
+      const creatorProfile = coin.creatorProfile || {}
+      const creatorAvatar = creatorProfile.avatar?.previewImage?.small || creatorProfile.avatar?.previewImage?.medium
+      const creatorHandle = creatorProfile.handle || coin.creatorAddress?.slice(0, 8)
 
       return {
         address: coin.address,
@@ -83,20 +150,20 @@ export async function GET(request: Request) {
         image: imageUrl,
         creator: {
           address: coin.creatorAddress || coin.creator?.address || "0x0000000000000000000000000000000000000000",
-          name: coin.creator?.name || coin.creatorName || `${coin.name} Creator`,
-          avatar: coin.creator?.avatar || coin.creator?.profileImage || null,
-          bio: coin.creator?.bio || `Creator of ${coin.name}`,
+          name: creatorHandle || `${coin.name} Creator`,
+          avatar: creatorAvatar || null,
+          bio: `@${creatorHandle}`,
         },
         metrics: {
-          price: Number.parseFloat(coin.price || "0"),
-          priceChange24h: coin.priceChange24h || 0,
-          marketCap: Number.parseFloat(coin.marketCap || "0"),
-          volume24h: Number.parseFloat(coin.volume24h || "0"),
+          price: priceInUsdc,
+          priceChange24h: priceChange24h,
+          marketCap: marketCap,
+          volume24h: volume24h,
           holders: coin.uniqueHolders || coin.holders || 0,
           totalSupply: Number.parseFloat(coin.totalSupply || "0"),
-          liquidity: Number.parseFloat(coin.marketCap || "0") * 0.3,
+          liquidity: liquidity,
         },
-        poolAddress: coin.poolAddress,
+        poolAddress: coin.uniswapV3PoolAddress || coin.poolAddress,
         uniswapV4PoolKey: coin.uniswapV4PoolKey
           ? {
               token0Address: coin.uniswapV4PoolKey.token0Address,
@@ -107,12 +174,12 @@ export async function GET(request: Request) {
             }
           : undefined,
         createdAt: coin.createdAt || new Date().toISOString(),
-        trending: Number.parseFloat(coin.volume24h || "0") > 10000,
+        trending: volume24h > 10000 || priceChange24h > 20,
         verified: coin.verified || false,
       }
     })
 
-    console.log(`[v0] Successfully transformed ${transformedCoins.length} creator coins`)
+    console.log(`[v0] Successfully transformed ${transformedCoins.length} creator coins with Dexscreener prices`)
 
     return NextResponse.json({
       coins: transformedCoins,

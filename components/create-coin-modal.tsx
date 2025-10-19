@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Sparkles, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
-import { useAccount, useSwitchChain, useChainId } from "wagmi"
+import { useAccount, useSwitchChain, useChainId, useWalletClient } from "wagmi"
 import { Badge } from "@/components/ui/badge"
 import { deployCoin } from "@/lib/zora-sdk"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -24,6 +24,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   const { address, isConnected } = useAccount()
   const chainId = useChainId()
   const { switchChain } = useSwitchChain()
+  const { data: walletClient } = useWalletClient()
   const isMobile = useIsMobile()
   const [step, setStep] = useState<"form" | "creating" | "success" | "error">("form")
   const [formData, setFormData] = useState({
@@ -66,9 +67,14 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
       return
     }
 
+    if (!walletClient) {
+      setError("Wallet client not available. Please reconnect your wallet.")
+      return
+    }
+
     console.log("[v0] Validating chain before coin creation...")
     console.log("[v0] Current chainId:", chainId)
-    console.log("[v0] chainId type:", typeof chainId)
+    console.log("[v0] Wallet client chain:", walletClient.chain.id)
 
     if (!chainId) {
       setError("Unable to detect network. Please refresh and try again.")
@@ -120,12 +126,14 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
 
       console.log("[v0] Metadata uploaded, deploying coin...")
       console.log("[v0] Using chainId:", chainId)
+      console.log("[v0] Using wallet client with chain:", walletClient.chain.id)
 
       const deployResult = await deployCoin({
         name: formData.name,
         symbol: formData.symbol,
         uri: data.metadataUri,
-        chainId: chainId,
+        walletClient: walletClient,
+        account: address,
         payoutRecipient: address,
         currency: "ETH",
       })
