@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { motion } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -9,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TrendingUp, Zap, Shield, BarChart3 } from "lucide-react"
 import useSWR from "swr"
 import AutomatedStrategies from "@/components/automated-strategies"
+import { FeaturedPoolsCarousel } from "@/components/featured-pools-carousel"
+import { DeployModal } from "@/components/deploy-modal"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -28,15 +31,18 @@ const staggerContainer = {
 }
 
 export default function PoolsPage() {
+  const [selectedPool, setSelectedPool] = useState<any | null>(null)
+  const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
+
   const { data: poolStats } = useSWR("/api/pools?limit=100", fetcher, {
-    refreshInterval: 300000, // Increased refresh interval from 180s to 300s (5 minutes)
+    refreshInterval: 300000,
     revalidateOnFocus: false,
-    revalidateOnReconnect: false, // Don't refresh on reconnect
-    dedupingInterval: 60000, // Dedupe requests within 60 seconds
+    revalidateOnReconnect: false,
+    dedupingInterval: 60000,
   })
 
   const { data: deusPoolStats } = useSWR("/api/pools?deusOnly=true&limit=100", fetcher, {
-    refreshInterval: 300000, // Increased refresh interval from 180s to 300s (5 minutes)
+    refreshInterval: 300000,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000,
@@ -65,6 +71,16 @@ export default function PoolsPage() {
     }
   }
 
+  const handleCarouselDeploy = (pool: any) => {
+    setSelectedPool(pool)
+    setIsDeployModalOpen(true)
+  }
+
+  const closeDeployModal = () => {
+    setSelectedPool(null)
+    setIsDeployModalOpen(false)
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <StickyHeader />
@@ -88,6 +104,17 @@ export default function PoolsPage() {
               Discover and analyze the most profitable liquidity pools on Base chain
             </p>
           </motion.div>
+
+          {poolStats?.pools && (
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={fadeInUp}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <FeaturedPoolsCarousel pools={poolStats.pools} onDeployClick={handleCarouselDeploy} />
+            </motion.div>
+          )}
 
           <motion.div
             initial="hidden"
@@ -148,6 +175,8 @@ export default function PoolsPage() {
           </motion.div>
         </div>
       </div>
+
+      <DeployModal pool={selectedPool} isOpen={isDeployModalOpen} onClose={closeDeployModal} />
     </div>
   )
 }

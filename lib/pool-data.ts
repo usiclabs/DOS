@@ -28,6 +28,10 @@ export interface PoolData {
   isDeusPool: boolean
   volatility: number
   lastUpdated: string
+  tokenImages?: {
+    base?: string
+    quote?: string
+  }
 }
 
 const DEXSCREENER_SEARCH_URL = "https://api.dexscreener.com/latest/dex/search"
@@ -115,6 +119,10 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
           isDeusPool,
           volatility,
           lastUpdated: new Date().toISOString(),
+          tokenImages: {
+            base: pair.info?.imageUrl || `https://dd.dexscreener.com/ds-data/tokens/base/${pair.baseToken.address}.png`,
+            quote: `https://dd.dexscreener.com/ds-data/tokens/base/${pair.quoteToken.address}.png`,
+          },
         }
       })
 

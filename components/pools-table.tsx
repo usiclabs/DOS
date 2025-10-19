@@ -1413,7 +1413,7 @@ export function PoolsTable() {
                                 }}
                                 whileHover={{
                                   backgroundColor: isPriority
-                                    ? "rgba(var(--accent-rgb), 0.08)"
+                                    ? "rgba(168, 85, 247, 0.08)"
                                     : "rgba(255, 255, 255, 0.03)",
                                   scale: 1.005,
                                 }}
@@ -1451,19 +1451,6 @@ export function PoolsTable() {
                                   <div className="font-medium">{safeToFixed(pool.feeApr, 2)}%</div>
                                 </TableCell>
                                 <TableCell>
-                                  <Badge
-                                    variant={
-                                      pool.volatility > 10
-                                        ? "destructive"
-                                        : pool.volatility > 5
-                                          ? "secondary"
-                                          : "default"
-                                    }
-                                  >
-                                    {safeToFixed(pool.volatility, 1)}%
-                                  </Badge>
-                                </TableCell>
-                                <TableCell>
                                   <div className="font-medium">{formatNumber(pool.volume24h)}</div>
                                   <div
                                     className={`text-sm flex items-center ${pool.volumeChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
@@ -1488,6 +1475,19 @@ export function PoolsTable() {
                                     )}
                                     {formatPercent(pool.liquidityChange24h)}
                                   </div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    variant={
+                                      pool.volatility > 10
+                                        ? "destructive"
+                                        : pool.volatility > 5
+                                          ? "secondary"
+                                          : "default"
+                                    }
+                                  >
+                                    {safeToFixed(pool.volatility, 1)}%
+                                  </Badge>
                                 </TableCell>
                                 <TableCell>
                                   <motion.div
