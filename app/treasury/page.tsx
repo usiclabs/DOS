@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { LoadingSkeleton } from "@/components/loading-skeleton"
 import { ErrorState } from "@/components/error-state"
 import { Wallet, DollarSign, TrendingUp, ExternalLink } from "lucide-react"
+import { TreasuryContribution } from "@/components/treasury-contribution"
 
 interface TokenHolding {
   address: string
@@ -122,8 +123,8 @@ export default function TreasuryPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black p-6">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black p-4 md:p-6">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8">
           <motion.div
             initial="hidden"
             animate="visible"
@@ -205,13 +206,18 @@ export default function TreasuryPage() {
           </motion.div>
 
           <motion.div initial="hidden" animate="visible" variants={fadeInUp} transition={{ duration: 0.5, delay: 0.2 }}>
+            <TreasuryContribution />
+          </motion.div>
+
+          <motion.div initial="hidden" animate="visible" variants={fadeInUp} transition={{ duration: 0.5, delay: 0.3 }}>
             <Card className="glass-card backdrop-blur-xl">
               <CardHeader>
-                <CardTitle className="text-xl font-bold text-white">Token Holdings</CardTitle>
+                <CardTitle className="text-xl md:text-2xl font-bold text-white">Token Holdings</CardTitle>
                 <p className="text-sm text-gray-400">All tokens held by the treasury wallet</p>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow className="border-accent/20 hover:bg-transparent">
@@ -251,6 +257,52 @@ export default function TreasuryPage() {
                     </TableBody>
                   </Table>
                 </div>
+
+                <div className="md:hidden space-y-3">
+                  {data?.holdings.map((holding) => (
+                    <motion.div
+                      key={holding.address}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4 rounded-lg border-white/5 hover:border-orange-500/30 transition-all"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div>
+                          <h3 className="font-semibold text-white text-base">{holding.name}</h3>
+                          <Badge
+                            variant="outline"
+                            className="glass-card border-orange-500/30 text-orange-300 mt-1 text-xs"
+                          >
+                            {holding.symbol}
+                          </Badge>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-green-300 font-bold text-base">{formatCurrency(holding.usdValue)}</div>
+                          <div className="text-gray-400 text-xs mt-1">USD Value</div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-400">Balance</span>
+                          <span className="text-gray-300 font-mono">{holding.balance}</span>
+                        </div>
+
+                        <div className="pt-2 border-t border-white/5">
+                          <a
+                            href={`https://basescan.org/token/${holding.address}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-gray-400 hover:text-white transition-colors inline-flex items-center text-xs font-mono"
+                          >
+                            {formatAddress(holding.address)}
+                            <ExternalLink className="h-3 w-3 ml-1" />
+                          </a>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -259,7 +311,7 @@ export default function TreasuryPage() {
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
-            transition={{ duration: 0.5, delay: 0.3 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
             className="glass-card p-4 rounded-xl backdrop-blur-xl"
           >
             <div className="flex items-center justify-between text-sm text-gray-400">

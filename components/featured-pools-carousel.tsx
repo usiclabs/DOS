@@ -135,12 +135,21 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
               className="absolute inset-0 cursor-grab active:cursor-grabbing"
             >
               <div className="absolute inset-0">
+                {/* Primary background - banner image or blurred token image */}
                 <div
-                  className="absolute inset-0 bg-cover bg-center blur-3xl scale-110 opacity-30"
+                  className="absolute inset-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${currentPool.tokenImages?.base || "/placeholder.svg?height=500&width=500"})`,
+                    backgroundImage: `url(${
+                      currentPool.bannerImage ||
+                      currentPool.tokenImages?.base ||
+                      "/placeholder.svg?height=550&width=1200"
+                    })`,
+                    filter: currentPool.bannerImage ? "blur(8px)" : "blur(40px)",
+                    transform: "scale(1.1)",
+                    opacity: currentPool.bannerImage ? 0.4 : 0.3,
                   }}
                 />
+                {/* Gradient overlays for readability */}
                 <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
               </div>

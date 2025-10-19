@@ -32,6 +32,7 @@ export interface PoolData {
     base?: string
     quote?: string
   }
+  bannerImage?: string
 }
 
 const DEXSCREENER_SEARCH_URL = "https://api.dexscreener.com/latest/dex/search"
@@ -91,6 +92,12 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
         const ilRisk = volatility > 10 ? volatility * 0.1 : volatility * 0.05
         const netApy = Math.max(0, feeApr - ilRisk)
 
+        const bannerImage =
+          pair.info?.header ||
+          pair.info?.banner ||
+          pair.info?.imageUrl ||
+          `https://dd.dexscreener.com/ds-data/tokens/base/${pair.baseToken.address}.png`
+
         return {
           id: pair.pairAddress,
           pairAddress: pair.pairAddress,
@@ -123,6 +130,7 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
             base: pair.info?.imageUrl || `https://dd.dexscreener.com/ds-data/tokens/base/${pair.baseToken.address}.png`,
             quote: `https://dd.dexscreener.com/ds-data/tokens/base/${pair.quoteToken.address}.png`,
           },
+          bannerImage,
         }
       })
 
