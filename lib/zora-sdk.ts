@@ -14,6 +14,7 @@ import {
   getCoinsTopGainers,
   getCoin,
   createCoin,
+  getProfileBalances,
 } from "@zoralabs/coins-sdk"
 import type { WalletClient } from "viem"
 import { base, baseSepolia } from "viem/chains"
@@ -73,6 +74,27 @@ export interface CoinDeploymentResult {
   transactionHash?: string
   poolAddress?: string
   error?: string
+}
+
+export interface CreatorProfileBalances {
+  address: string
+  handle: string
+  displayName: string
+  bio: string
+  avatar: string
+  holdings: {
+    coin: {
+      address: string
+      name: string
+      symbol: string
+      image: string
+    }
+    balance: number
+    priceUsd: number
+    valueUsd: number
+  }[]
+  totalValue: number
+  holdingsCount: number
 }
 
 async function fetchZoraAPI(endpoint: string, params?: Record<string, any>) {
@@ -312,5 +334,65 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
       success: false,
       error: error.message || "Failed to deploy coin",
     }
+  }
+}
+
+/**
+ * Get profile coin balances and holdings
+ * Shows how liquid/active a creator is in the Zora ecosystem
+ */
+export async function getCreatorProfileBalances(
+  address: string,
+  chainId = 8453,
+): Promise<CreatorProfileBalances | null> {
+  console.log("[v0] Fetching profile balances for:", address)
+
+  try {
+    const result = await getProfileBalances({
+      identifier: address,
+      count: 50, // Get up to 50 coin balances
+    })
+
+    const profile: any = result.data?.profile
+    const balances = profile?.coinBalances?.edges?.map((edge: any) => edge.node) || []
+
+    console.log(`[v0] Successfully fetched ${balances.length} coin balances for profile`)
+
+    // Calculate total USD value of holdings
+    let totalValue = 0
+    const holdings = balances.map((balance: any) => {
+      const coin = balance.coin
+      const amount = Number.parseFloat(balance.balance || "0")
+      const priceUsd = Number.parseFloat(coin?.tokenPrice?.priceInUsdc || "0")
+      const valueUsd = amount * priceUsd
+
+      totalValue += valueUsd
+
+      return {
+        coin: {
+          address: coin?.address,
+          name: coin?.name,
+          symbol: coin?.symbol,
+          image: coin?.mediaContent?.previewImage,
+        },
+        balance: amount,
+        priceUsd,
+        valueUsd,
+      }
+    })
+
+    return {
+      address: profile?.address || address,
+      handle: profile?.handle,
+      displayName: profile?.displayName,
+      bio: profile?.bio,
+      avatar: profile?.avatar?.medium,
+      holdings,
+      totalValue,
+      holdingsCount: holdings.length,
+    }
+  } catch (error) {
+    console.error("[v0] Error fetching profile balances:", error)
+    return null
   }
 }

@@ -20,7 +20,6 @@ import {
   Sparkles,
   CheckCircle2,
   ExternalLink,
-  Zap,
   Droplets,
   ArrowRightLeft,
   Plus,
@@ -61,7 +60,7 @@ interface ZoraCreatorCoin {
 export default function CreatorsPage() {
   const [coins, setCoins] = useState<ZoraCreatorCoin[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<"all" | "trending" | "new" | "top-volume">("all")
+  const [filter, setFilter] = useState<"trending" | "top-volume">("trending")
   const [selectedCoin, setSelectedCoin] = useState<any | null>(null)
   const [selectedSwapCoin, setSelectedSwapCoin] = useState<ZoraCreatorCoin | null>(null)
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
@@ -214,27 +213,13 @@ export default function CreatorsPage() {
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2 md:gap-3 glass-card backdrop-blur-xl bg-white/5 p-1.5 md:p-2 border border-white/10 shadow-2xl shadow-black/20">
-                <TabsTrigger
-                  value="all"
-                  className="text-xs sm:text-sm md:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-orange-200 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 transition-all duration-300 rounded-lg font-medium py-2 md:py-2.5"
-                >
-                  All Coins
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-2 gap-2 md:gap-3 glass-card backdrop-blur-xl bg-white/5 p-1.5 md:p-2 border border-white/10 shadow-2xl shadow-black/20">
                 <TabsTrigger
                   value="trending"
                   className="text-xs sm:text-sm md:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-orange-200 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 transition-all duration-300 rounded-lg font-medium py-2 md:py-2.5"
                 >
-                  <TrendingUp className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                  <span className="hidden sm:inline">Trending</span>
-                  <span className="sm:hidden">Hot</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="new"
-                  className="text-xs sm:text-sm md:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-orange-200 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 transition-all duration-300 rounded-lg font-medium py-2 md:py-2.5"
-                >
-                  <Zap className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                  New
+                  <Flame className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                  Hot
                 </TabsTrigger>
                 <TabsTrigger
                   value="top-volume"
@@ -374,8 +359,11 @@ export default function CreatorsPage() {
                             <p className="text-xs md:text-sm text-gray-400 line-clamp-2">{coin.description}</p>
                           </div>
 
-                          <div className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors max-w-full overflow-hidden">
-                            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0">
+                          <Link
+                            href={`/creators/${coin.creator.address}`}
+                            className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors max-w-full overflow-hidden cursor-pointer group"
+                          >
+                            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0 group-hover:border-orange-500/40 transition-colors">
                               {coin.creator.avatar &&
                               typeof coin.creator.avatar === "string" &&
                               coin.creator.avatar.trim() ? (
@@ -394,10 +382,12 @@ export default function CreatorsPage() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs md:text-sm font-medium truncate text-white">{coin.creator.name}</p>
+                              <p className="text-xs md:text-sm font-medium truncate text-white group-hover:text-orange-300 transition-colors">
+                                {coin.creator.name}
+                              </p>
                               <p className="text-[10px] md:text-xs text-gray-400 truncate">{coin.creator.bio}</p>
                             </div>
-                          </div>
+                          </Link>
 
                           <motion.div
                             className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-orange-500/5 border border-orange-500/20 shadow-lg max-w-full"
@@ -445,15 +435,39 @@ export default function CreatorsPage() {
                               </p>
                             </motion.div>
                             <motion.div
-                              className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-green-500/30 hover:bg-green-500/5 transition-all duration-300 min-w-0"
+                              className={`p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-green-500/30 hover:bg-green-500/5 transition-all duration-300 min-w-0 ${
+                                coin.metrics.volume24h > 1000
+                                  ? "relative before:absolute before:inset-0 before:rounded-xl before:bg-green-500/20 before:blur-md before:animate-pulse"
+                                  : ""
+                              }`}
                               whileHover={{ scale: 1.05 }}
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                              animate={
+                                coin.metrics.volume24h > 1000
+                                  ? {
+                                      boxShadow: [
+                                        "0 0 0px rgba(34, 197, 94, 0)",
+                                        "0 0 20px rgba(34, 197, 94, 0.4)",
+                                        "0 0 0px rgba(34, 197, 94, 0)",
+                                      ],
+                                    }
+                                  : {}
+                              }
+                              transition={{
+                                duration: 2,
+                                repeat: coin.metrics.volume24h > 1000 ? Number.POSITIVE_INFINITY : 0,
+                                ease: "easeInOut",
+                              }}
                             >
-                              <div className="flex items-center gap-1.5 md:gap-2 mb-1">
-                                <Activity className="w-2.5 h-2.5 md:w-3 md:h-3 text-green-400 flex-shrink-0" />
+                              <div className="flex items-center gap-1.5 md:gap-2 mb-1 relative z-10">
+                                <Activity
+                                  className={`w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0 ${
+                                    coin.metrics.volume24h > 1000 ? "text-green-400 animate-pulse" : "text-green-400"
+                                  }`}
+                                />
                                 <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">24h Volume</p>
                               </div>
-                              <p className="text-xs md:text-sm font-bold text-green-400 truncate">
+                              <p className="text-xs md:text-sm font-bold text-green-400 truncate relative z-10">
                                 {formatNumber(coin.metrics.volume24h)}
                               </p>
                             </motion.div>
@@ -472,6 +486,7 @@ export default function CreatorsPage() {
                                   : "N/A"}
                               </p>
                             </motion.div>
+
                             <motion.div
                               className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all duration-300 min-w-0"
                               whileHover={{ scale: 1.05 }}
@@ -567,11 +582,12 @@ export default function CreatorsPage() {
                 </p>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
-                    onClick={() => setFilter("all")}
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/40 glass-card backdrop-blur-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 hover:from-orange-500/30 hover:to-amber-500/30 hover:border-orange-500/50 hover:shadow-orange-500/60 transition-all duration-300 text-sm md:text-base font-semibold text-white"
+                    onClick={() => setFilter("trending")}
+                    size="lg"
+                    className="w-full md:w-auto md:h-16 md:w-16 md:rounded-full h-12 rounded-2xl shadow-2xl shadow-black/40 glass-card backdrop-blur-xl bg-black/40 border border-white/20 hover:bg-black/60 hover:border-white/30 hover:shadow-black/60 transition-all duration-300 text-sm md:text-base font-semibold text-white"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
-                    View All Coins
+                    <span className="md:hidden truncate">View Hot Coins</span>
                   </Button>
                 </motion.div>
               </Card>
