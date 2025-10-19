@@ -284,11 +284,7 @@ export default function CreatorsPage() {
                         </div>
                       </div>
                       <div className="h-16 md:h-20 bg-white/10 rounded-lg overflow-hidden relative">
-                        <motion.div
-                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-                          animate={{ x: ["-100%", "100%"] }}
-                          transition={{ duration: 1.5, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                        />
+                        <motion.div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-80" />
                       </div>
                     </div>
                   </Card>
@@ -301,7 +297,7 @@ export default function CreatorsPage() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={filter}
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-full"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-full mt-8 md:mt-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -572,7 +568,7 @@ export default function CreatorsPage() {
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button
                     onClick={() => setFilter("all")}
-                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/30 h-11 md:h-auto text-sm md:text-base"
+                    className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 shadow-lg shadow-orange-500/40 glass-card backdrop-blur-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 hover:from-orange-500/30 hover:to-amber-500/30 hover:border-orange-500/50 hover:shadow-orange-500/60 transition-all duration-300 text-sm md:text-base font-semibold text-white"
                   >
                     <RefreshCw className="w-4 h-4 mr-2" />
                     View All Coins
@@ -594,7 +590,7 @@ export default function CreatorsPage() {
           <Button
             onClick={() => setIsCreateCoinModalOpen(true)}
             size="lg"
-            className="w-full md:w-auto md:h-16 md:w-16 md:rounded-full h-12 rounded-2xl shadow-2xl shadow-orange-500/40 glass-card backdrop-blur-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/30 hover:from-orange-500/30 hover:to-amber-500/30 hover:border-orange-500/50 hover:shadow-orange-500/60 transition-all duration-300 text-sm md:text-base font-semibold text-white"
+            className="w-full md:w-auto md:h-16 md:w-16 md:rounded-full h-12 rounded-2xl shadow-2xl shadow-black/40 glass-card backdrop-blur-xl bg-black/40 border border-white/20 hover:bg-black/60 hover:border-white/30 hover:shadow-black/60 transition-all duration-300 text-sm md:text-base font-semibold text-white"
           >
             <Plus className="w-5 h-5 mr-2 md:mr-0 md:w-8 md:h-8 flex-shrink-0" />
             <span className="md:hidden truncate">Create a token</span>
