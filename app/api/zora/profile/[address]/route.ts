@@ -89,7 +89,12 @@ export async function GET(request: NextRequest, { params }: { params: { address:
         )
 
         return {
-          ...holding,
+          coin: {
+            address: holding.coin.address,
+            name: holding.coin.name,
+            symbol: holding.coin.symbol,
+            image: holding.coin.image || "", // Preserve image from Zora SDK
+          },
           balance: adjustedBalance,
           price,
           liquidity,

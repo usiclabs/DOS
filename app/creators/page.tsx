@@ -510,6 +510,21 @@ export default function CreatorsPage() {
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
                               <Button
+                                onClick={() => router.push(`/creators/coin/${coin.address}`)}
+                                variant="outline"
+                                className="w-full border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50 text-purple-300 transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
+                              >
+                                <Activity className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
+                                <span className="truncate">Details</span>
+                              </Button>
+                            </motion.div>
+                            <motion.div
+                              className="flex-1 min-w-0"
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                              <Button
                                 onClick={() => handleSwapToken(coin)}
                                 variant="outline"
                                 className="w-full border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50 text-orange-300 transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
