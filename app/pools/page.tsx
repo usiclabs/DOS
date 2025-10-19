@@ -48,6 +48,13 @@ export default function PoolsPage() {
     dedupingInterval: 60000,
   })
 
+  const { data: creatorCoins } = useSWR("/api/zora/creators?filter=trending&limit=2", fetcher, {
+    refreshInterval: 300000,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    dedupingInterval: 60000,
+  })
+
   const deusPoolCount = deusPoolStats?.totalCount || 0
 
   const avgApy = poolStats?.pools
@@ -95,6 +102,65 @@ export default function PoolsPage() {
     setIsDeployModalOpen(false)
   }
 
+  const carouselPools = (() => {
+    if (!poolStats?.pools) return []
+
+    const pools = [...poolStats.pools]
+
+    // Transform top 2 creator coins into pool format
+    if (creatorCoins?.coins && creatorCoins.coins.length > 0) {
+      const creatorPools = creatorCoins.coins.slice(0, 2).map((coin: any) => ({
+        id: `creator-${coin.address}`,
+        pairAddress: coin.poolAddress || coin.address,
+        baseToken: {
+          address: coin.address,
+          symbol: coin.symbol,
+          name: coin.name,
+        },
+        quoteToken: {
+          address: "0x4200000000000000000000000000000000000006", // WETH on Base
+          symbol: "ETH",
+          name: "Ethereum",
+        },
+        dexId: "zora",
+        chainId: "base",
+        priceUsd: coin.metrics.price,
+        volume24h: coin.metrics.volume24h,
+        volumeChange24h: 0,
+        liquidity: coin.metrics.liquidity,
+        liquidityChange24h: 0,
+        priceChange24h: coin.metrics.priceChange24h,
+        feeApr: (coin.metrics.volume24h / coin.metrics.liquidity) * 365 * 100 * 0.003, // Estimate 0.3% fee
+        netApy: Math.max(0, (coin.metrics.volume24h / coin.metrics.liquidity) * 365 * 100 * 0.003),
+        feeTier: "0.30%",
+        poolType: "v3" as const,
+        isDeusPool: false,
+        volatility: Math.abs(coin.metrics.priceChange24h),
+        lastUpdated: new Date().toISOString(),
+        tokenImages: {
+          base: coin.image || "/placeholder.svg?height=96&width=96",
+          quote: "https://ethereum-optimism.github.io/data/ETH/logo.svg",
+        },
+        bannerImage: coin.image || "/placeholder.svg?height=600&width=1200",
+        isCreatorCoin: true, // Flag to identify creator coins
+        creatorInfo: {
+          name: coin.creator.name,
+          avatar: coin.creator.avatar,
+        },
+      }))
+
+      // Insert creator coins into the pool list (after first DEUS pool)
+      const firstDeusIndex = pools.findIndex((p) => p.isDeusPool)
+      if (firstDeusIndex >= 0) {
+        pools.splice(firstDeusIndex + 1, 0, ...creatorPools)
+      } else {
+        pools.unshift(...creatorPools)
+      }
+    }
+
+    return pools
+  })()
+
   return (
     <div className="min-h-screen bg-background">
       <StickyHeader />
@@ -119,14 +185,14 @@ export default function PoolsPage() {
             </p>
           </motion.div>
 
-          {poolStats?.pools && (
+          {carouselPools.length > 0 && (
             <motion.div
               initial="hidden"
               animate="visible"
               variants={fadeInUp}
               transition={{ duration: 0.5, delay: 0.1 }}
             >
-              <FeaturedPoolsCarousel pools={poolStats.pools} onDeployClick={handleCarouselDeploy} />
+              <FeaturedPoolsCarousel pools={carouselPools} onDeployClick={handleCarouselDeploy} />
             </motion.div>
           )}
 

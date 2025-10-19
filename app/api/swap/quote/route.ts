@@ -1,13 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { getSwapQuote, UNISWAP_V3_ADDRESSES, findBestSwapPool } from "@/lib/uniswap-v3-swap"
+import {
+  getSwapQuote,
+  getMultiHopSwapQuote,
+  UNISWAP_V3_ADDRESSES,
+  findBestSwapPool,
+  detectPoolFeeTier,
+  ZORA_TOKEN_ADDRESS,
+} from "@/lib/uniswap-v3-swap"
+import { getV4SwapQuote, type PoolKey } from "@/lib/uniswap-v4-swap"
 import { parseUnits, formatUnits } from "viem"
-import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
 export async function POST(request: NextRequest) {
   try {
-    const { fromToken, toToken, amount, userAddress, liveDEUSPrice, poolHint } = await request.json()
+    const { fromToken, toToken, amount, userAddress, liveDEUSPrice, poolHint, uniswapV4PoolKey } = await request.json()
 
-    console.log("[v0] Swap quote request:", { fromToken, toToken, amount, userAddress, poolHint })
+    console.log("[v0] Swap quote request:", { fromToken, toToken, amount, userAddress, poolHint, uniswapV4PoolKey })
 
     // Validate required parameters
     if (!fromToken || !toToken || !amount || !userAddress) {
@@ -15,110 +22,251 @@ export async function POST(request: NextRequest) {
     }
 
     const fromAmountNum = Number.parseFloat(amount)
+    const amountInWei = parseUnits(amount, 18).toString()
 
-    console.log("[v0] Finding best pool for token pair...")
-    const bestPool = await findBestSwapPool(toToken, [UNISWAP_V3_ADDRESSES.WETH, DEUS_TOKEN_ADDRESS], poolHint)
+    if (uniswapV4PoolKey) {
+      console.log("[v0] Using Uniswap V4 pool for Zora creator coin:", uniswapV4PoolKey)
 
-    if (!bestPool) {
-      console.error("[v0] No Uniswap V3 pool found for token pair")
+      const poolKey: PoolKey = {
+        currency0: uniswapV4PoolKey.token0Address,
+        currency1: uniswapV4PoolKey.token1Address,
+        fee: uniswapV4PoolKey.fee,
+        tickSpacing: uniswapV4PoolKey.tickSpacing,
+        hooks: uniswapV4PoolKey.hookAddress,
+      }
+
+      // Determine swap direction (zeroForOne)
+      // If fromToken is ETH/WETH, we need to check which token is currency0
+      const isEthSwap =
+        fromToken === "0x0000000000000000000000000000000000000000" ||
+        fromToken.toLowerCase() === UNISWAP_V3_ADDRESSES.WETH.toLowerCase()
+
+      // Determine if we're swapping from currency0 to currency1 or vice versa
+      const zeroForOne = isEthSwap
+        ? poolKey.currency0.toLowerCase() === UNISWAP_V3_ADDRESSES.WETH.toLowerCase()
+        : poolKey.currency0.toLowerCase() === fromToken.toLowerCase()
+
+      console.log("[v0] V4 swap direction:", { zeroForOne, isEthSwap })
+
+      const v4Quote = await getV4SwapQuote(poolKey, amountInWei, zeroForOne)
+
+      if (!v4Quote) {
+        console.error("[v0] Failed to get V4 quote")
+        return NextResponse.json(
+          {
+            error: "QUOTE_FAILED",
+            message: "Unable to generate swap quote from Uniswap V4.",
+            suggestion: "Try a smaller amount or check back later.",
+          },
+          { status: 503 },
+        )
+      }
+
+      const toAmount = Number(formatUnits(BigInt(v4Quote.amountOut), 18))
+      const rate = toAmount / fromAmountNum
+
+      const quoteResponse = {
+        fromToken: {
+          address: isEthSwap ? UNISWAP_V3_ADDRESSES.WETH : fromToken,
+          symbol: isEthSwap ? "ETH" : getTokenSymbol(fromToken),
+          logo: isEthSwap ? "Ξ" : getTokenLogo(fromToken),
+          price: isEthSwap ? 3200 : 0,
+        },
+        toToken: {
+          address: toToken,
+          symbol: getTokenSymbol(toToken),
+          logo: getTokenLogo(toToken),
+          price: 0,
+        },
+        fromAmount: fromAmountNum,
+        toAmount,
+        rate,
+        priceImpact: 1,
+        fee: poolKey.fee / 10000,
+        route: `ETH → TOKEN (Uniswap V4)`,
+        estimatedGas: Number(v4Quote.gasEstimate) * 0.000000001,
+        validUntil: Date.now() + 120000,
+        dexes: ["Uniswap V4"],
+        slippage: 0.5,
+        minAmountOut: toAmount * 0.995,
+        uniswapV4Data: {
+          poolKey,
+          amountIn: amountInWei,
+          amountOutMinimum: ((BigInt(v4Quote.amountOut) * BigInt(995)) / BigInt(1000)).toString(),
+          zeroForOne,
+        },
+      }
+
+      console.log("[v0] V4 swap quote generated:", quoteResponse)
+      return NextResponse.json(quoteResponse)
+    }
+
+    console.log("[v0] Using Uniswap V3 for swap")
+    console.log("[v0] Checking for direct ETH/WETH pool...")
+    const directPool = await findBestSwapPool(toToken, [UNISWAP_V3_ADDRESSES.WETH], poolHint)
+
+    if (directPool) {
+      // Direct pool exists, use single-hop swap
+      console.log("[v0] Found direct pool:", {
+        baseToken: directPool.baseToken,
+        fee: directPool.fee,
+        poolAddress: directPool.poolAddress,
+      })
+
+      const quote = await getSwapQuote(directPool.baseToken, toToken, amountInWei, directPool.fee)
+
+      if (!quote) {
+        console.error("[v0] Failed to get quote from Uniswap V3 Quoter")
+        return NextResponse.json(
+          {
+            error: "QUOTE_FAILED",
+            message: "Unable to generate swap quote from Uniswap V3. The pool may have insufficient liquidity.",
+            suggestion: "Try a smaller amount or check back later when liquidity improves.",
+          },
+          { status: 503 },
+        )
+      }
+
+      const toAmount = Number(formatUnits(BigInt(quote.amountOut), 18))
+      const rate = toAmount / fromAmountNum
+
+      const quoteResponse = {
+        fromToken: {
+          address: UNISWAP_V3_ADDRESSES.WETH,
+          symbol: "ETH",
+          logo: "Ξ",
+          price: 3200,
+        },
+        toToken: {
+          address: toToken,
+          symbol: getTokenSymbol(toToken),
+          logo: getTokenLogo(toToken),
+          price: 0,
+        },
+        fromAmount: fromAmountNum,
+        toAmount,
+        rate,
+        priceImpact: 1,
+        fee: directPool.fee / 10000,
+        route: `ETH → TOKEN (Uniswap V3)`,
+        estimatedGas: Number(quote.gasEstimate) * 0.000000001,
+        validUntil: Date.now() + 120000,
+        dexes: ["Uniswap V3"],
+        slippage: 0.5,
+        minAmountOut: toAmount * 0.995,
+        uniswapV3Data: {
+          tokenIn: directPool.baseToken,
+          tokenOut: toToken,
+          fee: directPool.fee,
+          amountIn: amountInWei,
+          amountOutMinimum: ((BigInt(quote.amountOut) * BigInt(995)) / BigInt(1000)).toString(),
+          poolAddress: directPool.poolAddress,
+          isMultiHop: false,
+        },
+      }
+
+      console.log("[v0] Direct swap quote generated:", quoteResponse)
+      return NextResponse.json(quoteResponse)
+    }
+
+    console.log("[v0] No direct ETH pool found, checking for multi-hop route through ZORA...")
+
+    // Check if WETH → ZORA pool exists
+    const wethToZoraPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, ZORA_TOKEN_ADDRESS)
+    if (!wethToZoraPool) {
+      console.error("[v0] No WETH → ZORA pool found")
       return NextResponse.json(
         {
           error: "NO_LIQUIDITY",
-          message:
-            "No Uniswap V3 liquidity pool found for this token pair on Base chain. The token may not have active trading pools with WETH or DEUS.",
-          suggestion:
-            "Please verify the token address is correct. You can check available pools on Uniswap or Dexscreener.",
+          message: "No liquidity pool found for this token pair. Cannot route through ZORA.",
+          suggestion: "Please deploy liquidity for this token first.",
         },
         { status: 404 },
       )
     }
 
-    console.log("[v0] Found best pool:", {
-      baseToken: bestPool.baseToken,
-      fee: bestPool.fee,
-      poolAddress: bestPool.poolAddress,
+    // Check if ZORA → Target Token pool exists
+    const zoraToTokenPool = await detectPoolFeeTier(ZORA_TOKEN_ADDRESS, toToken)
+    if (!zoraToTokenPool) {
+      console.error("[v0] No ZORA → Token pool found")
+      return NextResponse.json(
+        {
+          error: "NO_LIQUIDITY",
+          message: "No ZORA liquidity pool found for this creator token.",
+          suggestion: "Please deploy liquidity for this token first.",
+        },
+        { status: 404 },
+      )
+    }
+
+    console.log("[v0] Found multi-hop route:", {
+      wethToZora: { fee: wethToZoraPool.fee, pool: wethToZoraPool.poolAddress },
+      zoraToToken: { fee: zoraToTokenPool.fee, pool: zoraToTokenPool.poolAddress },
     })
 
-    const tokenIn = bestPool.baseToken
+    // Get multi-hop quote
+    const multiHopQuote = await getMultiHopSwapQuote(
+      UNISWAP_V3_ADDRESSES.WETH,
+      ZORA_TOKEN_ADDRESS,
+      toToken,
+      amountInWei,
+      wethToZoraPool.fee,
+      zoraToTokenPool.fee,
+    )
 
-    // Step 2: Get quote from Uniswap V3 Quoter
-    const amountInWei = parseUnits(amount, 18).toString()
-    const quote = await getSwapQuote(tokenIn, toToken, amountInWei, bestPool.fee)
-
-    if (!quote) {
-      console.error("[v0] Failed to get quote from Uniswap V3 Quoter")
+    if (!multiHopQuote) {
+      console.error("[v0] Failed to get multi-hop quote")
       return NextResponse.json(
         {
           error: "QUOTE_FAILED",
-          message: "Unable to generate swap quote from Uniswap V3. The pool may have insufficient liquidity.",
-          suggestion: "Try a smaller amount or check back later when liquidity improves.",
+          message: "Unable to generate multi-hop swap quote.",
+          suggestion: "Try a smaller amount or check back later.",
         },
         { status: 503 },
       )
     }
 
-    // Convert amounts to human-readable
-    const toAmount = Number(formatUnits(BigInt(quote.amountOut), 18))
+    const toAmount = Number(formatUnits(BigInt(multiHopQuote.amountOut), 18))
     const rate = toAmount / fromAmountNum
-
-    // Get token prices for display
-    const deusPrice = liveDEUSPrice || 0.00007765
-    let fromTokenPrice = 3200 // Default ETH price
-
-    if (tokenIn.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()) {
-      fromTokenPrice = deusPrice
-    } else if (fromToken === "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") {
-      fromTokenPrice = 1 // USDC
-    }
-
-    // Price impact should be minimal for small swaps in a $34k liquidity pool
-    // Calculate based on the actual execution rate vs expected rate
-    const executionPrice = fromAmountNum / toAmount // ETH per DEUS
-    const expectedPrice = deusPrice / fromTokenPrice // ETH per DEUS from market price
-    const priceImpact = Math.abs(((executionPrice - expectedPrice) / expectedPrice) * 100)
-
-    // Cap price impact display at reasonable levels (should be <5% for small swaps)
-    const displayPriceImpact = Math.min(priceImpact, 5)
-
-    const slippageTolerance = 95 // 95% slippage tolerance to handle fee-on-transfer tokens
 
     const quoteResponse = {
       fromToken: {
-        address: tokenIn, // Use actual base token (WETH or DEUS)
-        symbol: getTokenSymbol(tokenIn),
-        logo: getTokenLogo(tokenIn),
-        price: fromTokenPrice,
+        address: UNISWAP_V3_ADDRESSES.WETH,
+        symbol: "ETH",
+        logo: "Ξ",
+        price: 3200,
       },
       toToken: {
         address: toToken,
-        symbol: "TOKEN",
-        logo: "🪙",
-        price: deusPrice,
+        symbol: getTokenSymbol(toToken),
+        logo: getTokenLogo(toToken),
+        price: 0,
       },
       fromAmount: fromAmountNum,
       toAmount,
       rate,
-      priceImpact: displayPriceImpact,
-      fee: bestPool.fee / 10000, // Convert basis points to percentage
-      route: `${getTokenSymbol(tokenIn)} → ${getTokenSymbol(toToken)} (Uniswap V3)`,
-      estimatedGas: Number(quote.gasEstimate) * 0.000000001, // Convert to ETH (approximate)
-      validUntil: Date.now() + 120000, // 2 minutes validity
+      priceImpact: 2,
+      fee: (wethToZoraPool.fee + zoraToTokenPool.fee) / 10000,
+      route: `ETH → ZORA → TOKEN (Multi-Hop)`,
+      estimatedGas: Number(multiHopQuote.gasEstimate) * 0.000000001,
+      validUntil: Date.now() + 120000,
       dexes: ["Uniswap V3"],
-      slippage: slippageTolerance,
-      minAmountOut: toAmount * (1 - slippageTolerance / 100),
-      // Store Uniswap V3 data for execution
+      slippage: 0.5,
+      minAmountOut: toAmount * 0.995,
       uniswapV3Data: {
-        tokenIn: tokenIn, // Use actual base token
+        tokenIn: UNISWAP_V3_ADDRESSES.WETH,
+        intermediateToken: ZORA_TOKEN_ADDRESS,
         tokenOut: toToken,
-        fee: bestPool.fee,
+        fee1: wethToZoraPool.fee,
+        fee2: zoraToTokenPool.fee,
         amountIn: amountInWei,
-        amountOutMinimum: ((BigInt(quote.amountOut) * BigInt(5)) / BigInt(100)).toString(),
-        poolAddress: bestPool.poolAddress,
+        amountOutMinimum: ((BigInt(multiHopQuote.amountOut) * BigInt(995)) / BigInt(1000)).toString(),
+        poolAddress: zoraToTokenPool.poolAddress,
+        isMultiHop: true,
       },
     }
 
-    console.log("[v0] Swap quote generated via Uniswap V3:", quoteResponse)
-
+    console.log("[v0] Multi-hop swap quote generated:", quoteResponse)
     return NextResponse.json(quoteResponse)
   } catch (error) {
     console.error("[v0] Swap quote error:", error)
@@ -139,6 +287,7 @@ function getTokenSymbol(address: string): string {
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "USDC",
     "0x4200000000000000000000000000000000000006": "WETH",
     "0x73582df1cad3187cD0746b7A473d65c06386837e": "DEUS",
+    "0x73582df1cad3187cD0746b7A473d65c06386837f": "ZORA",
   }
   return tokenMap[address.toLowerCase()] || "TOKEN"
 }
@@ -149,6 +298,7 @@ function getTokenLogo(address: string): string {
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "💵",
     "0x4200000000000000000000000000000000000006": "Ξ",
     "0x73582df1cad3187cD0746b7A473d65c06386837e": "⚡",
+    "0x73582df1cad3187cD0746b7A473d65c06386837f": "🖼️",
   }
   return logoMap[address.toLowerCase()] || "🪙"
 }

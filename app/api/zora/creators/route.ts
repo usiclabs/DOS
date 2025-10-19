@@ -25,6 +25,13 @@ export interface ZoraCreatorCoin {
     liquidity: number
   }
   poolAddress?: string
+  uniswapV4PoolKey?: {
+    token0Address: string
+    token1Address: string
+    fee: number
+    tickSpacing: number
+    hookAddress: string
+  }
   createdAt: string
   trending?: boolean
   verified?: boolean
@@ -90,6 +97,15 @@ export async function GET(request: Request) {
           liquidity: Number.parseFloat(coin.marketCap || "0") * 0.3,
         },
         poolAddress: coin.poolAddress,
+        uniswapV4PoolKey: coin.uniswapV4PoolKey
+          ? {
+              token0Address: coin.uniswapV4PoolKey.token0Address,
+              token1Address: coin.uniswapV4PoolKey.token1Address,
+              fee: coin.uniswapV4PoolKey.fee,
+              tickSpacing: coin.uniswapV4PoolKey.tickSpacing,
+              hookAddress: coin.uniswapV4PoolKey.hookAddress,
+            }
+          : undefined,
         createdAt: coin.createdAt || new Date().toISOString(),
         trending: Number.parseFloat(coin.volume24h || "0") > 10000,
         verified: coin.verified || false,

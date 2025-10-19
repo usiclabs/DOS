@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DeployModal } from "@/components/deploy-modal"
+import { CreatorSwapModal } from "@/components/creator-swap-modal"
 import {
   TrendingUp,
   TrendingDown,
@@ -59,6 +60,8 @@ export default function CreatorsPage() {
   const [filter, setFilter] = useState<"all" | "trending" | "new" | "top-volume">("all")
   const [selectedCoin, setSelectedCoin] = useState<any | null>(null)
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
+  const [selectedSwapCoin, setSelectedSwapCoin] = useState<ZoraCreatorCoin | null>(null)
+  const [isSwapModalOpen, setIsSwapModalOpen] = useState(false)
 
   const router = useRouter()
 
@@ -125,13 +128,18 @@ export default function CreatorsPage() {
   }
 
   const handleSwapToken = (coin: ZoraCreatorCoin) => {
-    // Navigate to swap page with token address in URL
-    router.push(`/swap?token=${coin.address}`)
+    setSelectedSwapCoin(coin)
+    setIsSwapModalOpen(true)
   }
 
   const closeDeployModal = () => {
     setSelectedCoin(null)
     setIsDeployModalOpen(false)
+  }
+
+  const closeSwapModal = () => {
+    setSelectedSwapCoin(null)
+    setIsSwapModalOpen(false)
   }
 
   return (
@@ -214,7 +222,7 @@ export default function CreatorsPage() {
           {/* Creator Coins Grid */}
           {!loading && (
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto max-h-[calc(100vh-400px)] pr-2"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.4 }}
@@ -416,6 +424,19 @@ export default function CreatorsPage() {
       </div>
 
       <DeployModal pool={selectedCoin} isOpen={isDeployModalOpen} onClose={closeDeployModal} />
+      {selectedSwapCoin && (
+        <CreatorSwapModal
+          isOpen={isSwapModalOpen}
+          onClose={closeSwapModal}
+          token={{
+            address: selectedSwapCoin.address,
+            symbol: selectedSwapCoin.symbol,
+            name: selectedSwapCoin.name,
+            image: selectedSwapCoin.image || "",
+            price: selectedSwapCoin.metrics.price,
+          }}
+        />
+      )}
     </div>
   )
 }

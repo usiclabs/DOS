@@ -98,6 +98,8 @@ const POOL_ABI = [
   },
 ] as const
 
+export const ZORA_TOKEN_ADDRESS = "0x1111111111166b7FE7bd91427724B487980aFc69" as const
+
 /**
  * Detect which fee tier has a pool for the given token pair
  * Returns the pool with the highest liquidity
@@ -402,6 +404,75 @@ export async function getSwapQuote(
 }
 
 /**
+ * Get a swap quote for multi-hop swap (ETH → ZORA → Target Token)
+ */
+export async function getMultiHopSwapQuote(
+  tokenIn: string,
+  intermediateToken: string,
+  tokenOut: string,
+  amountIn: string,
+  fee1: number,
+  fee2: number,
+): Promise<{
+  amountOut: string
+  gasEstimate: string
+  priceImpact: number
+} | null> {
+  try {
+    console.log("[v0] Getting multi-hop swap quote:", {
+      tokenIn,
+      intermediateToken,
+      tokenOut,
+      amountIn,
+      fee1,
+      fee2,
+    })
+
+    // Encode path: tokenIn + fee1 + intermediateToken + fee2 + tokenOut
+    const tokenInAddress = tokenIn.slice(2).toLowerCase()
+    const intermediateAddress = intermediateToken.slice(2).toLowerCase()
+    const tokenOutAddress = tokenOut.slice(2).toLowerCase()
+    const fee1Hex = fee1.toString(16).padStart(6, "0")
+    const fee2Hex = fee2.toString(16).padStart(6, "0")
+    const path = `0x${tokenInAddress}${fee1Hex}${intermediateAddress}${fee2Hex}${tokenOutAddress}` as `0x${string}`
+
+    console.log("[v0] Encoded multi-hop path:", path)
+
+    // Use quoteExactInput for multi-hop
+    const params = encodeAbiParameters([{ type: "bytes" }, { type: "uint256" }], [path, BigInt(amountIn)])
+
+    const functionSelector = "0xcdca1753" // quoteExactInput(bytes,uint256)
+    const callData = functionSelector + params.slice(2)
+
+    const result = await rpcCall("eth_call", [
+      {
+        to: UNISWAP_V3_ADDRESSES.QUOTER_V2,
+        data: callData,
+      },
+      "latest",
+    ])
+
+    // Decode the result (amountOut, sqrtPriceX96AfterList, initializedTicksCrossedList, gasEstimate)
+    const amountOut = BigInt("0x" + result.slice(2, 66))
+    const gasEstimate = BigInt("0x" + result.slice(194, 258))
+
+    console.log("[v0] Multi-hop quote received:", {
+      amountOut: amountOut.toString(),
+      gasEstimate: gasEstimate.toString(),
+    })
+
+    return {
+      amountOut: amountOut.toString(),
+      gasEstimate: gasEstimate.toString(),
+      priceImpact: 0,
+    }
+  } catch (error) {
+    console.error("[v0] Error getting multi-hop swap quote:", error)
+    return null
+  }
+}
+
+/**
  * Build swap transaction data for Uniswap V3 SwapRouter or Universal Router
  * Uses command-based system for ETH swaps
  */
@@ -537,5 +608,142 @@ export function buildSwapTransaction(
     data,
     value: "0",
     gasLimit: "0x61a80", // 400,000 gas
+  }
+}
+
+/**
+ * Build multi-hop swap transaction (ETH → ZORA → Target Token)
+ */
+export function buildMultiHopSwapTransaction(
+  tokenIn: string,
+  intermediateToken: string,
+  tokenOut: string,
+  amountIn: string,
+  amountOutMinimum: string,
+  recipient: string,
+  fee1: number,
+  fee2: number,
+  deadline: number,
+): {
+  to: string
+  data: string
+  value: string
+  gasLimit: string
+} {
+  console.log("[v0] Building multi-hop swap transaction:", {
+    tokenIn,
+    intermediateToken,
+    tokenOut,
+    amountIn,
+    amountOutMinimum,
+    recipient,
+    fee1,
+    fee2,
+    deadline,
+  })
+
+  const isEthSwap =
+    tokenIn === "0x0000000000000000000000000000000000000000" ||
+    tokenIn.toLowerCase() === UNISWAP_V3_ADDRESSES.WETH.toLowerCase()
+
+  if (isEthSwap) {
+    // Universal Router commands: WRAP_ETH = 0x0b, V3_SWAP_EXACT_IN = 0x00
+    const commands = "0x0b00" // WRAP_ETH followed by V3_SWAP_EXACT_IN
+
+    // Encode path for multi-hop V3 swap: WETH + fee1 + ZORA + fee2 + CreatorToken
+    const wethAddress = UNISWAP_V3_ADDRESSES.WETH.slice(2).toLowerCase()
+    const intermediateAddress = intermediateToken.slice(2).toLowerCase()
+    const tokenOutAddress = tokenOut.slice(2).toLowerCase()
+    const fee1Hex = fee1.toString(16).padStart(6, "0")
+    const fee2Hex = fee2.toString(16).padStart(6, "0")
+    const path = `0x${wethAddress}${fee1Hex}${intermediateAddress}${fee2Hex}${tokenOutAddress}` as `0x${string}`
+
+    console.log("[v0] Encoded multi-hop path for Universal Router:", {
+      tokenIn: UNISWAP_V3_ADDRESSES.WETH,
+      fee1,
+      intermediateToken,
+      fee2,
+      tokenOut,
+      path,
+    })
+
+    // WRAP_ETH parameters: recipient (ADDRESS_THIS), amountMin
+    const ADDRESS_THIS = "0x0000000000000000000000000000000000000002"
+    const wrapEthInput = encodeAbiParameters(
+      [{ type: "address" }, { type: "uint256" }],
+      [ADDRESS_THIS as `0x${string}`, BigInt(amountIn)],
+    )
+
+    // V3_SWAP_EXACT_IN parameters: recipient, amountIn, amountOutMin, path, payerIsUser
+    const swapInput = encodeAbiParameters(
+      [{ type: "address" }, { type: "uint256" }, { type: "uint256" }, { type: "bytes" }, { type: "bool" }],
+      [recipient as `0x${string}`, BigInt(amountIn), BigInt(amountOutMinimum), path, false],
+    )
+
+    // Encode the execute function call
+    const executeParams = encodeAbiParameters(
+      [{ type: "bytes" }, { type: "bytes[]" }, { type: "uint256" }],
+      [commands as `0x${string}`, [wrapEthInput, swapInput], BigInt(deadline)],
+    )
+
+    const functionSelector = "0x3593564c" // execute(bytes,bytes[],uint256)
+    const data = functionSelector + executeParams.slice(2)
+
+    console.log("[v0] Multi-hop Universal Router transaction data:", {
+      to: UNISWAP_V3_ADDRESSES.UNIVERSAL_ROUTER,
+      commands,
+      inputsCount: 2,
+      dataLength: data.length,
+      value: amountIn,
+    })
+
+    return {
+      to: UNISWAP_V3_ADDRESSES.UNIVERSAL_ROUTER,
+      data,
+      value: amountIn,
+      gasLimit: "0x7A120", // 500,000 gas (higher for multi-hop)
+    }
+  }
+
+  // For non-ETH swaps, use SwapRouter's exactInput function
+  const tokenInAddress = tokenIn.slice(2).toLowerCase()
+  const intermediateAddress = intermediateToken.slice(2).toLowerCase()
+  const tokenOutAddress = tokenOut.slice(2).toLowerCase()
+  const fee1Hex = fee1.toString(16).padStart(6, "0")
+  const fee2Hex = fee2.toString(16).padStart(6, "0")
+  const path = `0x${tokenInAddress}${fee1Hex}${intermediateAddress}${fee2Hex}${tokenOutAddress}` as `0x${string}`
+
+  const params = encodeAbiParameters(
+    [
+      {
+        type: "tuple",
+        components: [
+          { name: "path", type: "bytes" },
+          { name: "recipient", type: "address" },
+          { name: "deadline", type: "uint256" },
+          { name: "amountIn", type: "uint256" },
+          { name: "amountOutMinimum", type: "uint256" },
+        ],
+      },
+    ],
+    [
+      {
+        path,
+        recipient: recipient as `0x${string}`,
+        deadline: BigInt(deadline),
+        amountIn: BigInt(amountIn),
+        amountOutMinimum: BigInt(amountOutMinimum),
+      },
+    ],
+  )
+
+  const functionSelector = "0xc04b8d59" // exactInput
+  const data = functionSelector + params.slice(2)
+
+  return {
+    to: UNISWAP_V3_ADDRESSES.SWAP_ROUTER,
+    data,
+    value: "0",
+    gasLimit: "0x7A120", // 500,000 gas
   }
 }

@@ -20,17 +20,19 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
   const topPools = (() => {
     const validPools = pools.filter((pool) => pool.netApy > 0 && pool.liquidity > 1000)
 
-    // Separate DEUS and non-DEUS pools
     const deusPools = validPools.filter((pool) => pool.isDeusPool).sort((a, b) => b.netApy - a.netApy)
 
-    const nonDeusPools = validPools.filter((pool) => !pool.isDeusPool).sort((a, b) => b.netApy - a.netApy)
+    const creatorPools = validPools.filter((pool: any) => pool.isCreatorCoin)
 
-    // Take top 3 DEUS pools and top 2 non-DEUS pools
+    const nonDeusPools = validPools
+      .filter((pool: any) => !pool.isDeusPool && !pool.isCreatorCoin)
+      .sort((a, b) => b.netApy - a.netApy)
+
     const selectedDeusPools = deusPools.slice(0, 3)
+    const selectedCreatorPools = creatorPools.slice(0, 2)
     const selectedNonDeusPools = nonDeusPools.slice(0, 2)
 
-    // Combine them (DEUS pools first, then non-DEUS)
-    return [...selectedDeusPools, ...selectedNonDeusPools]
+    return [...selectedDeusPools, ...selectedCreatorPools, ...selectedNonDeusPools]
   })()
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
   if (topPools.length === 0) return null
 
   const currentPool = topPools[currentIndex]
+  const isCreatorCoin = (currentPool as any).isCreatorCoin
   const formatNumber = (num: number) => {
     if (num >= 1000000) return `$${(num / 1000000).toFixed(2)}M`
     if (num >= 1000) return `$${(num / 1000).toFixed(1)}K`
@@ -214,6 +217,12 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                         <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 backdrop-blur-sm text-xs md:text-base px-3 py-1 md:px-4 md:py-1.5">
                           {currentPool.dexId.toUpperCase()}
                         </Badge>
+                        {isCreatorCoin && (
+                          <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0 shadow-lg shadow-purple-500/30 text-xs md:text-base px-3 py-1 md:px-4 md:py-1.5">
+                            <Sparkles className="w-3 h-3 md:w-4 md:h-4 mr-1.5" />
+                            Creator Coin
+                          </Badge>
+                        )}
                         {currentPool.isDeusPool && (
                           <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-lg shadow-orange-500/30 text-xs md:text-base px-3 py-1 md:px-4 md:py-1.5">
                             <Sparkles className="w-3 h-3 md:w-4 md:h-4 mr-1.5" />
