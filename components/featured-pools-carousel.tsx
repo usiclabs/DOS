@@ -236,7 +236,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ delay: 0.2, duration: 0.6, ease: "easeOut" }}
+                    transition={{ delay: 0.2, duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
                     className="text-center"
                   >
                     <div className="text-sm md:text-lg text-gray-300 mb-3 md:mb-4 flex items-center justify-center gap-2 md:gap-3">
@@ -245,13 +245,13 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     </div>
                     <motion.div
                       className="text-7xl md:text-[8rem] font-black mb-4 md:mb-6"
-                      whileHover={{ scale: 1.03 }}
-                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.5, type: "spring", stiffness: 300 }}
                       animate={{
                         textShadow: [
-                          "0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2)",
-                          "0 0 30px rgba(74, 222, 128, 0.6), 0 0 60px rgba(74, 222, 128, 0.3)",
-                          "0 0 20px rgba(74, 222, 128, 0.4), 0 0 40px rgba(74, 222, 128, 0.2)",
+                          "0 0 20px rgba(74, 222, 128, 0.5), 0 0 40px rgba(74, 222, 128, 0.3)",
+                          "0 0 35px rgba(74, 222, 128, 0.7), 0 0 70px rgba(74, 222, 128, 0.4)",
+                          "0 0 20px rgba(74, 222, 128, 0.5), 0 0 40px rgba(74, 222, 128, 0.3)",
                         ],
                       }}
                       transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
@@ -272,9 +272,9 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.3, duration: 0.5, ease: "easeOut" }}
-                      whileHover={{ scale: 1.03, y: -3 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
+                      transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-orange-500/50 hover:bg-white/10 hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-500 cursor-pointer"
                     >
                       <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 text-xs md:text-sm mb-1 md:mb-2">
                         <Droplets className="w-3.5 h-3.5 md:w-5 md:h-5" />
@@ -288,9 +288,9 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
-                      whileHover={{ scale: 1.03, y: -3 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-orange-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
+                      transition={{ delay: 0.4, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-orange-500/50 hover:bg-white/10 hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-500 cursor-pointer"
                     >
                       <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 text-xs md:text-sm mb-1 md:mb-2">
                         <Activity className="w-3.5 h-3.5 md:w-5 md:h-5" />
@@ -304,9 +304,9 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
                       animate={{ y: 0, opacity: 1 }}
-                      transition={{ delay: 0.5, duration: 0.5, ease: "easeOut" }}
-                      whileHover={{ scale: 1.03, y: -3 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-green-500/40 hover:bg-white/10 transition-all duration-400 cursor-pointer"
+                      transition={{ delay: 0.5, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+                      whileHover={{ scale: 1.05, y: -5 }}
+                      className="backdrop-blur-xl bg-white/5 rounded-xl md:rounded-2xl p-3 md:p-6 border border-white/10 hover:border-green-500/50 hover:bg-white/10 hover:shadow-xl hover:shadow-green-500/20 transition-all duration-500 cursor-pointer"
                     >
                       <div className="flex items-center gap-1.5 md:gap-2 text-gray-400 text-xs md:text-sm mb-1 md:mb-2">
                         <TrendingUp className="w-3.5 h-3.5 md:w-5 md:h-5" />
@@ -321,12 +321,12 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                   <motion.div
                     initial={{ y: 20, opacity: 0 }}
                     animate={{ y: 0, opacity: 1 }}
-                    transition={{ delay: 0.6, duration: 0.5, ease: "easeOut" }}
+                    transition={{ delay: 0.6, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                   >
                     <Button
                       size="lg"
                       onClick={handleDeploy}
-                      className="relative w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-base md:text-xl h-14 md:h-16 rounded-xl md:rounded-2xl shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 transition-all duration-400 hover:scale-[1.02] active:scale-[0.98] group"
+                      className="relative w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-base md:text-xl h-14 md:h-16 rounded-xl md:rounded-2xl shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/80 transition-all duration-500 hover:scale-[1.03] active:scale-[0.98] group"
                     >
                       <span className="relative flex items-center justify-center">
                         <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />

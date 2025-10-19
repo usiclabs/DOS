@@ -160,8 +160,13 @@ export default function PoolsPage() {
                 color: "orange",
               },
             ].map((stat, index) => (
-              <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.05, y: -5 }}>
-                <Card className="glass-card backdrop-blur-xl hover:bg-white/5 transition-all duration-300">
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                whileHover={{ scale: 1.05, y: -8 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <Card className="glass-card backdrop-blur-xl hover:bg-white/5 transition-all duration-500 border-white/10 hover:border-accent/30 hover:shadow-2xl hover:shadow-accent/10">
                   <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
                     <CardTitle className="text-xs sm:text-sm font-medium flex items-center text-gray-300">
                       <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-${stat.color}-400`} />

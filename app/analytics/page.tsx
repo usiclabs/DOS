@@ -208,33 +208,33 @@ export default function AnalyticsPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black p-8">
-        <div className="max-w-7xl mx-auto space-y-10">
+      <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black px-4 py-6 md:px-6 md:py-8 lg:px-8 lg:py-10">
+        <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 lg:space-y-10">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.6 }}
-            className="flex items-center justify-between"
+            className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6"
           >
-            <div className="space-y-6">
-              <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-white to-orange-300 bg-clip-text text-transparent">
+            <div className="space-y-3 md:space-y-4 lg:space-y-6">
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white to-orange-300 bg-clip-text text-transparent leading-tight">
                 DEUS Ecosystem Analytics
               </h1>
-              <p className="text-gray-300 text-xl leading-relaxed max-w-3xl">
+              <p className="text-gray-300 text-sm md:text-lg lg:text-xl leading-relaxed max-w-3xl">
                 Live insights into DEUS DeFi ecosystem performance and metrics
               </p>
-              <div className="flex items-center space-x-6 mt-6">
+              <div className="flex flex-wrap items-center gap-3 md:gap-4 lg:gap-6">
                 <LiveDataIndicator label="Live Data" />
                 <Badge
                   variant="outline"
-                  className="glass-card border-orange-500/30 text-orange-300 px-4 py-2 text-base"
+                  className="glass-card border-orange-500/30 text-orange-300 px-3 py-1.5 md:px-4 md:py-2 text-sm md:text-base"
                 >
                   DEUS Ecosystem
                 </Badge>
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="hidden lg:flex items-center space-x-4">
               <LiveDataIndicator size="sm" />
               <div className="text-base text-gray-300">Updated: {new Date().toLocaleTimeString()}</div>
             </div>
@@ -244,7 +244,7 @@ export default function AnalyticsPage() {
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6"
           >
             {[
               {
@@ -290,29 +290,35 @@ export default function AnalyticsPage() {
                 color: "white",
               },
             ].map((stat, index) => (
-              <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.06, y: -6 }}>
-                <Card className="glass-card backdrop-blur-xl hover:bg-white/5 transition-all duration-500">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium flex items-center text-gray-300">
-                      <stat.icon className={`h-5 w-5 mr-3 text-${stat.color}-400`} />
+              <motion.div
+                key={index}
+                variants={fadeInUp}
+                whileHover={{ scale: 1.04, y: -4 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <Card className="glass-card backdrop-blur-xl hover:bg-white/5 transition-all duration-500 hover:shadow-[0_0_30px_rgba(251,146,60,0.15)] border-white/10 hover:border-orange-500/30">
+                  <CardHeader className="pb-2 md:pb-3 px-4 md:px-6 pt-4 md:pt-6">
+                    <CardTitle className="text-xs md:text-sm font-medium flex items-center text-gray-300">
+                      <stat.icon className={`h-4 w-4 md:h-5 md:w-5 mr-2 md:mr-3 text-${stat.color}-400`} />
                       {stat.label}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0 px-4 md:px-6 pb-4 md:pb-6">
                     <div
-                      className={`text-2xl sm:text-3xl font-bold text-${stat.color}-300 mb-2 truncate`}
+                      className={`text-xl md:text-2xl lg:text-3xl font-bold text-${stat.color}-300 mb-1 md:mb-2 truncate`}
                       title={stat.value}
                     >
                       {stat.value}
                     </div>
                     {stat.change && (
                       <div
-                        className={`text-base ${safeData.overview.deusChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
+                        className={`text-sm md:text-base ${safeData.overview.deusChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
                       >
                         {stat.change} 24h
                       </div>
                     )}
-                    {stat.sublabel && <div className="text-sm text-gray-400 mt-1">{stat.sublabel}</div>}
+                    {stat.sublabel && <div className="text-xs md:text-sm text-gray-400 mt-1">{stat.sublabel}</div>}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -324,28 +330,34 @@ export default function AnalyticsPage() {
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="glass-card p-6 rounded-2xl backdrop-blur-xl"
+            className="glass-card p-4 md:p-5 lg:p-6 rounded-xl md:rounded-2xl backdrop-blur-xl border-white/10 hover:border-orange-500/20 transition-all duration-500"
           >
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-8">
-                <div className="flex items-center space-x-3">
-                  <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
-                  <span className="text-green-300 font-medium text-base">DEUS Ecosystem Live</span>
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-4 lg:space-y-0 gap-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center flex-wrap gap-3 md:gap-4 lg:gap-8">
+                <div className="flex items-center space-x-2 md:space-x-3">
+                  <div className="w-2.5 h-2.5 md:w-3 md:h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
+                  <span className="text-green-300 font-medium text-sm md:text-base">DEUS Ecosystem Live</span>
                 </div>
-                <div className="flex items-center space-x-3 text-base text-gray-400">
-                  <Activity className="h-5 w-5" />
+                <div className="flex items-center space-x-2 md:space-x-3 text-sm md:text-base text-gray-400">
+                  <Activity className="h-4 w-4 md:h-5 md:w-5" />
                   <span>Price: {formatCurrency(safeData.overview.deusPrice)}</span>
                 </div>
-                <div className="flex items-center space-x-3 text-base text-gray-400">
-                  <Target className="h-5 w-5" />
-                  <span className="font-mono">0x7358...837e</span>
+                <div className="flex items-center space-x-2 md:space-x-3 text-sm md:text-base text-gray-400">
+                  <Target className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="font-mono text-xs md:text-sm">0x7358...837e</span>
                 </div>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="outline" className="glass-card border-orange-500/30 text-orange-300 px-4 py-2">
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <Badge
+                  variant="outline"
+                  className="glass-card border-orange-500/30 text-orange-300 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm"
+                >
                   {safeData.topPools?.length || 0} pools tracked
                 </Badge>
-                <Badge variant="outline" className="glass-card border-green-500/30 text-green-300 px-4 py-2">
+                <Badge
+                  variant="outline"
+                  className="glass-card border-green-500/30 text-green-300 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm"
+                >
                   Market cap: {formatCurrency(safeData.overview.deusMarketCap)}
                 </Badge>
               </div>

@@ -281,28 +281,28 @@ export function PoolsTable() {
         whileHover={{
           y: -8,
           scale: 1.02,
-          transition: { duration: 0.2 },
+          transition: { duration: 0.3, type: "spring", stiffness: 300 },
         }}
         className={`glass-card rounded-2xl border overflow-hidden relative group cursor-pointer ${
           isPriority
-            ? "border-accent/40 shadow-xl shadow-accent/20 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent"
-            : "border-white/10 hover:border-accent/30 shadow-lg hover:shadow-2xl"
+            ? "border-accent/40 shadow-xl shadow-accent/20 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent hover:shadow-2xl hover:shadow-accent/30"
+            : "border-white/10 hover:border-accent/30 shadow-lg hover:shadow-2xl hover:shadow-white/10"
         }`}
         onClick={() => handleDeploy(pool)}
       >
         {/* Animated gradient overlay */}
         <motion.div
           className="absolute inset-0 bg-gradient-to-br from-accent/0 via-accent/10 to-accent/0 opacity-0 group-hover:opacity-100 pointer-events-none"
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4 }}
         />
 
         {/* Glow effect on hover */}
         <motion.div
           className="absolute inset-0 opacity-0 group-hover:opacity-100 pointer-events-none"
           style={{
-            background: "radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15), transparent 70%)",
+            background: "radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.2), transparent 70%)",
           }}
-          transition={{ duration: 0.3 }}
+          transition={{ duration: 0.4 }}
         />
 
         <div className="relative z-10 p-6">
@@ -361,7 +361,7 @@ export function PoolsTable() {
           </div>
 
           {/* Main APY Display */}
-          <div className="mb-6 text-center py-6 px-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20">
+          <div className="mb-6 text-center py-6 px-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 hover:border-green-500/40 transition-all duration-300">
             <div className="text-sm text-green-400 mb-2 flex items-center justify-center gap-2">
               <Sparkles className="h-4 w-4" />
               Net APY
@@ -369,9 +369,10 @@ export function PoolsTable() {
             <motion.div
               className="text-5xl font-black text-green-400 mb-1"
               style={{
-                textShadow: "0 0 30px rgba(74, 222, 128, 0.5), 0 0 60px rgba(74, 222, 128, 0.3)",
+                textShadow: "0 0 30px rgba(74, 222, 128, 0.6), 0 0 60px rgba(74, 222, 128, 0.4)",
               }}
               whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
               {safeToFixed(pool.netApy, 2)}%
             </motion.div>
@@ -426,9 +427,10 @@ export function PoolsTable() {
 
           {/* Deploy Button */}
           <motion.button
-            whileHover={{ scale: 1.02 }}
+            whileHover={{ scale: 1.03, y: -2 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent via-accent/90 to-accent text-accent-foreground font-semibold shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 transition-all duration-300 flex items-center justify-center gap-2"
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent via-accent/90 to-accent text-accent-foreground font-semibold shadow-lg shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 transition-all duration-300 flex items-center justify-center gap-2"
             onClick={(e) => {
               e.stopPropagation()
               handleDeploy(pool)
@@ -792,7 +794,7 @@ export function PoolsTable() {
               damping: 25,
             }}
             onTouchStart={handleCardTap}
-            className="glass-card p-4 rounded-xl border border-purple-500/30 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer relative overflow-hidden group bg-gradient-to-br from-purple-500/5 via-pink-500/5 to-transparent active:scale-[0.98]"
+            className="glass-card p-4 rounded-xl border border-purple-500/30 hover:border-purple-500/50 hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 cursor-pointer relative overflow-hidden group active:scale-[0.98]"
           >
             {/* Animated gradient overlay */}
             <motion.div
