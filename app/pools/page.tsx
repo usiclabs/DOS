@@ -49,11 +49,25 @@ export default function PoolsPage() {
   })
 
   const deusPoolCount = deusPoolStats?.totalCount || 0
+
   const avgApy = poolStats?.pools
-    ? (
-        poolStats.pools.reduce((sum: number, pool: any) => sum + (pool.netApy || 0), 0) / poolStats.pools.length
-      ).toFixed(1)
+    ? (() => {
+        // Filter pools for reliable APY calculation
+        const validPools = poolStats.pools.filter(
+          (pool: any) =>
+            pool.netApy > 0 && // Has valid APY
+            pool.netApy < 500 && // Exclude extreme outliers (> 500%)
+            pool.liquidity > 50, // Has meaningful liquidity (> $50)
+        )
+
+        // Calculate average from filtered pools
+        if (validPools.length === 0) return "0.0"
+
+        const sum = validPools.reduce((acc: number, pool: any) => acc + pool.netApy, 0)
+        return (sum / validPools.length).toFixed(1)
+      })()
     : "0.0"
+
   const totalTvl = poolStats?.pools
     ? poolStats.pools.reduce((sum: number, pool: any) => sum + (pool.liquidity || 0), 0)
     : 0
