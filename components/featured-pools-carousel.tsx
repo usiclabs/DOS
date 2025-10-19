@@ -17,11 +17,21 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
   const [direction, setDirection] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
 
-  // Get top 5 pools by Net APY
-  const topPools = pools
-    .filter((pool) => pool.netApy > 0 && pool.liquidity > 1000)
-    .sort((a, b) => b.netApy - a.netApy)
-    .slice(0, 5)
+  const topPools = (() => {
+    const validPools = pools.filter((pool) => pool.netApy > 0 && pool.liquidity > 1000)
+
+    // Separate DEUS and non-DEUS pools
+    const deusPools = validPools.filter((pool) => pool.isDeusPool).sort((a, b) => b.netApy - a.netApy)
+
+    const nonDeusPools = validPools.filter((pool) => !pool.isDeusPool).sort((a, b) => b.netApy - a.netApy)
+
+    // Take top 3 DEUS pools and top 2 non-DEUS pools
+    const selectedDeusPools = deusPools.slice(0, 3)
+    const selectedNonDeusPools = nonDeusPools.slice(0, 2)
+
+    // Combine them (DEUS pools first, then non-DEUS)
+    return [...selectedDeusPools, ...selectedNonDeusPools]
+  })()
 
   useEffect(() => {
     if (isHovered) return
@@ -111,7 +121,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="relative h-[600px] md:h-[600px] rounded-2xl md:rounded-3xl overflow-hidden group"
+          className="relative h-[600px] md:h-[540px] rounded-2xl md:rounded-3xl overflow-hidden group"
         >
           <div className="absolute inset-0 rounded-2xl md:rounded-3xl p-[1px] bg-gradient-to-r from-orange-500/30 via-red-500/30 to-orange-500/30 group-hover:from-orange-500/50 group-hover:via-red-500/50 group-hover:to-orange-500/50 transition-all duration-700" />
 
@@ -155,7 +165,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
               </div>
 
               {/* Content */}
-              <div className="relative h-full flex flex-col justify-between p-6 md:p-16">
+              <div className="relative h-full flex flex-col justify-between p-6 md:p-10 md:pb-12">
                 {/* Top section */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3 md:gap-6">
@@ -222,7 +232,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                 </div>
 
                 {/* Center section - Hero APY */}
-                <div className="flex-1 flex items-center justify-center py-6 md:py-12">
+                <div className="flex-1 flex items-center justify-center py-6 md:py-8">
                   <motion.div
                     initial={{ scale: 0.9, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
@@ -234,7 +244,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       Net APY
                     </div>
                     <motion.div
-                      className="text-7xl md:text-[10rem] font-black mb-4 md:mb-8"
+                      className="text-7xl md:text-[8rem] font-black mb-4 md:mb-6"
                       whileHover={{ scale: 1.03 }}
                       transition={{ duration: 0.4, ease: "easeOut" }}
                       animate={{
@@ -257,7 +267,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                 </div>
 
                 {/* Bottom section - Metrics and CTA */}
-                <div className="space-y-4 md:space-y-6">
+                <div className="space-y-4 md:space-y-5">
                   <div className="grid grid-cols-3 gap-3 md:gap-6">
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
@@ -316,7 +326,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     <Button
                       size="lg"
                       onClick={handleDeploy}
-                      className="relative w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-base md:text-xl h-14 md:h-20 rounded-xl md:rounded-2xl shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 transition-all duration-400 hover:scale-[1.02] active:scale-[0.98] group"
+                      className="relative w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-base md:text-xl h-14 md:h-16 rounded-xl md:rounded-2xl shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/70 transition-all duration-400 hover:scale-[1.02] active:scale-[0.98] group"
                     >
                       <span className="relative flex items-center justify-center">
                         <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />

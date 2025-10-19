@@ -93,7 +93,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-accent/5 blur-3xl" />
           <div className="max-w-5xl mx-auto relative space-y-6 md:space-y-8 lg:space-y-10">
             <motion.div variants={fadeInUp}>
-              <Badge className="mb-6 md:mb-8 lg:mb-10 glass-card text-accent-foreground border-accent/20 hover:border-accent/40 transition-all duration-500 px-4 py-2 md:px-6 md:py-3 text-sm md:text-base">
+              <Badge className="mb-6 md:mb-8 lg:mb-10 backdrop-blur-lg bg-white/10 text-white border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all duration-500 px-4 py-2 md:px-6 md:py-3 text-sm md:text-base">
                 <LiveDataIndicator size="sm" label="Live on Base" className="mr-2 md:mr-3" />
                 Base's Most Advanced Liquidity Hub
               </Badge>
@@ -407,7 +407,7 @@ export default function HomePage() {
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 lg:mb-6 text-white">
               Built Different
             </h2>
-            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               What sets DEUS apart from every other platform in the DeFi ecosystem
             </p>
           </div>
