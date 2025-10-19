@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -37,6 +37,15 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   const [txHash, setTxHash] = useState<string>("")
   const [coinAddress, setCoinAddress] = useState<string>("")
 
+  useEffect(() => {
+    if (isOpen && isConnected) {
+      console.log("[v0] Create coin modal opened")
+      console.log("[v0] Current chain ID:", chainId)
+      console.log("[v0] Is Base (8453):", chainId === 8453)
+      console.log("[v0] Is Base Sepolia (84532):", chainId === 84532)
+    }
+  }, [isOpen, isConnected, chainId])
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -57,11 +66,22 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
       return
     }
 
+    console.log("[v0] Validating chain before coin creation...")
+    console.log("[v0] Current chainId:", chainId)
+    console.log("[v0] chainId type:", typeof chainId)
+
+    if (!chainId) {
+      setError("Unable to detect network. Please refresh and try again.")
+      return
+    }
+
     if (chainId !== 8453 && chainId !== 84532) {
       setError("Please switch to Base network to create a coin")
+      console.log("[v0] Wrong network detected, attempting to switch to Base...")
 
       try {
         await switchChain?.({ chainId: 8453 })
+        console.log("[v0] Successfully switched to Base chain")
       } catch (err) {
         console.error("[v0] Failed to switch chain:", err)
       }
@@ -99,12 +119,13 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
       }
 
       console.log("[v0] Metadata uploaded, deploying coin...")
+      console.log("[v0] Using chainId:", chainId)
 
       const deployResult = await deployCoin({
         name: formData.name,
         symbol: formData.symbol,
         uri: data.metadataUri,
-        chainId: chainId, // Use current chain ID from wagmi
+        chainId: chainId,
         payoutRecipient: address,
         currency: "ETH",
       })
