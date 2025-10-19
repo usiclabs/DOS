@@ -41,6 +41,8 @@
     "@radix-ui/react-tooltip": "latest",
     "@tanstack/react-query": "latest",
     "@vercel/analytics": "1.5.0",
+    "@zoralabs/coins-sdk": "latest",
+    "abitype": "latest",
     "abort-controller": "^3.0.0",
     "ai": "^5.0.39",
     "autoprefixer": "^10.4.20",

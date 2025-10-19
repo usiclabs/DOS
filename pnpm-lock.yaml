@@ -104,6 +104,12 @@ importers:
       '@vercel/analytics':
         specifier: 1.5.0
         version: 1.5.0(next@14.2.16(@opentelemetry/api@1.9.0)(react-dom@18.0.0(react@18.0.0))(react@18.0.0))(react@18.0.0)
+      '@zoralabs/coins-sdk':
+        specifier: latest
+        version: 0.3.2(abitype@1.1.1(typescript@5.0.2)(zod@3.25.67))(viem@2.38.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.67))
+      abitype:
+        specifier: latest
+        version: 1.1.1(typescript@5.0.2)(zod@3.25.67)
       abort-controller:
         specifier: ^3.0.0
         version: 3.0.0
@@ -154,7 +160,7 @@ importers:
         version: 0.4.6(react-dom@18.0.0(react@18.0.0))(react@18.0.0)
       openai:
         specifier: latest
-        version: 6.4.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.67)
+        version: 6.5.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.67)
       react:
         specifier: ^18
         version: 18.0.0
@@ -333,6 +339,10 @@ packages:
     resolution: {integrity: sha512-vv9aozWnKrrPWQ3vIFcWk7yta4hQW1Ie0fsNNPeXnjAxkbXr2hqMagEptLuMxpEP2W3mnRu05VDNKzcvAuuZDw==}
     peerDependencies:
       viem: '>=2.0.0'
+
+  '@hey-api/client-fetch@0.8.4':
+    resolution: {integrity: sha512-SWtUjVEFIUdiJGR2NiuF0njsSrSdTe7WHWkp3BLH3DEl2bRhiflOnBo29NSDdrY90hjtTQiTQkBxUgGOF29Xzg==}
+    deprecated: Starting with v0.73.0, this package is bundled directly inside @hey-api/openapi-ts.
 
   '@hookform/resolvers@3.10.0':
     resolution: {integrity: sha512-79Dv+3mDF7i+2ajj7SkypSKHhl1cbln1OGavqrsF7p6mbUv11xpqpacPsGDCTRvCSjEEIez2ef1NveSVL3b0Ag==}
@@ -1811,6 +1821,16 @@ packages:
   '@walletconnect/window-metadata@1.0.1':
     resolution: {integrity: sha512-9koTqyGrM2cqFRW517BPY/iEtUDx2r1+Pwwu5m7sJ7ka79wi3EyqhqcICk/yDmv6jAS1rjKgTKXlEhanYjijcA==}
 
+  '@zoralabs/coins-sdk@0.3.2':
+    resolution: {integrity: sha512-yrQGWMwnVv9SBGiAP0OoE+H5hDrdjwX0oJ1+5l6XYYXwg55CxYlIy9sooX5YejGJAo4gifsfGNopoMAjGksHmA==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      abitype: ^1.0.8
+      viem: ^2.21.55
+
+  '@zoralabs/protocol-deployments@0.6.3':
+    resolution: {integrity: sha512-ipMBdTm4uQ1ckD1Tjv5WnQTceoLOH/P+HTlMp6+LPfMcW282sm6cA1llNaxw6xyQooooWZ4P+TTfQtP79inDLg==}
+
   abitype@1.0.8:
     resolution: {integrity: sha512-ZeiI6h3GnW06uYDLx0etQtX/p8E24UaHHBj57RSjK7YBFe7iuVn07EDpOeP451D06sF27VOz9JJPlIKJmXgkEg==}
     peerDependencies:
@@ -2638,8 +2658,8 @@ packages:
   once@1.4.0:
     resolution: {integrity: sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==}
 
-  openai@6.4.0:
-    resolution: {integrity: sha512-vSoVBRTPMgg3oSaoHIGfbYM2zwGN0D4F2aiNHMeu1lZHFOwfJMAF0X110HDdedYvcsIo578ujQ11WL5kP687Cw==}
+  openai@6.5.0:
+    resolution: {integrity: sha512-bNqJ15Ijbs41KuJ2iYz/mGAruFHzQQt7zXo4EvjNLoB64aJdgn1jlMeDTsXjEg+idVYafg57QB/5Rd16oqvZ6A==}
     hasBin: true
     peerDependencies:
       ws: ^8.18.0
@@ -3570,6 +3590,8 @@ snapshots:
       viem: 2.38.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.67)
     transitivePeerDependencies:
       - supports-color
+
+  '@hey-api/client-fetch@0.8.4': {}
 
   '@hookform/resolvers@3.10.0(react-hook-form@7.54.2(react@18.0.0))':
     dependencies:
@@ -5828,6 +5850,15 @@ snapshots:
       '@walletconnect/window-getters': 1.0.1
       tslib: 1.14.1
 
+  '@zoralabs/coins-sdk@0.3.2(abitype@1.1.1(typescript@5.0.2)(zod@3.25.67))(viem@2.38.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.67))':
+    dependencies:
+      '@hey-api/client-fetch': 0.8.4
+      '@zoralabs/protocol-deployments': 0.6.3
+      abitype: 1.1.1(typescript@5.0.2)(zod@3.25.67)
+      viem: 2.38.3(bufferutil@4.0.9)(typescript@5.0.2)(utf-8-validate@5.0.10)(zod@3.25.67)
+
+  '@zoralabs/protocol-deployments@0.6.3': {}
+
   abitype@1.0.8(typescript@5.0.2)(zod@3.25.67):
     optionalDependencies:
       typescript: 5.0.2
@@ -5842,6 +5873,11 @@ snapshots:
     optionalDependencies:
       typescript: 5.0.2
       zod: 3.25.67
+
+  abitype@1.1.1(typescript@5.0.2)(zod@3.22.4):
+    optionalDependencies:
+      typescript: 5.0.2
+      zod: 3.22.4
 
   abitype@1.1.1(typescript@5.0.2)(zod@3.25.67):
     optionalDependencies:
@@ -6596,7 +6632,7 @@ snapshots:
     dependencies:
       wrappy: 1.0.2
 
-  openai@6.4.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.67):
+  openai@6.5.0(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))(zod@3.25.67):
     optionalDependencies:
       ws: 8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       zod: 3.25.67
@@ -6658,7 +6694,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.0(typescript@5.0.2)(zod@3.22.4)
+      abitype: 1.1.1(typescript@5.0.2)(zod@3.22.4)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2
@@ -6673,7 +6709,7 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip32': 1.7.0
       '@scure/bip39': 1.6.0
-      abitype: 1.1.0(typescript@5.0.2)(zod@3.25.67)
+      abitype: 1.1.1(typescript@5.0.2)(zod@3.25.67)
       eventemitter3: 5.0.1
     optionalDependencies:
       typescript: 5.0.2

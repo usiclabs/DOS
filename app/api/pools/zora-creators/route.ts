@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 export const dynamic = "force-dynamic"
 
 const ZORA_CONTRACT = "0x1111111111166b7FE7bd91427724B487980aFc69"
+const ZORA_API_KEY = "zora_api_a3bdc55dcf5cb9e9974348e5576525f6f4b1c81686700bf8cf52c088fef51207"
 
 interface ZoraPoolOpportunity {
   id: string
@@ -34,6 +35,7 @@ export async function GET(request: Request) {
 
     console.log("[v0] Fetching all ZORA paired pools...")
     console.log(`[v0] Time filter: ${timeFilter}`)
+    console.log(`[v0] Zora API key configured: ${ZORA_API_KEY ? "Yes" : "No"}`)
 
     const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${ZORA_CONTRACT}`, {
       headers: { "User-Agent": "D.O.S./1.0" },

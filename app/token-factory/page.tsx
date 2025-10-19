@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { TokenDeployModal } from "@/components/token-deploy-modal"
+import { ZoraCoinDeployModal } from "@/components/zora-coin-deploy-modal"
 import { Rocket, Coins, TrendingUp, Zap, ArrowLeft, Sparkles, Shield, Clock, Lock } from "lucide-react"
 import Link from "next/link"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -16,6 +17,7 @@ const MINIMUM_DEUS_BALANCE = 10_000_000 // 10 million DEUS (1% of supply)
 
 export default function TokenFactoryPage() {
   const [deployModalOpen, setDeployModalOpen] = useState(false)
+  const [zoraCoinModalOpen, setZoraCoinModalOpen] = useState(false)
   const [deusBalance, setDeusBalance] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState(false)
@@ -458,7 +460,17 @@ export default function TokenFactoryPage() {
                     className="w-full sm:w-auto bg-accent hover:bg-accent/90 shadow-lg hover:shadow-xl transition-all"
                   >
                     <Rocket className="h-5 w-5 mr-2" />
-                    Create Pool
+                    Create DEUS Pool
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    onClick={() => setZoraCoinModalOpen(true)}
+                    size="lg"
+                    className="w-full sm:w-auto bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    Deploy Zora Coin
                   </Button>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -575,6 +587,7 @@ export default function TokenFactoryPage() {
       </div>
 
       <TokenDeployModal open={deployModalOpen} onOpenChange={setDeployModalOpen} />
+      <ZoraCoinDeployModal open={zoraCoinModalOpen} onOpenChange={setZoraCoinModalOpen} />
     </div>
   )
 }
