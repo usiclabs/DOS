@@ -396,12 +396,12 @@ export default function SwapPage() {
             transition={{ duration: 0.6 }}
             className="w-full max-w-2xl"
           >
-            <Card className="glass-card relative overflow-hidden">
+            <Card className="glass-card relative overflow-hidden border-2 border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                {[...Array(20)].map((_, i) => (
+                {[...Array(30)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="absolute w-0.5 h-0.5 bg-emerald-400/60 rounded-full blur-sm"
+                    className="absolute w-1 h-1 bg-emerald-400/40 rounded-full blur-[1px]"
                     initial={{
                       x: Math.random() * 100 + "%",
                       y: Math.random() * 100 + "%",
@@ -409,10 +409,11 @@ export default function SwapPage() {
                     animate={{
                       y: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
                       x: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
-                      opacity: [0.3, 0.8, 0.3],
+                      opacity: [0.2, 0.8, 0.2],
+                      scale: [1, 1.5, 1],
                     }}
                     transition={{
-                      duration: Math.random() * 10 + 15,
+                      duration: Math.random() * 8 + 12,
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "linear",
                     }}
@@ -420,74 +421,34 @@ export default function SwapPage() {
                 ))}
               </div>
 
-              <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-emerald-500/30 rounded-tl-2xl" />
-              <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-emerald-500/30 rounded-tr-2xl" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-emerald-500/30 rounded-bl-2xl" />
-              <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-emerald-500/30 rounded-br-2xl" />
+              <div className="absolute top-0 left-0 w-40 h-40 border-t-2 border-l-2 border-emerald-500/40 rounded-tl-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
+              <div className="absolute top-0 right-0 w-40 h-40 border-t-2 border-r-2 border-emerald-500/40 rounded-tr-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 border-b-2 border-l-2 border-emerald-500/40 rounded-bl-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
+              <div className="absolute bottom-0 right-0 w-40 h-40 border-b-2 border-r-2 border-emerald-500/40 rounded-br-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
 
-              <motion.div
-                className="absolute top-0 left-0 w-32 h-32"
-                animate={{
-                  opacity: [0.3, 0.6, 0.3],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                }}
-              >
-                <div className="absolute top-0 left-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
-              </motion.div>
-              <motion.div
-                className="absolute top-0 right-0 w-32 h-32"
-                animate={{
-                  opacity: [0.3, 0.6, 0.3],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                  delay: 0.75,
-                }}
-              >
-                <div className="absolute top-0 right-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
-              </motion.div>
-              <motion.div
-                className="absolute bottom-0 left-0 w-32 h-32"
-                animate={{
-                  opacity: [0.3, 0.6, 0.3],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                  delay: 1.5,
-                }}
-              >
-                <div className="absolute bottom-0 left-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
-              </motion.div>
-              <motion.div
-                className="absolute bottom-0 right-0 w-32 h-32"
-                animate={{
-                  opacity: [0.3, 0.6, 0.3],
-                }}
-                transition={{
-                  duration: 3,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "easeInOut",
-                  delay: 2.25,
-                }}
-              >
-                <div className="absolute bottom-0 right-0 w-16 h-16 bg-emerald-500/20 blur-xl rounded-full" />
-              </motion.div>
+              {[
+                { position: "top-0 left-0", delay: 0 },
+                { position: "top-0 right-0", delay: 0.75 },
+                { position: "bottom-0 left-0", delay: 1.5 },
+                { position: "bottom-0 right-0", delay: 2.25 },
+              ].map((corner, i) => (
+                <motion.div
+                  key={i}
+                  className={`absolute ${corner.position} w-40 h-40`}
+                  animate={{ opacity: [0.2, 0.5, 0.2] }}
+                  transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
+                >
+                  <div className={`absolute ${corner.position} w-20 h-20 bg-emerald-500/30 blur-2xl rounded-full`} />
+                </motion.div>
+              ))}
 
               <div className="relative p-16 text-center">
-                <div className="relative w-36 h-36 mx-auto mb-10">
+                <div className="relative w-40 h-40 mx-auto mb-12">
                   <motion.div
-                    className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl"
+                    className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl"
                     animate={{
-                      scale: [1, 1.2, 1],
-                      opacity: [0.3, 0.5, 0.3],
+                      scale: [1, 1.3, 1],
+                      opacity: [0.3, 0.6, 0.3],
                     }}
                     transition={{
                       duration: 3,
@@ -496,10 +457,10 @@ export default function SwapPage() {
                     }}
                   />
                   <motion.div
-                    className="absolute inset-0 bg-emerald-400/10 rounded-full blur-2xl"
+                    className="absolute inset-0 bg-emerald-400/20 rounded-full blur-3xl"
                     animate={{
-                      scale: [1, 1.4, 1],
-                      opacity: [0.2, 0.4, 0.2],
+                      scale: [1, 1.5, 1],
+                      opacity: [0.2, 0.5, 0.2],
                     }}
                     transition={{
                       duration: 3,
@@ -510,7 +471,7 @@ export default function SwapPage() {
                   />
 
                   <motion.div
-                    className="absolute inset-0 flex items-center justify-center bg-emerald-500/10 rounded-full border border-emerald-500/20 backdrop-blur-sm"
+                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-full border-2 border-emerald-500/30 backdrop-blur-sm shadow-[0_0_40px_rgba(16,185,129,0.3)]"
                     animate={{ rotate: 360 }}
                     transition={{
                       duration: 20,
@@ -518,13 +479,13 @@ export default function SwapPage() {
                       ease: "linear",
                     }}
                   >
-                    <Wallet className="w-6 h-6 text-emerald-400" />
+                    <Wallet className="w-8 h-8 text-emerald-300" />
                   </motion.div>
                 </div>
 
-                <div className="relative mb-6">
+                <div className="relative mb-8">
                   <motion.h2
-                    className="text-5xl font-bold bg-gradient-to-r from-emerald-200 via-emerald-400 to-emerald-200 bg-clip-text text-transparent bg-[length:200%_100%]"
+                    className="text-6xl font-bold bg-gradient-to-r from-emerald-200 via-emerald-400 to-emerald-200 bg-clip-text text-transparent bg-[length:200%_100%]"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
@@ -536,13 +497,25 @@ export default function SwapPage() {
                   >
                     Token Swap
                   </motion.h2>
+                  <motion.div
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent rounded-full"
+                    animate={{
+                      opacity: [0.3, 0.8, 0.3],
+                      scaleX: [0.8, 1, 0.8],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
                 </div>
 
                 <motion.p
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-gray-300 text-xl mb-10 max-w-md mx-auto leading-relaxed"
+                  className="text-gray-300 text-xl mb-12 max-w-md mx-auto leading-relaxed"
                 >
                   Connect your wallet to swap tokens instantly with the best rates across the DEUS ecosystem
                 </motion.p>
@@ -550,11 +523,12 @@ export default function SwapPage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Button
                     onClick={() => connectWallet("metamask")}
-                    className="bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-10 py-7 text-xl rounded-2xl shadow-lg shadow-emerald-500/20 transition-all duration-500"
+                    className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium px-12 py-8 text-xl rounded-2xl shadow-2xl shadow-emerald-500/30 transition-all duration-500 border border-emerald-400/30 overflow-hidden group"
                     size="lg"
                   >
-                    <Wallet className="w-6 h-6 mr-3" />
-                    Connect Wallet
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <Wallet className="w-6 h-6 mr-3 relative z-10" />
+                    <span className="relative z-10">Connect Wallet</span>
                   </Button>
                 </motion.div>
 
@@ -562,11 +536,11 @@ export default function SwapPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="mt-8 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20"
+                  className="mt-10 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-sm shadow-lg shadow-emerald-500/10"
                 >
                   <motion.span
                     animate={{
-                      scale: [1, 1.2, 1],
+                      scale: [1, 1.3, 1],
                       opacity: [0.5, 1, 0.5],
                     }}
                     transition={{
@@ -574,14 +548,16 @@ export default function SwapPage() {
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "easeInOut",
                     }}
-                    className="text-emerald-400"
+                    className="text-emerald-400 text-lg"
                   >
                     ✦
                   </motion.span>
-                  <span className="text-sm font-medium text-emerald-300">INSTANT SWAPS</span>
+                  <span className="text-sm font-semibold text-emerald-300 tracking-wide">
+                    INSTANT SWAPS • BEST RATES
+                  </span>
                   <motion.span
                     animate={{
-                      scale: [1, 1.2, 1],
+                      scale: [1, 1.3, 1],
                       opacity: [0.5, 1, 0.5],
                     }}
                     transition={{
@@ -590,7 +566,7 @@ export default function SwapPage() {
                       ease: "easeInOut",
                       delay: 1,
                     }}
-                    className="text-emerald-400"
+                    className="text-emerald-400 text-lg"
                   >
                     ✦
                   </motion.span>
@@ -616,26 +592,34 @@ export default function SwapPage() {
           className="w-full max-w-lg"
         >
           <Tabs defaultValue="swap" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5">
-              <TabsTrigger value="swap" className="flex items-center gap-2 py-3 text-base">
+            <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg">
+              <TabsTrigger
+                value="swap"
+                className="flex items-center gap-2 py-3 text-base data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-500/20 data-[state=active]:to-emerald-600/20 data-[state=active]:border data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/20 transition-all duration-300"
+              >
                 <ArrowDownUp className="w-5 h-5" />
                 Swap
               </TabsTrigger>
-              <TabsTrigger value="discover" className="flex items-center gap-2 py-3 text-base">
+              <TabsTrigger
+                value="discover"
+                className="flex items-center gap-2 py-3 text-base data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-purple-600/20 data-[state=active]:border data-[state=active]:border-purple-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 transition-all duration-300"
+              >
                 <Sparkles className="w-5 h-5" />
                 Discover
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="swap">
-              <Card className="glass-card p-8">
+              <Card className="glass-card p-8 border-2 border-white/10 shadow-2xl">
                 <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-bold">Swap</h2>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                    Swap
+                  </h2>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => setShowSettings(!showSettings)}
-                    className="hover:bg-white/5 transition-all duration-300"
+                    className="hover:bg-white/10 transition-all duration-300 rounded-xl"
                   >
                     <Settings className="w-6 h-6" />
                   </Button>
@@ -666,7 +650,7 @@ export default function SwapPage() {
                     <span>Sell</span>
                     {fromToken && <span>Balance: {fromToken.balance.toFixed(6)}</span>}
                   </div>
-                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10 hover:border-white/20 transition-all duration-300">
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 hover:border-emerald-500/30 transition-all duration-300 shadow-lg hover:shadow-emerald-500/10">
                     <div className="flex items-center justify-between mb-3">
                       <Input
                         type="number"
@@ -708,9 +692,9 @@ export default function SwapPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full bg-background border-4 border-background hover:bg-white/5"
+                    className="rounded-full bg-gradient-to-br from-background to-background/80 border-4 border-background hover:bg-white/10 shadow-lg hover:shadow-emerald-500/20 transition-all duration-300"
                   >
-                    <ArrowDownUp className="w-5 h-5 text-accent" />
+                    <ArrowDownUp className="w-5 h-5 text-emerald-400" />
                   </Button>
                 </div>
 
@@ -719,7 +703,7 @@ export default function SwapPage() {
                     <span>Buy</span>
                     {toToken && <span>Balance: {toToken.balance.toFixed(6)}</span>}
                   </div>
-                  <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
+                  <div className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 shadow-lg">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-2xl font-bold text-white">
                         {isLoading ? <RefreshCw className="w-6 h-6 animate-spin" /> : toAmount || "0.0"}
@@ -741,42 +725,45 @@ export default function SwapPage() {
                 <Button
                   onClick={handleSwap}
                   disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
-                  className="w-full mt-8 bg-accent hover:bg-accent/90 text-white font-medium py-6 text-lg transition-all duration-500"
+                  className="w-full mt-8 bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium py-6 text-lg transition-all duration-500 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 border border-emerald-400/30 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
                   size="lg"
                 >
-                  {cooldownRemaining > 0 ? (
-                    `Wait ${cooldownRemaining}s to avoid rate limiting`
-                  ) : isSwapping ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Confirming in wallet...
-                    </>
-                  ) : isLoading ? (
-                    <>
-                      <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
-                      Loading...
-                    </>
-                  ) : (
-                    "Swap"
-                  )}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <span className="relative z-10">
+                    {cooldownRemaining > 0 ? (
+                      `Wait ${cooldownRemaining}s to avoid rate limiting`
+                    ) : isSwapping ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin inline" />
+                        Confirming in wallet...
+                      </>
+                    ) : isLoading ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin inline" />
+                        Loading...
+                      </>
+                    ) : (
+                      "Swap"
+                    )}
+                  </span>
                 </Button>
 
                 {toAmount && !isLoading && (
                   <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10 space-y-2 text-sm"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-4 p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm space-y-2 text-sm shadow-lg"
                   >
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Rate</span>
-                      <span>
+                      <span className="font-medium">
                         1 {fromToken?.symbol} ={" "}
                         {(Number.parseFloat(toAmount) / Number.parseFloat(fromAmount)).toFixed(6)} {toToken?.symbol}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Slippage</span>
-                      <span>{slippage}%</span>
+                      <span className="font-medium text-emerald-400">{slippage}%</span>
                     </div>
                   </motion.div>
                 )}
