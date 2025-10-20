@@ -13,24 +13,12 @@ import { useOnboarding } from "@/hooks/use-onboarding"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { LiveDataIndicator } from "@/components/live-data-indicator"
-import { useState, useEffect } from "react"
+import useSWR from "swr"
 import type { PoolData } from "@/lib/pool-data"
-import {
-  Zap,
-  Shield,
-  Brain,
-  Target,
-  Layers,
-  BarChart3,
-  Rocket,
-  Users,
-  DollarSign,
-  Activity,
-  Sparkles,
-  Trophy,
-} from "lucide-react"
+import { Shield, Brain, BarChart3, Rocket, Users, DollarSign, Sparkles, Trophy } from "lucide-react"
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 40 },
@@ -75,24 +63,16 @@ export default function HomePage() {
   const { hasCompletedOnboarding, isOnboardingOpen, startOnboarding, completeOnboarding, closeOnboarding } =
     useOnboarding()
 
-  const [pools, setPools] = useState<PoolData[]>([])
-  const [isLoadingPools, setIsLoadingPools] = useState(true)
+  const { data: poolsData, isLoading: isLoadingPools } = useSWR<{ pools: PoolData[] }>(
+    "/api/pools?limit=15&sortBy=netApy&sortOrder=desc",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 60000, // Cache for 1 minute
+    },
+  )
 
-  useEffect(() => {
-    const fetchPools = async () => {
-      try {
-        const response = await fetch("/api/pools?limit=50&sortBy=netApy&sortOrder=desc")
-        const data = await response.json()
-        setPools(data.pools || [])
-      } catch (error) {
-        console.error("[v0] Error fetching pools:", error)
-      } finally {
-        setIsLoadingPools(false)
-      }
-    }
-
-    fetchPools()
-  }, [])
+  const pools = poolsData?.pools || []
 
   return (
     <div className="min-h-screen bg-background">
@@ -204,7 +184,38 @@ export default function HomePage() {
           </div>
         </motion.section>
 
-        {!isLoadingPools && pools.length > 0 && (
+        {isLoadingPools ? (
+          <motion.section
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="mb-20 md:mb-32 lg:mb-40"
+          >
+            <div className="text-center mb-8 md:mb-12 px-2">
+              <Badge className="mb-4 md:mb-6 glass-card text-accent-foreground border-accent/20 px-3 py-1 md:px-4 md:py-2 text-sm">
+                <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                Top LP Opportunities
+              </Badge>
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-white">
+                Featured Liquidity Pools
+              </h2>
+              <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Discover the highest-yielding liquidity opportunities on Base chain
+              </p>
+            </div>
+            {/* Loading skeleton */}
+            <div className="relative w-full mb-6 md:mb-8">
+              <div className="relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-red-500/10 to-orange-500/10 rounded-2xl md:rounded-3xl" />
+                <div className="relative h-[600px] md:h-[540px] rounded-2xl md:rounded-3xl overflow-hidden">
+                  <div className="absolute inset-0 rounded-2xl md:rounded-3xl p-[1px] bg-gradient-to-r from-orange-500/30 via-red-500/30 to-orange-500/30" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/70 to-transparent animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </motion.section>
+        ) : pools.length > 0 ? (
           <motion.section
             initial="hidden"
             whileInView="visible"
@@ -228,12 +239,11 @@ export default function HomePage() {
             <FeaturedPoolsCarousel
               pools={pools}
               onDeployClick={(pool) => {
-                console.log("[v0] Deploy clicked for pool:", pool.id)
                 window.location.href = `/pools?search=${pool.baseToken.symbol}`
               }}
             />
           </motion.section>
-        )}
+        ) : null}
 
         <motion.section
           initial="hidden"
@@ -242,146 +252,8 @@ export default function HomePage() {
           variants={staggerContainer}
           className="mb-20 md:mb-32 lg:mb-40"
         >
-          <div className="text-center mb-12 md:mb-16 lg:mb-24 px-2">
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 lg:mb-8 text-white">
-              Why DEUS Dominates
-            </h2>
-            <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Advanced features that put us ahead of the competition in the DeFi space
-            </p>
-          </div>
-
-          <motion.div
-            variants={staggerContainer}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 lg:gap-10"
-          >
-            {[
-              {
-                icon: Brain,
-                badge: "AI-Powered",
-                title: "Intelligent Pool Discovery",
-                description:
-                  "Advanced AI algorithms identify the most profitable opportunities before the market catches on",
-                successRate: 94.2,
-                detail: "Real-time analysis of 500+ pools with predictive yield modeling and risk assessment",
-              },
-              {
-                icon: Target,
-                badge: "Exclusive",
-                title: "Exotic Yield Strategies",
-                description: "Access to unique liquidity pools and yield farming strategies unavailable elsewhere",
-                successRate: 127.8,
-                detail:
-                  "Clanker integration for meme coin liquidity and exotic pair strategies with automated rebalancing",
-                isApr: true,
-              },
-              {
-                icon: Zap,
-                badge: "Instant",
-                title: "One-Click Deployment",
-                description: "Deploy optimized liquidity positions with institutional-grade risk management",
-                successRate: 100,
-                detail: "Automated slippage protection and MEV-resistant execution with gas optimization",
-                time: "<3 seconds",
-              },
-              {
-                icon: Shield,
-                badge: "Enterprise",
-                title: "Advanced Risk Management",
-                description: "Institutional-grade risk assessment and portfolio protection mechanisms",
-                successRate: 96,
-                detail: "Real-time impermanent loss protection and volatility hedging with automated alerts",
-                rating: "A+ Rated",
-              },
-              {
-                icon: Layers,
-                badge: "Multi-DEX",
-                title: "Omni-Liquidity Access",
-                description: "Aggregate liquidity across all major DEXs for optimal execution and yields",
-                successRate: 88,
-                detail: "Uniswap V3, Aerodrome, BaseSwap, and more integrated with smart routing",
-                dexCount: "15+ DEXs",
-              },
-              {
-                icon: Activity,
-                badge: "Real-time",
-                title: "Live Performance Tracking",
-                description: "Comprehensive analytics dashboard with real-time P&L and performance metrics",
-                successRate: 100,
-                detail: "Advanced charting, alerts, and portfolio optimization tools with mobile notifications",
-                frequency: "Real-time",
-              },
-            ].map((feature, index) => (
-              <motion.div key={index} variants={scaleIn} whileHover={{ scale: 1.03, y: -6 }}>
-                <Card className="glass-card p-6 md:p-8 lg:p-10 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 group h-full">
-                  <CardHeader className="pb-4 md:pb-6 lg:pb-8">
-                    <div className="flex items-center justify-between mb-4 md:mb-6 lg:mb-8">
-                      <motion.div
-                        whileHover={{ rotate: 360 }}
-                        transition={{ duration: 0.6 }}
-                        className="p-3 md:p-4 lg:p-5 rounded-xl md:rounded-2xl bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors duration-300"
-                      >
-                        <feature.icon className="h-7 w-7 md:h-8 md:w-8 lg:h-9 lg:w-9 text-accent-foreground" />
-                      </motion.div>
-                      <Badge
-                        variant="secondary"
-                        className="bg-accent/20 text-accent-foreground border-accent/30 px-3 py-1 md:px-4 md:py-2 text-xs md:text-sm"
-                      >
-                        {feature.badge}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl md:text-2xl text-white mb-3 md:mb-4 lg:mb-5">
-                      {feature.title}
-                    </CardTitle>
-                    <CardDescription className="text-gray-300 text-base md:text-lg leading-relaxed">
-                      {feature.description}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3 md:space-y-4 lg:space-y-5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400 font-medium text-sm md:text-base">
-                          {feature.isApr
-                            ? "Avg APR"
-                            : feature.time
-                              ? "Deploy Time"
-                              : feature.rating
-                                ? "Risk Score"
-                                : feature.dexCount
-                                  ? "DEX Coverage"
-                                  : feature.frequency
-                                    ? "Update Frequency"
-                                    : "Success Rate"}
-                        </span>
-                        <span
-                          className={`font-bold text-lg md:text-xl ${feature.isApr ? "text-green-300" : "text-white"}`}
-                        >
-                          {feature.time ||
-                            feature.rating ||
-                            feature.dexCount ||
-                            feature.frequency ||
-                            `${feature.successRate}${feature.isApr ? "%" : ".2%"}`}
-                        </span>
-                      </div>
-                      <Progress value={feature.successRate} className="h-2 md:h-3 progress-enhanced" />
-                      <p className="text-gray-400 leading-relaxed text-sm md:text-base">{feature.detail}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.section>
-
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={staggerContainer}
-          className="mb-20 md:mb-28 lg:mb-32"
-        >
-          <div className="text-center mb-12 md:mb-14 lg:mb-16 px-2">
-            <Badge className="mb-3 md:mb-4 glass-card text-accent-foreground border-accent/20 px-3 py-1 md:px-4 md:py-2 text-sm">
+          <div className="text-center mb-8 md:mb-12 px-2">
+            <Badge className="mb-4 md:mb-6 glass-card text-accent-foreground border-accent/20 px-3 py-1 md:px-4 md:py-2 text-sm">
               <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-2" />
               Platform Advantages
             </Badge>
