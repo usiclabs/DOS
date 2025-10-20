@@ -274,25 +274,10 @@ export async function GET() {
       try {
         let price = 0
         if (token.address.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()) {
-          try {
-            const baseUrl = process.env.NEXT_PUBLIC_VERCEL_URL
-              ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-              : process.env.VERCEL_URL
-                ? `https://${process.env.VERCEL_URL}`
-                : "http://localhost:3000"
-            const tickerUrl = `${baseUrl}/api/deus/ticker`
-            console.log("[v0] Fetching DEUS price from:", tickerUrl)
-            const tickerResponse = await fetchWithTimeout(tickerUrl, {}, 5000)
-            if (tickerResponse.ok) {
-              const tickerData = await tickerResponse.json()
-              price = tickerData.priceUsd || 0
-              console.log("[v0] DEUS price from ticker:", price)
-            }
-          } catch (error) {
-            console.error("[v0] Error fetching DEUS price from ticker:", error)
-            // Fallback to Dexscreener
-            price = await getTokenPrice(token.address)
-          }
+          // During build time, we can't reliably construct absolute URLs
+          // So we'll just use Dexscreener as the primary source for DEUS price
+          price = await getTokenPrice(token.address)
+          console.log("[v0] DEUS price from Dexscreener:", price)
         } else {
           price = await getTokenPrice(token.address)
         }

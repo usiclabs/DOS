@@ -131,7 +131,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          className="relative h-[390px] md:h-[351px] rounded-xl md:rounded-2xl overflow-hidden group"
+          className="relative h-[420px] md:h-[380px] rounded-xl md:rounded-2xl overflow-hidden group"
         >
           <div className="absolute inset-0 rounded-xl md:rounded-2xl p-[1px] bg-gradient-to-r from-orange-500/30 via-red-500/30 to-orange-500/30 group-hover:from-orange-500/50 group-hover:via-red-500/50 group-hover:to-orange-500/50 transition-all duration-700" />
 
@@ -276,7 +276,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                   </motion.div>
                 </div>
 
-                <div className="space-y-3 md:space-y-4 pb-2 md:pb-3">
+                <div className="space-y-3 md:space-y-4 pb-4 md:pb-6">
                   <div className="grid grid-cols-3 gap-2 md:gap-4">
                     <motion.div
                       initial={{ y: 20, opacity: 0 }}
@@ -318,7 +318,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       className="backdrop-blur-xl bg-white/5 rounded-lg md:rounded-xl p-2 md:p-4 border border-white/10 hover:border-green-500/50 hover:bg-white/10 hover:shadow-xl hover:shadow-green-500/20 transition-all duration-500 cursor-pointer"
                     >
                       <div className="flex items-center gap-1 md:gap-1.5 text-gray-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
-                        <TrendingUp className="w-3 h-3 md:w-4 md:h-4" />
+                        <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4" />
                         <span>Fee APR</span>
                       </div>
                       <div className="text-base md:text-xl font-bold text-green-400 truncate">
