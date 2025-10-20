@@ -95,6 +95,9 @@ export function TokenDiscoverMode() {
 
       pools.forEach((pool: any) => {
         const token = pool.baseToken
+        // Try multiple sources for token image
+        const tokenImage = pool.info?.imageUrl || token.image || pool.baseToken?.logoURI || null
+
         if (!tokenMap.has(token.address)) {
           tokenMap.set(token.address, {
             symbol: token.symbol,
@@ -105,7 +108,7 @@ export function TokenDiscoverMode() {
             volume24h: 0,
             liquidity: 0,
             avgApy: 0,
-            image: pool.info?.imageUrl || token.image,
+            image: tokenImage,
             pools: [],
             isDeusPool: pool.isDeusPool,
             isTrending: false,
@@ -114,6 +117,10 @@ export function TokenDiscoverMode() {
         }
 
         const tokenCard = tokenMap.get(token.address)!
+        // Update image if we found a better one
+        if (!tokenCard.image && tokenImage) {
+          tokenCard.image = tokenImage
+        }
         tokenCard.volume24h += pool.volume24h
         tokenCard.liquidity += pool.liquidity
         tokenCard.pools.push({
@@ -137,6 +144,10 @@ export function TokenDiscoverMode() {
           if (tokenMap.has(token.address.toLowerCase())) {
             const existingToken = tokenMap.get(token.address.toLowerCase())!
             existingToken.isTrending = true
+            // Update image if trending token has one
+            if (token.image && !existingToken.image) {
+              existingToken.image = token.image
+            }
             return
           }
 
@@ -174,7 +185,8 @@ export function TokenDiscoverMode() {
           const estimatedApy =
             coin.metrics.liquidity > 0 ? (coin.metrics.volume24h / coin.metrics.liquidity) * 365 * 100 : 0
 
-          // Include creator coins with high yield (>5%) OR trending OR high volume
+          const creatorImage = coin.mediaContent?.previewImage?.medium || coin.image || null
+
           if (estimatedApy > 5 || coin.trending || coin.metrics.volume24h > 1000) {
             tokenMap.set(coin.address.toLowerCase(), {
               symbol: coin.symbol,
@@ -185,12 +197,12 @@ export function TokenDiscoverMode() {
               volume24h: coin.metrics.volume24h,
               liquidity: coin.metrics.liquidity,
               avgApy: estimatedApy,
-              image: coin.image,
+              image: creatorImage,
               pools: coin.poolAddress
                 ? [
                     {
                       pairAddress: coin.poolAddress,
-                      quoteToken: coin.quoteToken || "ETH", // Use actual quote token from API
+                      quoteToken: coin.quoteToken || "ETH",
                       dexId: "Zora",
                       apy: estimatedApy,
                       liquidity: coin.metrics.liquidity,
@@ -670,6 +682,10 @@ export function TokenDiscoverMode() {
                     fill
                     className="object-cover scale-110 blur-3xl opacity-30"
                     unoptimized
+                    onError={(e) => {
+                      console.log("[v0] Failed to load image:", currentToken.image)
+                      e.currentTarget.style.display = "none"
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/90 to-background/95 backdrop-blur-xl" />
                 </>
