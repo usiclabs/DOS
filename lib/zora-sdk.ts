@@ -198,12 +198,22 @@ export async function getCoinDetails(coinAddress: string, chainId = 8453) {
 
   try {
     const result = await getCoin({
-      coinAddress,
+      address: coinAddress,
       chainId,
     })
 
+    console.log("[v0] getCoin result structure:", JSON.stringify(result, null, 2))
+
+    // The Zora SDK returns data in result.data.zora20Token structure
+    const coin = result?.data?.zora20Token || result?.data?.coin || result?.coin || result?.data || result
+
+    if (!coin || !coin.address) {
+      console.error("[v0] No valid coin data found in response")
+      return null
+    }
+
     console.log("[v0] Successfully fetched coin details from Zora SDK")
-    return result?.data?.coin || null
+    return coin
   } catch (error) {
     console.error("[v0] Error fetching coin details from Zora SDK:", error)
     return null
@@ -394,71 +404,5 @@ export async function getCreatorProfileBalances(
   } catch (error) {
     console.error("[v0] Error fetching profile balances:", error)
     return null
-  }
-}
-
-/**
- * Get holders of a specific coin
- */
-export async function getCoinHolders(coinAddress: string, chainId = 8453, count = 20, after?: string) {
-  console.log("[v0] Fetching coin holders for:", coinAddress)
-
-  try {
-    const result = await fetchZoraAPI(`/coin/${coinAddress}/holders`, {
-      chainId,
-      count,
-      after,
-    })
-
-    const holders = result?.data?.zora20Token?.tokenBalances?.edges?.map((edge: any) => edge.node) || []
-    const pageInfo = result?.data?.zora20Token?.tokenBalances?.pageInfo
-
-    console.log(`[v0] Successfully fetched ${holders.length} holders`)
-
-    return {
-      holders,
-      pageInfo,
-      totalCount: holders.length,
-    }
-  } catch (error) {
-    console.error("[v0] Error fetching coin holders:", error)
-    return {
-      holders: [],
-      pageInfo: null,
-      totalCount: 0,
-    }
-  }
-}
-
-/**
- * Get swap/trading activity for a specific coin
- */
-export async function getCoinSwaps(coinAddress: string, chainId = 8453, count = 20, after?: string) {
-  console.log("[v0] Fetching coin swaps for:", coinAddress)
-
-  try {
-    const result = await fetchZoraAPI(`/coin/${coinAddress}/swaps`, {
-      chainId,
-      count,
-      after,
-    })
-
-    const swaps = result?.data?.zora20Token?.swaps?.edges?.map((edge: any) => edge.node) || []
-    const pageInfo = result?.data?.zora20Token?.swaps?.pageInfo
-
-    console.log(`[v0] Successfully fetched ${swaps.length} swaps`)
-
-    return {
-      swaps,
-      pageInfo,
-      totalCount: swaps.length,
-    }
-  } catch (error) {
-    console.error("[v0] Error fetching coin swaps:", error)
-    return {
-      swaps: [],
-      pageInfo: null,
-      totalCount: 0,
-    }
   }
 }

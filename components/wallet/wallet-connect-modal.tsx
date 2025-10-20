@@ -82,15 +82,15 @@ export function WalletConnectModal({ isOpen, onClose, onConnect }: WalletConnect
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md bg-card border-border shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] border border-accent/20">
-        <DialogHeader>
+      <DialogContent className="max-w-md max-h-[90vh] bg-card border-border shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)] border border-accent/20 flex flex-col">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="flex items-center space-x-2">
             <Wallet className="h-5 w-5" />
             <span>Connect Wallet</span>
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto flex-1 pr-2">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
               Connect your wallet to start managing liquidity positions and accessing personalized analytics.

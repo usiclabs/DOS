@@ -18,6 +18,7 @@ const navItems = [
   { href: "/pools", label: "Pools" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/lp-manager", label: "LP Manager" },
+  { href: "/creators", label: "Creators" },
   { href: "/analytics", label: "Analytics" },
   { href: "/treasury", label: "Treasury" },
   { href: "/swap", label: "Swap" },
@@ -33,7 +34,7 @@ const NavItem = memo(
         <Button
           variant="ghost"
           className={cn(
-            "text-gray-300 hover:text-white hover:bg-accent/20 font-medium transition-all duration-300 px-4 py-2 rounded-xl text-sm",
+            "text-gray-300 hover:text-white hover:bg-accent/20 font-medium transition-all duration-300 px-3 py-2 rounded-xl text-xs",
             isActive && "text-white bg-accent/30 shadow-lg border border-accent/30",
           )}
           aria-current={isActive ? "page" : undefined}

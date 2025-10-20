@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
@@ -26,7 +28,6 @@ import {
   Flame,
   RefreshCw,
 } from "lucide-react"
-import Link from "next/link"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
 
@@ -301,7 +302,10 @@ export default function CreatorsPage() {
                     className="max-w-full"
                   >
                     <motion.div whileHover={{ y: -8 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
-                      <Card className="group relative overflow-hidden glass-card backdrop-blur-xl bg-white/5 border-white/10 hover:border-orange-500/40 transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/20 max-w-full">
+                      <Card
+                        onClick={() => router.push(`/creators/coin/${coin.address}`)}
+                        className="group relative overflow-hidden glass-card backdrop-blur-xl bg-white/5 border-white/10 hover:border-orange-500/40 transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/20 max-w-full cursor-pointer"
+                      >
                         {coin.trending && (
                           <motion.div
                             className="absolute top-3 right-3 md:top-4 md:right-4 z-10"
@@ -359,8 +363,12 @@ export default function CreatorsPage() {
                             <p className="text-xs md:text-sm text-gray-400 line-clamp-2">{coin.description}</p>
                           </div>
 
-                          <Link
-                            href={`/creators/${coin.creator.address}`}
+                          <div
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              router.push(`/creators/${coin.creator.address}`)
+                            }}
                             className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors max-w-full overflow-hidden cursor-pointer group"
                           >
                             <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0 group-hover:border-orange-500/40 transition-colors">
@@ -387,7 +395,7 @@ export default function CreatorsPage() {
                               </p>
                               <p className="text-[10px] md:text-xs text-gray-400 truncate">{coin.creator.bio}</p>
                             </div>
-                          </Link>
+                          </div>
 
                           <motion.div
                             className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-orange-500/5 border border-orange-500/20 shadow-lg max-w-full"
@@ -490,6 +498,7 @@ export default function CreatorsPage() {
                             <motion.div
                               className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all duration-300 min-w-0"
                               whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
                               <div className="flex items-center gap-1.5 md:gap-2 mb-1">
@@ -510,22 +519,11 @@ export default function CreatorsPage() {
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
                               <Button
-                                onClick={() => router.push(`/creators/coin/${coin.address}`)}
-                                variant="outline"
-                                className="w-full border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50 text-purple-300 transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
-                              >
-                                <Activity className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
-                                <span className="truncate">Details</span>
-                              </Button>
-                            </motion.div>
-                            <motion.div
-                              className="flex-1 min-w-0"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Button
-                                onClick={() => handleSwapToken(coin)}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleSwapToken(coin)
+                                }}
                                 variant="outline"
                                 className="w-full border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50 text-orange-300 transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
                               >
@@ -540,7 +538,11 @@ export default function CreatorsPage() {
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
                               <Button
-                                onClick={() => handleDeployLiquidity(coin)}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                  handleDeployLiquidity(coin)
+                                }}
                                 className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0 transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 h-10 md:h-auto text-xs md:text-sm"
                               >
                                 <Droplets className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
@@ -558,10 +560,18 @@ export default function CreatorsPage() {
                                 size="icon"
                                 className="border-white/10 hover:bg-white/10 hover:border-white/20 bg-transparent transition-all duration-300 h-10 w-10 md:h-auto md:w-auto"
                                 asChild
+                                onClick={(e: React.MouseEvent) => {
+                                  e.preventDefault()
+                                  e.stopPropagation()
+                                }}
                               >
-                                <Link href={`https://zora.co/coins/${coin.address}`} target="_blank">
+                                <a
+                                  href={`https://zora.co/coins/${coin.address}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
                                   <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                </Link>
+                                </a>
                               </Button>
                             </motion.div>
                           </div>
