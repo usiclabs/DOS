@@ -3,6 +3,8 @@ import { createPublicClient, http, formatUnits } from "viem"
 import { base } from "viem/chains"
 import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
+export const dynamic = "force-dynamic"
+
 const ERC20_ABI = [
   {
     inputs: [{ name: "account", type: "address" }],

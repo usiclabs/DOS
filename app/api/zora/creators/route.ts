@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { queryCreatorCoins } from "@/lib/zora-sdk"
 
+export const dynamic = "force-dynamic"
+
 const ZORA_API_KEY = "zora_api_a3bdc55dcf5cb9e9974348e5576525f6f4b1c81686700bf8cf52c088fef51207"
 
 export interface ZoraCreatorCoin {
