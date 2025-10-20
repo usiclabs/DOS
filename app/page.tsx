@@ -8,12 +8,15 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { OnboardingModal } from "@/components/onboarding/onboarding-modal"
 import { WelcomeBanner } from "@/components/onboarding/welcome-banner"
 import { AIInsightsPanel } from "@/components/ai-insights-panel"
+import { FeaturedPoolsCarousel } from "@/components/featured-pools-carousel"
 import { useOnboarding } from "@/hooks/use-onboarding"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { LiveDataIndicator } from "@/components/live-data-indicator"
+import { useState, useEffect } from "react"
+import type { PoolData } from "@/lib/pool-data"
 import {
   Zap,
   Shield,
@@ -71,6 +74,25 @@ const scaleIn = {
 export default function HomePage() {
   const { hasCompletedOnboarding, isOnboardingOpen, startOnboarding, completeOnboarding, closeOnboarding } =
     useOnboarding()
+
+  const [pools, setPools] = useState<PoolData[]>([])
+  const [isLoadingPools, setIsLoadingPools] = useState(true)
+
+  useEffect(() => {
+    const fetchPools = async () => {
+      try {
+        const response = await fetch("/api/pools?limit=50&sortBy=netApy&sortOrder=desc")
+        const data = await response.json()
+        setPools(data.pools || [])
+      } catch (error) {
+        console.error("[v0] Error fetching pools:", error)
+      } finally {
+        setIsLoadingPools(false)
+      }
+    }
+
+    fetchPools()
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">
@@ -181,6 +203,37 @@ export default function HomePage() {
             </motion.div>
           </div>
         </motion.section>
+
+        {!isLoadingPools && pools.length > 0 && (
+          <motion.section
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+            variants={staggerContainer}
+            className="mb-20 md:mb-32 lg:mb-40"
+          >
+            <div className="text-center mb-8 md:mb-12 px-2">
+              <Badge className="mb-4 md:mb-6 glass-card text-accent-foreground border-accent/20 px-3 py-1 md:px-4 md:py-2 text-sm">
+                <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                Top LP Opportunities
+              </Badge>
+              <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-white">
+                Featured Liquidity Pools
+              </h2>
+              <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                Discover the highest-yielding liquidity opportunities on Base chain
+              </p>
+            </div>
+
+            <FeaturedPoolsCarousel
+              pools={pools}
+              onDeployClick={(pool) => {
+                console.log("[v0] Deploy clicked for pool:", pool.id)
+                window.location.href = `/pools?search=${pool.baseToken.symbol}`
+              }}
+            />
+          </motion.section>
+        )}
 
         <motion.section
           initial="hidden"
