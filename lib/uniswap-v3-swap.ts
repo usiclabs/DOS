@@ -110,7 +110,7 @@ export async function detectPoolFeeTier(
 ): Promise<{ fee: number; poolAddress: string } | null> {
   console.log("[v0] Detecting pool fee tier for:", { tokenA, tokenB })
 
-  const MIN_LIQUIDITY = BigInt("100000000000000") // 0.0001 ETH worth of liquidity minimum
+  const MIN_LIQUIDITY = BigInt("100000000000") // 0.0000001 ETH worth of liquidity minimum (lowered significantly)
 
   const pools: Array<{ fee: number; poolAddress: string; liquidity: bigint }> = []
 
@@ -136,6 +136,8 @@ export async function detectPoolFeeTier(
       // Decode the pool address from the result
       const poolAddress = "0x" + result.slice(-40)
 
+      console.log(`[v0] Checking fee tier ${fee} (${fee / 10000}%):`, poolAddress)
+
       // Check if pool exists (not zero address)
       if (poolAddress !== "0x0000000000000000000000000000000000000000") {
         // Get pool liquidity
@@ -149,16 +151,27 @@ export async function detectPoolFeeTier(
           ])
 
           const liquidity = BigInt(liquidityResult)
-          console.log("[v0] Found pool:", { fee, poolAddress, liquidity: liquidity.toString() })
+          console.log("[v0] Pool details:", {
+            fee,
+            feePercent: `${fee / 10000}%`,
+            poolAddress,
+            liquidity: liquidity.toString(),
+            liquidityETH: (Number(liquidity) / 1e18).toFixed(6) + " ETH",
+            meetsMinimum: liquidity >= MIN_LIQUIDITY,
+          })
 
           if (liquidity >= MIN_LIQUIDITY) {
             pools.push({ fee, poolAddress, liquidity })
           } else {
-            console.log(`[v0] Skipping pool with insufficient liquidity: ${liquidity.toString()}`)
+            console.log(
+              `[v0] ⚠️ Skipping pool with insufficient liquidity: ${(Number(liquidity) / 1e18).toFixed(6)} ETH (minimum: ${(Number(MIN_LIQUIDITY) / 1e18).toFixed(9)} ETH)`,
+            )
           }
         } catch (error) {
-          console.error(`[v0] Error getting liquidity for pool ${poolAddress}:`, error)
+          console.error(`[v0] ❌ Error getting liquidity for pool ${poolAddress}:`, error)
         }
+      } else {
+        console.log(`[v0] No pool exists for fee tier ${fee} (${fee / 10000}%)`)
       }
     } catch (error) {
       console.error(`[v0] Error checking fee tier ${fee}:`, error)
@@ -166,16 +179,28 @@ export async function detectPoolFeeTier(
   }
 
   if (pools.length === 0) {
-    console.log("[v0] No pool with sufficient liquidity found for token pair")
+    console.log("[v0] ❌ No pool with sufficient liquidity found for token pair")
+    console.log("[v0] Checked fee tiers:", FEE_TIERS.map((f) => `${f / 10000}%`).join(", "))
     return null
   }
 
+  console.log(
+    "[v0] Found pools:",
+    pools.map((p) => ({
+      fee: `${p.fee / 10000}%`,
+      address: p.poolAddress,
+      liquidityETH: (Number(p.liquidity) / 1e18).toFixed(6) + " ETH",
+    })),
+  )
+
   const bestPool = pools.reduce((best, current) => (current.liquidity > best.liquidity ? current : best))
 
-  console.log("[v0] Selected pool with best liquidity:", {
+  console.log("[v0] ✅ Selected pool with best liquidity:", {
     fee: bestPool.fee,
+    feePercent: `${bestPool.fee / 10000}%`,
     poolAddress: bestPool.poolAddress,
     liquidity: bestPool.liquidity.toString(),
+    liquidityETH: (Number(bestPool.liquidity) / 1e18).toFixed(6) + " ETH",
   })
 
   return { fee: bestPool.fee, poolAddress: bestPool.poolAddress }
@@ -249,7 +274,7 @@ export async function findBestSwapPool(
           ])
 
           const liquidity = BigInt(liquidityResult)
-          const MIN_LIQUIDITY = BigInt("100000000000000") // 0.0001 ETH worth
+          const MIN_LIQUIDITY = BigInt("100000000000") // 0.0000001 ETH worth
 
           if (liquidity >= MIN_LIQUIDITY) {
             console.log("[v0] Pool hint has sufficient liquidity:", liquidity.toString())

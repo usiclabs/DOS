@@ -1,7 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createPublicClient, http } from "viem"
-import { base } from "viem/chains"
-import { BASE_RPC_URL } from "@/lib/rpc-config"
 import { buildSwapTransaction, buildMultiHopSwapTransaction } from "@/lib/uniswap-v3-swap"
 import { buildV4SwapTransaction } from "@/lib/uniswap-v4-swap"
 import { prepareZoraTradeTransaction } from "@/lib/zora-trade"
@@ -31,43 +28,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const client = createPublicClient({
-      chain: base,
-      transport: http(BASE_RPC_URL, {
-        timeout: 10000,
-        retryCount: 2,
-      }),
-    })
-
-    let nonce: number | undefined
-    let maxFeePerGas: bigint | undefined
-    let maxPriorityFeePerGas: bigint | undefined
-
-    try {
-      const [fetchedNonce, gasPrice, block] = await Promise.all([
-        client.getTransactionCount({ address: userAddress as `0x${string}` }),
-        client.getGasPrice(),
-        client.getBlock(),
-      ])
-
-      nonce = fetchedNonce
-      maxPriorityFeePerGas = gasPrice / 10n
-      maxFeePerGas = (block.baseFeePerGas || gasPrice) * 2n + maxPriorityFeePerGas
-    } catch (rpcError) {
-      console.error(
-        "[v0] Could not fetch RPC parameters:",
-        rpcError instanceof Error ? rpcError.message : "Unknown error",
-      )
-      return NextResponse.json({ error: "Failed to fetch transaction parameters from RPC" }, { status: 500 })
-    }
-
     const deadline = Math.floor(Date.now() / 1000) + 1200 // 20 minutes from now
 
     let swapTx
 
     if (quote.zoraTradeData) {
-      console.log("[v0] Building Zora trade transaction...")
-      swapTx = prepareZoraTradeTransaction(quote.zoraTradeData.tradeParams, deadline)
+      console.log("[v0] Building Zora trade transaction with pairing:", quote.zoraTradeData.poolPairing)
+      swapTx = prepareZoraTradeTransaction(quote.zoraTradeData.tradeParams, deadline, quote.zoraTradeData.poolPairing)
     } else if (quote.uniswapV4Data) {
       console.log("[v0] Building Uniswap V4 swap transaction...")
       swapTx = buildV4SwapTransaction(
@@ -109,9 +76,6 @@ export async function POST(request: NextRequest) {
       data: swapTx.data,
       value: swapTx.value,
       gasLimit: swapTx.gasLimit,
-      nonce: nonce !== undefined ? `0x${nonce.toString(16)}` : undefined,
-      maxFeePerGas: maxFeePerGas ? `0x${maxFeePerGas.toString(16)}` : undefined,
-      maxPriorityFeePerGas: maxPriorityFeePerGas ? `0x${maxPriorityFeePerGas.toString(16)}` : undefined,
     }
 
     console.log("[v0] Swap transaction prepared:", {
@@ -119,6 +83,7 @@ export async function POST(request: NextRequest) {
       value: transactionRequest.value,
       gasLimit: transactionRequest.gasLimit,
       isZoraTrade: !!quote.zoraTradeData,
+      poolPairing: quote.zoraTradeData?.poolPairing,
       isV4: !!quote.uniswapV4Data,
       isMultiHop: quote.uniswapV3Data?.isMultiHop,
     })
@@ -131,7 +96,7 @@ export async function POST(request: NextRequest) {
         validUntil: Date.now() + 120000, // 2 minutes
       },
       message: quote.zoraTradeData
-        ? "Swap transaction prepared via Zora Protocol"
+        ? `Swap transaction prepared via Zora Protocol (${quote.zoraTradeData.poolPairing} pairing)`
         : quote.uniswapV4Data
           ? "Swap transaction prepared via Uniswap V4"
           : quote.uniswapV3Data.isMultiHop

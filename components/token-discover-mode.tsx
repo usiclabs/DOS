@@ -16,12 +16,16 @@ import {
   Sparkles,
   BarChart3,
   Droplets,
+  Zap,
+  Users,
+  ExternalLink,
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useWalletContext } from "@/contexts/wallet-context"
 import { createPublicClient, http } from "viem"
 import { base } from "viem/chains"
 import { supportsEIP5792, sendCalls, waitForCallsConfirmation } from "@/lib/eip5792"
+import Image from "next/image"
 
 interface TokenCard {
   symbol: string
@@ -32,6 +36,7 @@ interface TokenCard {
   volume24h: number
   liquidity: number
   avgApy: number
+  image?: string
   pools: {
     pairAddress: string
     quoteToken: string
@@ -41,6 +46,13 @@ interface TokenCard {
   }[]
   isDeusPool: boolean
   isTrending?: boolean
+  isCreatorCoin?: boolean
+  creator?: {
+    address: string
+    name?: string
+    avatar?: string
+  }
+  holders?: number
 }
 
 export function TokenDiscoverMode() {
@@ -51,21 +63,25 @@ export function TokenDiscoverMode() {
   const [isLoading, setIsLoading] = useState(true)
   const [isExpanded, setIsExpanded] = useState(false)
   const [isBuying, setIsBuying] = useState(false)
+  const [currentPage, setCurrentPage] = useState(0)
+  const [hasMore, setHasMore] = useState(true)
+  const TOKENS_PER_PAGE = 15
 
   const x = useMotionValue(0)
-  const rotate = useTransform(x, [-200, 200], [-25, 25])
+  const rotate = useTransform(x, [-200, 200], [-15, 15])
   const opacity = useTransform(x, [-200, -100, 0, 100, 200], [0, 1, 1, 1, 0])
 
   useEffect(() => {
     fetchTokens()
   }, [])
 
-  const fetchTokens = async () => {
+  const fetchTokens = async (page = 0) => {
     setIsLoading(true)
     try {
-      const [poolsResponse, trendingResponse] = await Promise.all([
-        fetch("/api/pools?limit=100&sortBy=netApy"), // Increased limit to fetch more pools
+      const [poolsResponse, trendingResponse, creatorsResponse] = await Promise.all([
+        fetch("/api/pools?limit=100&sortBy=netApy"),
         fetch("/api/trending-tokens"),
+        fetch("/api/zora/creators?limit=100"), // Increased limit to get more creator coins
       ])
 
       if (!poolsResponse.ok) throw new Error("Failed to fetch pools")
@@ -89,9 +105,11 @@ export function TokenDiscoverMode() {
             volume24h: 0,
             liquidity: 0,
             avgApy: 0,
+            image: pool.info?.imageUrl || token.image,
             pools: [],
             isDeusPool: pool.isDeusPool,
             isTrending: false,
+            isCreatorCoin: false,
           })
         }
 
@@ -131,6 +149,7 @@ export function TokenDiscoverMode() {
             volume24h: token.volume24h,
             liquidity: token.liquidity,
             avgApy: 0,
+            image: token.image,
             pools: token.pairs.map((pair: any) => ({
               pairAddress: pair.pairAddress,
               quoteToken: pair.quoteToken,
@@ -140,30 +159,94 @@ export function TokenDiscoverMode() {
             })),
             isDeusPool: false,
             isTrending: true,
+            isCreatorCoin: false,
           })
         })
+      }
+
+      if (creatorsResponse.ok) {
+        const creatorsData = await creatorsResponse.json()
+        const creatorCoins = creatorsData.coins || []
+
+        console.log("[v0] Processing", creatorCoins.length, "creator coins for discovery")
+
+        creatorCoins.forEach((coin: any) => {
+          const estimatedApy =
+            coin.metrics.liquidity > 0 ? (coin.metrics.volume24h / coin.metrics.liquidity) * 365 * 100 : 0
+
+          // Include creator coins with high yield (>5%) OR trending OR high volume
+          if (estimatedApy > 5 || coin.trending || coin.metrics.volume24h > 1000) {
+            tokenMap.set(coin.address.toLowerCase(), {
+              symbol: coin.symbol,
+              name: coin.name,
+              address: coin.address,
+              priceUsd: coin.metrics.price,
+              priceChange24h: coin.metrics.priceChange24h,
+              volume24h: coin.metrics.volume24h,
+              liquidity: coin.metrics.liquidity,
+              avgApy: estimatedApy,
+              image: coin.image,
+              pools: coin.poolAddress
+                ? [
+                    {
+                      pairAddress: coin.poolAddress,
+                      quoteToken: coin.quoteToken || "ETH", // Use actual quote token from API
+                      dexId: "Zora",
+                      apy: estimatedApy,
+                      liquidity: coin.metrics.liquidity,
+                    },
+                  ]
+                : [],
+              isDeusPool: false,
+              isTrending: coin.trending,
+              isCreatorCoin: true,
+              creator: coin.creator,
+              holders: coin.metrics.holders,
+            })
+          }
+        })
+
+        console.log("[v0] Added", tokenMap.size - pools.length, "creator coins to discovery")
       }
 
       const tokenCards = Array.from(tokenMap.values())
         .filter((token) => {
           const hasAnyPool = token.pools.length > 0
-          const hasSomeLiquidity = token.pools.some((p) => p.liquidity > 1)
+          const hasSomeLiquidity = token.pools.some((p) => p.liquidity > 1) || token.liquidity > 1
           return hasAnyPool && hasSomeLiquidity
         })
         .map((token) => ({
           ...token,
-          avgApy: token.pools.length > 0 ? token.pools.reduce((sum, p) => sum + p.apy, 0) / token.pools.length : 0,
+          avgApy:
+            token.pools.length > 0 ? token.pools.reduce((sum, p) => sum + p.apy, 0) / token.pools.length : token.avgApy,
         }))
         .sort((a, b) => {
           if (a.isDeusPool && !b.isDeusPool) return -1
           if (!a.isDeusPool && b.isDeusPool) return 1
+          if (a.isCreatorCoin && a.avgApy > 50 && (!b.isCreatorCoin || b.avgApy <= 50)) return -1
+          if (b.isCreatorCoin && b.avgApy > 50 && (!a.isCreatorCoin || a.avgApy <= 50)) return 1
           if (a.isTrending && !b.isTrending) return -1
           if (!a.isTrending && b.isTrending) return 1
           return b.volume24h - a.volume24h
         })
 
-      setTokens(tokenCards)
-      console.log("[v0] Loaded", tokenCards.length, "tradeable tokens for discovery (including trending)")
+      const startIndex = page * TOKENS_PER_PAGE
+      const endIndex = startIndex + TOKENS_PER_PAGE
+      const paginatedTokens = tokenCards.slice(startIndex, endIndex)
+
+      setTokens(page === 0 ? paginatedTokens : [...tokens, ...paginatedTokens])
+      setHasMore(endIndex < tokenCards.length)
+      setCurrentPage(page)
+
+      console.log(
+        "[v0] Loaded page",
+        page + 1,
+        "with",
+        paginatedTokens.length,
+        "tokens (",
+        tokenCards.length,
+        "total available)",
+      )
     } catch (error) {
       console.error("[v0] Failed to fetch tokens:", error)
       toast({
@@ -175,6 +258,13 @@ export function TokenDiscoverMode() {
       setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    if (currentIndex >= tokens.length - 2 && hasMore && !isLoading) {
+      console.log("[v0] Loading more tokens...")
+      fetchTokens(currentPage + 1)
+    }
+  }, [currentIndex, tokens.length, hasMore, isLoading, currentPage])
 
   const handleDragEnd = async (event: any, info: PanInfo) => {
     const swipeThreshold = 100
@@ -216,7 +306,6 @@ export function TokenDiscoverMode() {
       const wethPools = token.pools.filter((p) => p.quoteToken === "WETH" || p.quoteToken === "ETH")
       const deusPools = token.pools.filter((p) => p.quoteToken === "DEUS")
 
-      // Priority: Uniswap with WETH > Uniswap with DEUS > Any WETH > Any DEUS > Highest liquidity
       let selectedPool = uniswapPools.find(
         (p) => (p.quoteToken === "WETH" || p.quoteToken === "ETH") && p.liquidity > 10,
       )
@@ -261,7 +350,7 @@ export function TokenDiscoverMode() {
         return
       }
 
-      if (!selectedPool.dexId.toLowerCase().includes("uniswap")) {
+      if (!selectedPool.dexId.toLowerCase().includes("uniswap") && !token.isCreatorCoin) {
         toast({
           title: "Available on " + selectedPool.dexId,
           description: (
@@ -298,31 +387,6 @@ export function TokenDiscoverMode() {
 
       const supportsEIP5792Batch = await supportsEIP5792()
       console.log("[v0] Wallet supports EIP-5792:", supportsEIP5792Batch)
-
-      if (window.ethereum) {
-        try {
-          console.log("[v0] Configuring MetaMask to use BlastAPI RPC...")
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: "0x2105",
-                chainName: "Base",
-                nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                rpcUrls: ["https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"],
-                blockExplorerUrls: ["https://basescan.org"],
-              },
-            ],
-          })
-        } catch (addError: any) {
-          if (addError.code === 4902) {
-            await window.ethereum.request({
-              method: "wallet_switchEthereumChain",
-              params: [{ chainId: "0x2105" }],
-            })
-          }
-        }
-      }
 
       const quoteResponse = await fetch("/api/swap/quote", {
         method: "POST",
@@ -363,7 +427,11 @@ export function TokenDiscoverMode() {
         }),
       })
 
-      if (!executeResponse.ok) throw new Error("Failed to prepare transaction")
+      if (!executeResponse.ok) {
+        const errorText = await executeResponse.text()
+        console.error("[v0] Execute API error:", errorText)
+        throw new Error("Failed to prepare transaction")
+      }
 
       const txData = await executeResponse.json()
 
@@ -444,17 +512,10 @@ export function TokenDiscoverMode() {
           to: transaction.to,
           data: transaction.data,
           value: `0x${BigInt(transaction.value || 0).toString(16)}`,
-          gas: `0x${BigInt(transaction.gasLimit).toString(16)}`,
         }
 
-        if (transaction.nonce) {
-          txParams.nonce = transaction.nonce
-        }
-        if (transaction.maxFeePerGas) {
-          txParams.maxFeePerGas = transaction.maxFeePerGas
-        }
-        if (transaction.maxPriorityFeePerGas) {
-          txParams.maxPriorityFeePerGas = transaction.maxPriorityFeePerGas
+        if (transaction.gasLimit) {
+          txParams.gas = `0x${BigInt(transaction.gasLimit).toString(16)}`
         }
 
         const txHash = await window.ethereum.request({
@@ -471,7 +532,7 @@ export function TokenDiscoverMode() {
 
         const publicClient = createPublicClient({
           chain: base,
-          transport: http("https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"),
+          transport: http("https://mainnet.base.org"), // Using official Base RPC
         })
 
         const receipt = await publicClient.waitForTransactionReceipt({
@@ -523,13 +584,18 @@ export function TokenDiscoverMode() {
           variant: "destructive",
         })
         handleSkip()
+      } else if (error.message?.includes("rate limit") || error.message?.includes("Too Many Requests")) {
+        toast({
+          title: "Network Busy",
+          description: "The network is experiencing high traffic. Please try again in a moment.",
+          variant: "destructive",
+        })
       } else {
         toast({
           title: "Purchase Failed",
-          description: error.message || "Failed to complete purchase. Skipping to next token.",
+          description: error.message || "Failed to complete purchase. Please try again.",
           variant: "destructive",
         })
-        handleSkip()
       }
     } finally {
       setIsBuying(false)
@@ -551,7 +617,7 @@ export function TokenDiscoverMode() {
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="text-center space-y-4">
           <Loader2 className="w-12 h-12 animate-spin text-emerald-400 mx-auto" />
-          <p className="text-muted-foreground">Loading tokens...</p>
+          <p className="text-muted-foreground">Loading premium opportunities...</p>
         </div>
       </div>
     )
@@ -576,151 +642,299 @@ export function TokenDiscoverMode() {
 
   return (
     <div className="relative w-full max-w-md mx-auto px-4 py-8">
-      <div className="relative h-[600px]">
+      <div className="relative h-[620px] md:h-[640px]">
+        {/* Next card preview */}
         {currentIndex + 1 < tokens.length && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Card className="w-full h-[580px] bg-card/50 border-border scale-95 opacity-50" />
+            <Card className="w-full h-[600px] md:h-[620px] bg-card/30 border-border/30 scale-95 opacity-40 blur-sm" />
           </div>
         )}
 
+        {/* Current card with glassmorphism and token image background */}
         <motion.div
-          className="absolute inset-0 flex items-center justify-center cursor-grab active:cursor-grabbing"
+          className="absolute inset-0 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
           style={{ x, rotate, opacity }}
           drag="x"
           dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
           onDragEnd={handleDragEnd}
-          whileTap={{ cursor: "grabbing" }}
+          whileTap={{ cursor: "grabbing", scale: 0.98 }}
         >
-          <Card className="w-full h-[580px] bg-gradient-to-br from-card to-card/80 border-emerald-500/20 shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-border/50">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-3xl font-bold">{currentToken.symbol}</h2>
-                    {currentToken.isDeusPool && (
-                      <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">DEUS</Badge>
-                    )}
-                    {currentToken.isTrending && (
-                      <Badge className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-                        <TrendingUp className="w-3 h-3 mr-1" />
-                        Trending
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-sm text-muted-foreground">{currentToken.name}</p>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="hover:bg-white/5"
-                >
-                  {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                </Button>
-              </div>
-
-              <div className="space-y-1">
-                <div className="text-4xl font-bold">{formatNumber(currentToken.priceUsd)}</div>
-                <div
-                  className={`flex items-center text-sm ${currentToken.priceChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
-                >
-                  {currentToken.priceChange24h >= 0 ? (
-                    <TrendingUp className="w-4 h-4 mr-1" />
-                  ) : (
-                    <TrendingDown className="w-4 h-4 mr-1" />
-                  )}
-                  {formatPercent(currentToken.priceChange24h)} (24h)
-                </div>
-              </div>
+          <Card className="w-full h-[600px] md:h-[620px] relative overflow-hidden border-2 border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
+            <div className="absolute inset-0 overflow-hidden">
+              {currentToken.image ? (
+                <>
+                  <Image
+                    src={currentToken.image || "/placeholder.svg"}
+                    alt={currentToken.symbol}
+                    fill
+                    className="object-cover scale-110 blur-3xl opacity-30"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-background/95 via-background/90 to-background/95 backdrop-blur-xl" />
+                </>
+              ) : (
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-background to-purple-500/10" />
+              )}
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <BarChart3 className="w-4 h-4 mr-1" />
-                    24h Volume
-                  </div>
-                  <div className="text-xl font-semibold">{formatNumber(currentToken.volume24h)}</div>
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center text-sm text-muted-foreground">
-                    <Droplets className="w-4 h-4 mr-1" />
-                    Liquidity
-                  </div>
-                  <div className="text-xl font-semibold">{formatNumber(currentToken.liquidity)}</div>
-                </div>
-              </div>
+            <motion.div
+              className="absolute inset-0 opacity-50"
+              animate={{
+                background: [
+                  "linear-gradient(0deg, rgba(16,185,129,0.1) 0%, transparent 50%)",
+                  "linear-gradient(360deg, rgba(16,185,129,0.1) 0%, transparent 50%)",
+                ],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "linear",
+              }}
+            />
 
-              <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
-                <div className="text-sm text-muted-foreground mb-1">Average APY</div>
-                <div className="text-3xl font-bold text-emerald-400">{currentToken.avgApy.toFixed(2)}%</div>
-                <div className="text-xs text-muted-foreground mt-1">Across {currentToken.pools.length} pools</div>
-              </div>
-
-              {isExpanded && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="space-y-3 pt-4 border-t border-border/50"
-                >
-                  <div className="text-sm font-medium">Trading Pairs</div>
-                  <div className="space-y-2 max-h-[200px] overflow-y-auto">
-                    {currentToken.pools.slice(0, 5).map((pool, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-white/5">
-                        <div className="text-sm">
-                          {currentToken.symbol}/{pool.quoteToken}
-                          <div className="text-xs text-muted-foreground">{pool.dexId}</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-emerald-400">{pool.apy.toFixed(1)}%</div>
-                          <div className="text-xs text-muted-foreground">{formatNumber(pool.liquidity)}</div>
-                        </div>
+            {/* Content */}
+            <div className="relative h-full flex flex-col">
+              <div className="p-5 md:p-6 border-b border-border/30 backdrop-blur-sm bg-background/40">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                        {currentToken.symbol}
+                      </h2>
+                      {currentToken.isDeusPool && (
+                        <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 backdrop-blur-sm">
+                          <Zap className="w-3 h-3 mr-1" />
+                          DEUS
+                        </Badge>
+                      )}
+                      {currentToken.isTrending && (
+                        <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/40 backdrop-blur-sm">
+                          <TrendingUp className="w-3 h-3 mr-1" />
+                          Trending
+                        </Badge>
+                      )}
+                      {currentToken.isCreatorCoin && (
+                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/40 backdrop-blur-sm">
+                          <Sparkles className="w-3 h-3 mr-1" />
+                          Creator
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-sm text-muted-foreground line-clamp-1">{currentToken.name}</p>
+                    {currentToken.isCreatorCoin && currentToken.creator && (
+                      <div className="flex items-center gap-2 mt-2">
+                        {currentToken.creator.avatar && (
+                          <Image
+                            src={currentToken.creator.avatar || "/placeholder.svg"}
+                            alt={currentToken.creator.name || "Creator"}
+                            width={20}
+                            height={20}
+                            className="rounded-full"
+                            unoptimized
+                          />
+                        )}
+                        <span className="text-xs text-emerald-400">by {currentToken.creator.name}</span>
                       </div>
-                    ))}
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="hover:bg-white/10 backdrop-blur-sm shrink-0"
+                  >
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-emerald-200 to-emerald-400 bg-clip-text text-transparent">
+                    {formatNumber(currentToken.priceUsd)}
+                  </div>
+                  <div
+                    className={`flex items-center text-base md:text-lg font-medium ${
+                      currentToken.priceChange24h >= 0 ? "text-green-400" : "text-red-400"
+                    }`}
+                  >
+                    {currentToken.priceChange24h >= 0 ? (
+                      <TrendingUp className="w-5 h-5 mr-2" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5 mr-2" />
+                    )}
+                    {formatPercent(currentToken.priceChange24h)} (24h)
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 p-5 md:p-6 space-y-4 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3 md:gap-4">
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center text-sm text-muted-foreground mb-2">
+                      <BarChart3 className="w-4 h-4 mr-2" />
+                      24h Volume
+                    </div>
+                    <div className="text-xl md:text-2xl font-bold">{formatNumber(currentToken.volume24h)}</div>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center text-sm text-muted-foreground mb-2">
+                      <Droplets className="w-4 h-4 mr-2" />
+                      Liquidity
+                    </div>
+                    <div className="text-xl md:text-2xl font-bold">{formatNumber(currentToken.liquidity)}</div>
+                  </motion.div>
+                </div>
+
+                {currentToken.isCreatorCoin && currentToken.holders && (
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center text-sm text-purple-300 mb-2">
+                      <Users className="w-4 h-4 mr-2" />
+                      Holders
+                    </div>
+                    <div className="text-2xl md:text-3xl font-bold text-purple-200">
+                      {currentToken.holders.toLocaleString()}
+                    </div>
+                  </motion.div>
+                )}
+
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  className="p-5 md:p-6 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 border-2 border-emerald-500/30 backdrop-blur-sm shadow-lg shadow-emerald-500/10"
+                >
+                  <div className="text-sm text-emerald-200 mb-2 font-medium">
+                    {currentToken.isCreatorCoin ? "Estimated APY" : "Average APY"}
+                  </div>
+                  <div className="text-4xl md:text-5xl font-bold text-emerald-300 mb-1">
+                    {currentToken.avgApy.toFixed(2)}%
+                  </div>
+                  <div className="text-xs text-emerald-200/80">
+                    {currentToken.isCreatorCoin
+                      ? "Based on volume/liquidity ratio"
+                      : `Across ${currentToken.pools.length} pool${currentToken.pools.length > 1 ? "s" : ""}`}
                   </div>
                 </motion.div>
-              )}
+
+                {isExpanded && currentToken.pools.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-3 pt-2"
+                  >
+                    <div className="text-sm font-medium text-muted-foreground">Trading Pairs</div>
+                    <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                      {currentToken.pools.slice(0, 5).map((pool, idx) => (
+                        <motion.div
+                          key={idx}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.05 }}
+                          className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors"
+                        >
+                          <div className="text-sm">
+                            <div className="font-medium">
+                              {currentToken.symbol}/{pool.quoteToken}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">{pool.dexId}</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-emerald-400">{pool.apy.toFixed(1)}%</div>
+                            <div className="text-xs text-muted-foreground">{formatNumber(pool.liquidity)}</div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+
+                <motion.a
+                  href={`https://dexscreener.com/base/${currentToken.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.02 }}
+                  className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors text-sm text-muted-foreground hover:text-foreground"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  View on DexScreener
+                </motion.a>
+              </div>
             </div>
           </Card>
         </motion.div>
       </div>
 
-      <div className="flex items-center justify-center gap-6 mt-8">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={handleSkip}
-          disabled={isBuying}
-          className="w-16 h-16 rounded-full border-2 border-red-500/30 hover:bg-red-500/10 hover:border-red-500 bg-transparent"
-        >
-          <X className="w-8 h-8 text-red-400" />
-        </Button>
+      <div className="flex items-center justify-center gap-8 mt-8">
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleSkip}
+            disabled={isBuying}
+            className="w-20 h-20 rounded-full border-2 border-red-500/40 hover:bg-red-500/20 hover:border-red-500 bg-background/80 backdrop-blur-sm shadow-lg"
+          >
+            <X className="w-10 h-10 text-red-400" />
+          </Button>
+        </motion.div>
 
-        <Button
-          size="lg"
-          onClick={handleBuy}
-          disabled={isBuying || !address}
-          className="w-20 h-20 rounded-full bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
+        <motion.div
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          animate={{
+            boxShadow: [
+              "0 0 20px rgba(16,185,129,0.4)",
+              "0 0 60px rgba(16,185,129,0.6)",
+              "0 0 20px rgba(16,185,129,0.4)",
+            ],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+          className="rounded-full"
         >
-          {isBuying ? <Loader2 className="w-10 h-10 animate-spin" /> : <Heart className="w-10 h-10" />}
-        </Button>
+          <Button
+            size="lg"
+            onClick={handleBuy}
+            disabled={isBuying || !address}
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500/90 to-emerald-600/90 hover:from-emerald-500 hover:to-emerald-600 shadow-2xl border-2 border-emerald-400/50 backdrop-blur-sm"
+          >
+            {isBuying ? <Loader2 className="w-12 h-12 animate-spin" /> : <Heart className="w-12 h-12 fill-current" />}
+          </Button>
+        </motion.div>
       </div>
 
-      <div className="flex items-center justify-between mt-6 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mt-6 px-2 text-sm text-muted-foreground">
+        <motion.div
+          className="flex items-center gap-2"
+          animate={{ x: [-5, 0, -5] }}
+          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+        >
           <X className="w-4 h-4 text-red-400" />
-          Swipe left to skip
+          <span className="hidden sm:inline">Swipe left to skip</span>
+          <span className="sm:hidden">Skip</span>
+        </motion.div>
+        <div className="text-center font-medium">
+          {currentIndex + 1} / {tokens.length}
         </div>
-        <div className="flex items-center gap-2">
-          Swipe right to buy
+        <motion.div
+          className="flex items-center gap-2"
+          animate={{ x: [5, 0, 5] }}
+          transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+        >
+          <span className="hidden sm:inline">Swipe right to buy</span>
+          <span className="sm:hidden">Buy</span>
           <Heart className="w-4 h-4 text-emerald-400" />
-        </div>
-      </div>
-
-      <div className="mt-4 text-center text-sm text-muted-foreground">
-        {currentIndex + 1} / {tokens.length} tokens
+        </motion.div>
       </div>
     </div>
   )
