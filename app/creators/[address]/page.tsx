@@ -146,7 +146,7 @@ export default function CreatorProfilePage({ params }: { params: { address: stri
                 <Card className="p-8 glass-card backdrop-blur-xl bg-white/5 border-white/10 shadow-2xl mb-8">
                   <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
                     <div className="relative w-24 h-24 rounded-full border-4 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0">
-                      {profile.avatar ? (
+                      {profile.avatar && typeof profile.avatar === "string" && profile.avatar.trim() !== "" ? (
                         <Image
                           src={profile.avatar || "/placeholder.svg"}
                           alt={profile.displayName || "Creator"}
@@ -257,7 +257,9 @@ export default function CreatorProfilePage({ params }: { params: { address: stri
                           <div className="p-6 space-y-4">
                             <div className="flex items-center gap-3">
                               <div className="relative w-12 h-12 rounded-full border-2 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0">
-                                {holding.coin.image ? (
+                                {holding.coin.image &&
+                                typeof holding.coin.image === "string" &&
+                                holding.coin.image.trim() !== "" ? (
                                   <Image
                                     src={holding.coin.image || "/placeholder.svg"}
                                     alt={holding.coin.name}
