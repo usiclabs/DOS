@@ -70,7 +70,7 @@ export default function SwapPage() {
   const DEUS_TOKEN: Token = {
     symbol: "DEUS",
     name: "DEUS Finance",
-    address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
+    address: "0x73582df1cad3e187cD0746b7A473d65c06386837e",
     balance: 0,
     price: 0.00005113,
     logo: "⚡",
@@ -396,12 +396,12 @@ export default function SwapPage() {
             transition={{ duration: 0.6 }}
             className="w-full max-w-2xl"
           >
-            <Card className="glass-card relative overflow-hidden border-2 border-emerald-500/20 shadow-2xl shadow-emerald-500/10">
+            <Card className="glass-card relative overflow-hidden border-2 border-primary/20 shadow-2xl shadow-primary/10">
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {[...Array(30)].map((_, i) => (
                   <motion.div
                     key={i}
-                    className="absolute w-1 h-1 bg-emerald-400/40 rounded-full blur-[1px]"
+                    className="absolute w-1 h-1 bg-primary/40 rounded-full blur-[1px]"
                     initial={{
                       x: Math.random() * 100 + "%",
                       y: Math.random() * 100 + "%",
@@ -421,10 +421,10 @@ export default function SwapPage() {
                 ))}
               </div>
 
-              <div className="absolute top-0 left-0 w-40 h-40 border-t-2 border-l-2 border-emerald-500/40 rounded-tl-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
-              <div className="absolute top-0 right-0 w-40 h-40 border-t-2 border-r-2 border-emerald-500/40 rounded-tr-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
-              <div className="absolute bottom-0 left-0 w-40 h-40 border-b-2 border-l-2 border-emerald-500/40 rounded-bl-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
-              <div className="absolute bottom-0 right-0 w-40 h-40 border-b-2 border-r-2 border-emerald-500/40 rounded-br-3xl shadow-[0_0_20px_rgba(16,185,129,0.3)]" />
+              <div className="absolute top-0 left-0 w-40 h-40 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(249,115,22,0.3)]" />
+              <div className="absolute top-0 right-0 w-40 h-40 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(249,115,22,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-40 h-40 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(249,115,22,0.3)]" />
+              <div className="absolute bottom-0 right-0 w-40 h-40 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(249,115,22,0.3)]" />
 
               {[
                 { position: "top-0 left-0", delay: 0 },
@@ -438,14 +438,14 @@ export default function SwapPage() {
                   animate={{ opacity: [0.2, 0.5, 0.2] }}
                   transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
                 >
-                  <div className={`absolute ${corner.position} w-20 h-20 bg-emerald-500/30 blur-2xl rounded-full`} />
+                  <div className={`absolute ${corner.position} w-20 h-20 bg-primary/30 blur-2xl rounded-full`} />
                 </motion.div>
               ))}
 
               <div className="relative p-16 text-center">
                 <div className="relative w-40 h-40 mx-auto mb-12">
                   <motion.div
-                    className="absolute inset-0 bg-emerald-500/30 rounded-full blur-2xl"
+                    className="absolute inset-0 bg-primary/30 rounded-full blur-2xl"
                     animate={{
                       scale: [1, 1.3, 1],
                       opacity: [0.3, 0.6, 0.3],
@@ -457,7 +457,7 @@ export default function SwapPage() {
                     }}
                   />
                   <motion.div
-                    className="absolute inset-0 bg-emerald-400/20 rounded-full blur-3xl"
+                    className="absolute inset-0 bg-primary/20 rounded-full blur-3xl"
                     animate={{
                       scale: [1, 1.5, 1],
                       opacity: [0.2, 0.5, 0.2],
@@ -471,7 +471,7 @@ export default function SwapPage() {
                   />
 
                   <motion.div
-                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-emerald-600/20 rounded-full border-2 border-emerald-500/30 backdrop-blur-sm shadow-[0_0_40px_rgba(16,185,129,0.3)]"
+                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-red-600/20 rounded-full border-2 border-primary/30 backdrop-blur-sm shadow-[0_0_40px_rgba(249,115,22,0.3)]"
                     animate={{ rotate: 360 }}
                     transition={{
                       duration: 20,
@@ -479,13 +479,13 @@ export default function SwapPage() {
                       ease: "linear",
                     }}
                   >
-                    <Wallet className="w-8 h-8 text-emerald-300" />
+                    <Wallet className="w-8 h-8 text-primary" />
                   </motion.div>
                 </div>
 
                 <div className="relative mb-8">
                   <motion.h2
-                    className="text-6xl font-bold bg-gradient-to-r from-emerald-200 via-emerald-400 to-emerald-200 bg-clip-text text-transparent bg-[length:200%_100%]"
+                    className="text-6xl font-bold bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent bg-[length:200%_100%]"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
@@ -498,7 +498,7 @@ export default function SwapPage() {
                     Token Swap
                   </motion.h2>
                   <motion.div
-                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent rounded-full"
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full"
                     animate={{
                       opacity: [0.3, 0.8, 0.3],
                       scaleX: [0.8, 1, 0.8],
@@ -523,7 +523,7 @@ export default function SwapPage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Button
                     onClick={() => connectWallet("metamask")}
-                    className="relative bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium px-12 py-8 text-xl rounded-2xl shadow-2xl shadow-emerald-500/30 transition-all duration-500 border border-emerald-400/30 overflow-hidden group"
+                    className="relative bg-gradient-to-br from-primary to-red-600 hover:from-primary/90 hover:to-red-500 text-white font-medium px-12 py-8 text-xl rounded-2xl shadow-2xl shadow-primary/30 transition-all duration-500 border border-primary/30 overflow-hidden group"
                     size="lg"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -536,7 +536,7 @@ export default function SwapPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="mt-10 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-emerald-500/10 border border-emerald-500/30 backdrop-blur-sm shadow-lg shadow-emerald-500/10"
+                  className="mt-10 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/10"
                 >
                   <motion.span
                     animate={{
@@ -548,13 +548,11 @@ export default function SwapPage() {
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "easeInOut",
                     }}
-                    className="text-emerald-400 text-lg"
+                    className="text-primary text-lg"
                   >
                     ✦
                   </motion.span>
-                  <span className="text-sm font-semibold text-emerald-300 tracking-wide">
-                    INSTANT SWAPS • BEST RATES
-                  </span>
+                  <span className="text-sm font-semibold text-primary tracking-wide">INSTANT SWAPS • BEST RATES</span>
                   <motion.span
                     animate={{
                       scale: [1, 1.3, 1],
@@ -566,7 +564,7 @@ export default function SwapPage() {
                       ease: "easeInOut",
                       delay: 1,
                     }}
-                    className="text-emerald-400 text-lg"
+                    className="text-primary text-lg"
                   >
                     ✦
                   </motion.span>
@@ -592,17 +590,17 @@ export default function SwapPage() {
           className="w-full max-w-lg"
         >
           <Tabs defaultValue="swap" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg">
+            <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl rounded-2xl overflow-hidden">
               <TabsTrigger
                 value="swap"
-                className="flex items-center gap-2 py-3 text-base data-[state=active]:bg-gradient-to-br data-[state=active]:from-emerald-500/20 data-[state=active]:to-emerald-600/20 data-[state=active]:border data-[state=active]:border-emerald-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-emerald-500/20 transition-all duration-300"
+                className="flex items-center gap-2 py-4 text-base font-medium rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/20 data-[state=active]:to-primary/10 data-[state=active]:border data-[state=active]:border-primary/30 data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 data-[state=active]:text-primary transition-all duration-300 hover:bg-white/5"
               >
                 <ArrowDownUp className="w-5 h-5" />
                 Swap
               </TabsTrigger>
               <TabsTrigger
                 value="discover"
-                className="flex items-center gap-2 py-3 text-base data-[state=active]:bg-gradient-to-br data-[state=active]:from-purple-500/20 data-[state=active]:to-purple-600/20 data-[state=active]:border data-[state=active]:border-purple-500/30 data-[state=active]:shadow-lg data-[state=active]:shadow-purple-500/20 transition-all duration-300"
+                className="flex items-center gap-2 py-4 text-base font-medium rounded-xl data-[state=active]:bg-gradient-to-br data-[state=active]:from-secondary/20 data-[state=active]:to-secondary/10 data-[state=active]:border data-[state=active]:border-secondary/30 data-[state=active]:shadow-lg data-[state=active]:shadow-secondary/20 data-[state=active]:text-secondary transition-all duration-300 hover:bg-white/5"
               >
                 <Sparkles className="w-5 h-5" />
                 Discover
@@ -610,163 +608,212 @@ export default function SwapPage() {
             </TabsList>
 
             <TabsContent value="swap">
-              <Card className="glass-card p-8 border-2 border-white/10 shadow-2xl">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-                    Swap
-                  </h2>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setShowSettings(!showSettings)}
-                    className="hover:bg-white/10 transition-all duration-300 rounded-xl"
-                  >
-                    <Settings className="w-6 h-6" />
-                  </Button>
-                </div>
+              <Card className="glass-card p-8 border-2 border-white/10 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
+                <motion.div
+                  className="absolute inset-0 opacity-30 pointer-events-none"
+                  animate={{
+                    background: [
+                      "radial-gradient(circle at 20% 50%, rgba(249,115,22,0.15) 0%, transparent 50%)",
+                      "radial-gradient(circle at 80% 50%, rgba(249,115,22,0.15) 0%, transparent 50%)",
+                      "radial-gradient(circle at 20% 50%, rgba(249,115,22,0.15) 0%, transparent 50%)",
+                    ],
+                  }}
+                  transition={{
+                    duration: 8,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                />
 
-                {showSettings && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    className="mb-6 p-4 rounded-lg bg-white/5 border border-white/10"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Slippage Tolerance</span>
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={slippage}
-                          onChange={(e) => setSlippage(e.target.value)}
-                          className="w-20 text-right"
-                        />
-                        <span className="text-sm">%</span>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                <div className="space-y-3 mb-3">
-                  <div className="flex items-center justify-between text-base text-muted-foreground">
-                    <span>Sell</span>
-                    {fromToken && <span>Balance: {fromToken.balance.toFixed(6)}</span>}
+                <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-white via-primary/80 to-white bg-clip-text text-transparent">
+                      Swap
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setShowSettings(!showSettings)}
+                      className="hover:bg-white/10 transition-all duration-300 rounded-xl hover:scale-110"
+                    >
+                      <Settings className="w-6 h-6" />
+                    </Button>
                   </div>
-                  <div className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 hover:border-emerald-500/30 transition-all duration-300 shadow-lg hover:shadow-emerald-500/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <Input
-                        type="number"
-                        placeholder="0.0"
-                        value={fromAmount}
-                        onChange={(e) => setFromAmount(e.target.value)}
-                        className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
-                      />
-                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
-                        <span className="text-xl">{fromToken?.logo}</span>
-                        <span className="font-medium">{fromToken?.symbol}</span>
-                        <ChevronDown className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-1">
-                        {[25, 50, 75, 100].map((percent) => (
-                          <Button
-                            key={percent}
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handlePercentage(percent)}
-                            className="text-xs hover:bg-white/10"
-                          >
-                            {percent === 100 ? "MAX" : `${percent}%`}
-                          </Button>
-                        ))}
+
+                  {showSettings && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mb-6 p-5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Slippage Tolerance</span>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={slippage}
+                            onChange={(e) => setSlippage(e.target.value)}
+                            className="w-24 text-right bg-white/5 border-white/10 focus:border-primary/50"
+                          />
+                          <span className="text-sm font-medium">%</span>
+                        </div>
                       </div>
-                      {fromToken && fromAmount && (
-                        <span className="text-sm text-muted-foreground">
-                          ${(Number.parseFloat(fromAmount) * fromToken.price).toFixed(2)}
+                    </motion.div>
+                  )}
+
+                  <div className="space-y-4 mb-4">
+                    <div className="flex items-center justify-between text-base text-muted-foreground font-medium">
+                      <span>Sell</span>
+                      {fromToken && (
+                        <span className="text-sm">
+                          Balance: <span className="text-foreground font-semibold">{fromToken.balance.toFixed(6)}</span>
                         </span>
                       )}
                     </div>
-                  </div>
-                </div>
-
-                <div className="flex justify-center -my-2 relative z-10">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full bg-gradient-to-br from-background to-background/80 border-4 border-background hover:bg-white/10 shadow-lg hover:shadow-emerald-500/20 transition-all duration-300"
-                  >
-                    <ArrowDownUp className="w-5 h-5 text-emerald-400" />
-                  </Button>
-                </div>
-
-                <div className="space-y-2 mt-2">
-                  <div className="flex items-center justify-between text-base text-muted-foreground">
-                    <span>Buy</span>
-                    {toToken && <span>Balance: {toToken.balance.toFixed(6)}</span>}
-                  </div>
-                  <div className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 shadow-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-2xl font-bold text-white">
-                        {isLoading ? <RefreshCw className="w-6 h-6 animate-spin" /> : toAmount || "0.0"}
+                    <motion.div
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      className="p-6 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border-2 border-white/10 hover:border-primary/30 transition-all duration-300 shadow-lg hover:shadow-primary/10 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <Input
+                          type="number"
+                          placeholder="0.0"
+                          value={fromAmount}
+                          onChange={(e) => setFromAmount(e.target.value)}
+                          className="text-3xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0 placeholder:text-white/20"
+                        />
+                        <Button
+                          variant="ghost"
+                          className="flex items-center gap-2 hover:bg-white/10 rounded-xl px-4 py-2"
+                        >
+                          <span className="text-2xl">{fromToken?.logo}</span>
+                          <span className="font-semibold text-lg">{fromToken?.symbol}</span>
+                          <ChevronDown className="w-5 h-5" />
+                        </Button>
                       </div>
-                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-white/5">
-                        <span className="text-xl">{toToken?.logo}</span>
-                        <span className="font-medium">{toToken?.symbol}</span>
-                        <ChevronDown className="w-4 h-4" />
+                      <div className="flex items-center justify-between">
+                        <div className="flex gap-2">
+                          {[25, 50, 75, 100].map((percent) => (
+                            <Button
+                              key={percent}
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handlePercentage(percent)}
+                              className="text-xs font-semibold hover:bg-primary/20 hover:text-primary transition-all duration-200 rounded-lg px-3"
+                            >
+                              {percent === 100 ? "MAX" : `${percent}%`}
+                            </Button>
+                          ))}
+                        </div>
+                        {fromToken && fromAmount && (
+                          <span className="text-sm text-muted-foreground font-medium">
+                            ${(Number.parseFloat(fromAmount) * fromToken.price).toFixed(2)}
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  <div className="flex justify-center -my-3 relative z-20">
+                    <motion.div whileHover={{ scale: 1.1, rotate: 180 }} whileTap={{ scale: 0.9 }}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-full bg-gradient-to-br from-background to-background/80 border-4 border-background hover:bg-white/10 shadow-2xl hover:shadow-primary/20 transition-all duration-300 w-14 h-14"
+                      >
+                        <ArrowDownUp className="w-6 h-6 text-primary" />
                       </Button>
-                    </div>
-                    {toToken && toAmount && (
-                      <div className="text-sm text-muted-foreground text-right">
-                        ${(Number.parseFloat(toAmount) * toToken.price).toFixed(2)}
-                      </div>
-                    )}
+                    </motion.div>
                   </div>
-                </div>
 
-                <Button
-                  onClick={handleSwap}
-                  disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
-                  className="w-full mt-8 bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 text-white font-medium py-6 text-lg transition-all duration-500 shadow-lg shadow-emerald-500/30 hover:shadow-emerald-500/50 border border-emerald-400/30 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group"
-                  size="lg"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                  <span className="relative z-10">
-                    {cooldownRemaining > 0 ? (
-                      `Wait ${cooldownRemaining}s to avoid rate limiting`
-                    ) : isSwapping ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin inline" />
-                        Confirming in wallet...
-                      </>
-                    ) : isLoading ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 mr-2 animate-spin inline" />
-                        Loading...
-                      </>
-                    ) : (
-                      "Swap"
-                    )}
-                  </span>
-                </Button>
+                  <div className="space-y-3 mt-3">
+                    <div className="flex items-center justify-between text-base text-muted-foreground font-medium">
+                      <span>Buy</span>
+                      {toToken && (
+                        <span className="text-sm">
+                          Balance: <span className="text-foreground font-semibold">{toToken.balance.toFixed(6)}</span>
+                        </span>
+                      )}
+                    </div>
+                    <motion.div
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      className="p-6 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border-2 border-white/10 shadow-lg backdrop-blur-sm"
+                    >
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="text-3xl font-bold text-white">
+                          {isLoading ? <RefreshCw className="w-8 h-8 animate-spin text-primary" /> : toAmount || "0.0"}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          className="flex items-center gap-2 hover:bg-white/10 rounded-xl px-4 py-2"
+                        >
+                          <span className="text-2xl">{toToken?.logo}</span>
+                          <span className="font-semibold text-lg">{toToken?.symbol}</span>
+                          <ChevronDown className="w-5 h-5" />
+                        </Button>
+                      </div>
+                      {toToken && toAmount && (
+                        <div className="text-sm text-muted-foreground text-right font-medium">
+                          ${(Number.parseFloat(toAmount) * toToken.price).toFixed(2)}
+                        </div>
+                      )}
+                    </motion.div>
+                  </div>
 
-                {toAmount && !isLoading && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm space-y-2 text-sm shadow-lg"
-                  >
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Rate</span>
-                      <span className="font-medium">
-                        1 {fromToken?.symbol} ={" "}
-                        {(Number.parseFloat(toAmount) / Number.parseFloat(fromAmount)).toFixed(6)} {toToken?.symbol}
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      onClick={handleSwap}
+                      disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
+                      className="w-full mt-8 bg-gradient-to-br from-primary to-red-600 hover:from-primary/90 hover:to-red-500 text-white font-semibold py-7 text-lg transition-all duration-500 shadow-2xl shadow-primary/30 hover:shadow-primary/50 border-2 border-primary/30 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden group rounded-2xl"
+                      size="lg"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        {cooldownRemaining > 0 ? (
+                          `Wait ${cooldownRemaining}s to avoid rate limiting`
+                        ) : isSwapping ? (
+                          <>
+                            <RefreshCw className="w-5 h-5 animate-spin" />
+                            Confirming in wallet...
+                          </>
+                        ) : isLoading ? (
+                          <>
+                            <RefreshCw className="w-5 h-5 animate-spin" />
+                            Loading...
+                          </>
+                        ) : (
+                          "Swap Tokens"
+                        )}
                       </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Slippage</span>
-                      <span className="font-medium text-emerald-400">{slippage}%</span>
-                    </div>
+                    </Button>
                   </motion.div>
-                )}
+
+                  {toAmount && !isLoading && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-6 p-5 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 backdrop-blur-sm space-y-3 text-sm shadow-lg"
+                    >
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground font-medium">Exchange Rate</span>
+                        <span className="font-semibold text-foreground">
+                          1 {fromToken?.symbol} ={" "}
+                          {(Number.parseFloat(toAmount) / Number.parseFloat(fromAmount)).toFixed(6)} {toToken?.symbol}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground font-medium">Slippage Tolerance</span>
+                        <span className="font-semibold text-primary">{slippage}%</span>
+                      </div>
+                      <div className="pt-2 border-t border-white/10">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Best rate across all DEXs</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
               </Card>
             </TabsContent>
 
