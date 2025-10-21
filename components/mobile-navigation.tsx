@@ -67,7 +67,7 @@ const NavigationItem = memo(
         onClick={onClick}
         className={cn(
           "relative flex flex-col items-center justify-center px-3 py-2 transition-all duration-300 min-w-0 flex-1 rounded-lg touch-manipulation",
-          isActive ? "text-white" : "text-muted-foreground hover:text-foreground hover:bg-muted/30",
+          isActive ? "text-orange-500" : "text-muted-foreground hover:text-foreground hover:bg-muted/30",
         )}
         aria-label={item.name}
         aria-current={isActive ? "page" : undefined}
@@ -78,14 +78,34 @@ const NavigationItem = memo(
         >
           <Icon className="h-5 w-5 mb-1" aria-hidden="true" />
         </motion.div>
-        <span className="text-xs font-medium truncate">{item.name}</span>
+        <motion.span
+          className="text-xs font-medium truncate"
+          animate={
+            isActive
+              ? {
+                  textShadow: [
+                    "0 0 8px rgba(249, 115, 22, 0.6), 0 0 16px rgba(249, 115, 22, 0.4)",
+                    "0 0 12px rgba(249, 115, 22, 0.8), 0 0 24px rgba(249, 115, 22, 0.6)",
+                    "0 0 8px rgba(249, 115, 22, 0.6), 0 0 16px rgba(249, 115, 22, 0.4)",
+                  ],
+                }
+              : {}
+          }
+          transition={{
+            duration: 2,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        >
+          {item.name}
+        </motion.span>
         {isActive && (
           <motion.div
             layoutId="activeTab"
-            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-white rounded-full"
+            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-orange-500 rounded-full"
             style={{
               boxShadow:
-                "0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 255, 255, 0.4), 0 0 30px rgba(255, 255, 255, 0.2)",
+                "0 0 10px rgba(249, 115, 22, 0.8), 0 0 20px rgba(249, 115, 22, 0.4), 0 0 30px rgba(249, 115, 22, 0.2)",
             }}
             transition={{ type: "spring", stiffness: 500, damping: 30 }}
           />
