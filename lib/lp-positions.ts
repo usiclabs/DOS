@@ -51,12 +51,12 @@ const TOKEN_METADATA: Record<string, { symbol: string; name: string; decimals: n
 
 const tokenMetadataCache = new Map<string, { symbol: string; name: string; decimals: number }>()
 const tokenPriceCache = new Map<string, { price: number; timestamp: number }>()
-const PRICE_CACHE_DURATION = 60000 // 1 minute
+const PRICE_CACHE_DURATION = 300000 // 5 minutes
 
 async function batchRpcCalls(calls: Array<{ to: string; data: string }>): Promise<string[]> {
   try {
     // Process calls in smaller chunks to avoid rate limiting
-    const chunkSize = 3 // Process 3 calls at a time
+    const chunkSize = 5 // Process 5 calls at a time
     const results: string[] = []
 
     for (let i = 0; i < calls.length; i += chunkSize) {
@@ -75,7 +75,7 @@ async function batchRpcCalls(calls: Array<{ to: string; data: string }>): Promis
 
       // Add delay between chunks to avoid rate limiting
       if (i + chunkSize < calls.length) {
-        await new Promise((resolve) => setTimeout(resolve, 1000)) // 1 second delay between chunks
+        await new Promise((resolve) => setTimeout(resolve, 200)) // 200ms delay between chunks
       }
     }
 
@@ -351,7 +351,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
     console.log(`[v0] Found ${balance} V3 position NFTs`)
 
     const positions: LPPosition[] = []
-    const batchSize = 3
+    const batchSize = 5
     const maxPositions = Math.min(balance, 50)
 
     for (let batchStart = 0; batchStart < maxPositions; batchStart += batchSize) {
@@ -369,7 +369,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
 
       const tokenIdResults = await batchRpcCalls(tokenIdCalls)
 
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       const positionDataCalls = []
       const tokenIds = []
@@ -384,7 +384,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
 
       const positionDataResults = await batchRpcCalls(positionDataCalls)
 
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       const validPositions: Array<{
         index: number
@@ -464,7 +464,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
 
       const poolAddressResults = await batchRpcCalls(poolAddressCalls)
 
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       const validPoolPositions: Array<{
         position: (typeof validPositions)[0]
@@ -492,7 +492,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
 
       const slot0Results = await batchRpcCalls(slot0Calls)
 
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      await new Promise((resolve) => setTimeout(resolve, 100))
 
       const uniqueTokens = new Set<string>()
       for (const vpp of validPoolPositions) {
@@ -648,8 +648,8 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
       }
 
       if (batchEnd < maxPositions) {
-        console.log("[v0] Waiting 3 seconds before next batch to avoid rate limiting...")
-        await new Promise((resolve) => setTimeout(resolve, 3000))
+        console.log("[v0] Waiting 0.5 seconds before next batch...")
+        await new Promise((resolve) => setTimeout(resolve, 500))
       }
     }
 

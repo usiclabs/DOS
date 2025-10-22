@@ -851,7 +851,7 @@ export default function LPManagerPage() {
   console.log("[v0] LP Manager API URL:", apiUrl)
 
   const { data, error, isLoading, mutate } = useSWR<LPManagerResponse>(apiUrl, fetcher, {
-    refreshInterval: 60000, // Increased from 30000 to 60000 (60 seconds)
+    refreshInterval: 120000, // 2 minutes instead of 60 seconds
     revalidateOnFocus: false, // Disabled to prevent unnecessary refreshes
     onSuccess: (data) => {
       console.log("[v0] LP Manager API success:", {
