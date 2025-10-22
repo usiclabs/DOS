@@ -11,6 +11,16 @@ import { useToast } from "@/hooks/use-toast"
 import { motion, AnimatePresence } from "framer-motion"
 import confetti from "canvas-confetti"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
+
+const TOKEN_ADDRESSES = {
+  ETH: "0x0000000000000000000000000000000000000000",
+  DEUS: DEUS_TOKEN_ADDRESS,
+  USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  ZORA: "0x1111111111166b7fe7bd91427724b487980afc69",
+} as const
+
+type FundingToken = keyof typeof TOKEN_ADDRESSES
 
 interface CreatorSwapModalProps {
   isOpen: boolean
@@ -35,13 +45,14 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
   const { toast } = useToast()
   const { isConnected, address, connectWallet } = useWalletContext()
   const [isMobile, setIsMobile] = useState(false)
-  const [ethAmount, setEthAmount] = useState("")
+  const [fundingToken, setFundingToken] = useState<FundingToken>("ETH")
+  const [fromAmount, setFromAmount] = useState("")
   const [tokenAmount, setTokenAmount] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isSwapping, setIsSwapping] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
-  const [ethBalance, setEthBalance] = useState(0)
+  const [fundingBalance, setFundingBalance] = useState(0)
   const [hasDirectPool, setHasDirectPool] = useState(true)
   const [swapRoute, setSwapRoute] = useState<string>("")
 
@@ -59,8 +70,8 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
         const response = await fetch(`/api/wallet/balances/${address}`)
         if (response.ok) {
           const data = await response.json()
-          const ethToken = data.tokens?.find((t: any) => t.symbol === "ETH")
-          if (ethToken) setEthBalance(ethToken.balance)
+          const selectedToken = data.tokens?.find((t: any) => t.symbol === fundingToken)
+          if (selectedToken) setFundingBalance(selectedToken.balance)
         }
       } catch (error) {
         console.error("Failed to fetch balance:", error)
@@ -69,11 +80,11 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
     if (isOpen) {
       fetchBalance()
     }
-  }, [isConnected, address, isOpen])
+  }, [isConnected, address, isOpen, fundingToken])
 
   useEffect(() => {
     const calculateTokenAmount = async () => {
-      if (!ethAmount || Number.parseFloat(ethAmount) <= 0) {
+      if (!fromAmount || Number.parseFloat(fromAmount) <= 0) {
         setTokenAmount("")
         setSwapRoute("")
         return
@@ -85,9 +96,9 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            fromToken: "0x0000000000000000000000000000000000000000", // ETH
+            fromToken: TOKEN_ADDRESSES[fundingToken],
             toToken: token.address,
-            amount: ethAmount,
+            amount: fromAmount,
             userAddress: address,
             uniswapV4PoolKey: token.uniswapV4PoolKey,
           }),
@@ -126,7 +137,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
 
     const debounce = setTimeout(calculateTokenAmount, 500)
     return () => clearTimeout(debounce)
-  }, [ethAmount, token.address, token.uniswapV4PoolKey, address])
+  }, [fromAmount, token.address, token.uniswapV4PoolKey, address, fundingToken])
 
   const triggerConfetti = () => {
     const colors = ["#f97316", "#fb923c", "#fdba74", "#fed7aa"]
@@ -165,7 +176,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
       return
     }
 
-    if (!ethAmount || !tokenAmount) {
+    if (!fromAmount || !tokenAmount) {
       toast({
         title: "Invalid Amount",
         description: "Please enter an amount to swap",
@@ -182,9 +193,9 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          fromToken: "0x0000000000000000000000000000000000000000",
+          fromToken: TOKEN_ADDRESSES[fundingToken],
           toToken: token.address,
-          amount: ethAmount,
+          amount: fromAmount,
           userAddress: address,
           uniswapV4PoolKey: token.uniswapV4PoolKey,
         }),
@@ -231,8 +242,8 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
       console.log("[v0] Transaction value check:", {
         original: transaction.value,
         formatted: txValue,
-        ethAmount: ethAmount,
-        expectedWei: BigInt(Number.parseFloat(ethAmount) * 1e18).toString(),
+        fromAmount: fromAmount,
+        expectedWei: BigInt(Number.parseFloat(fromAmount) * 1e18).toString(),
       })
 
       const txParams = {
@@ -282,7 +293,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
 
         toast({
           title: "Swap Successful!",
-          description: `Successfully swapped ${ethAmount} ETH for ${tokenAmount} ${token.symbol}`,
+          description: `Successfully swapped ${fromAmount} ${fundingToken} for ${tokenAmount} ${token.symbol}`,
         })
       }
     } catch (error: any) {
@@ -306,10 +317,11 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
   }
 
   const handleClose = () => {
-    setEthAmount("")
+    setFromAmount("")
     setTokenAmount("")
     setTxHash(null)
     setIsSuccess(false)
+    setFundingToken("ETH")
     onClose()
   }
 
@@ -341,7 +353,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
                 Swap Successful!
               </h3>
               <p className="text-muted-foreground">
-                You swapped {ethAmount} ETH for {tokenAmount} {token.symbol}
+                You swapped {fromAmount} {fundingToken} for {tokenAmount} {token.symbol}
               </p>
             </div>
 
@@ -385,7 +397,49 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
               </div>
             </div>
 
-            {!hasDirectPool && ethAmount && (
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-muted-foreground">Select Funding Token</label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["ETH", "DEUS", "USDC", "ZORA"] as FundingToken[]).map((tokenSymbol) => (
+                  <motion.button
+                    key={tokenSymbol}
+                    onClick={() => setFundingToken(tokenSymbol)}
+                    className={`p-3 rounded-lg border-2 transition-all duration-300 ${
+                      fundingToken === tokenSymbol
+                        ? tokenSymbol === "ETH"
+                          ? "border-blue-500 bg-blue-500/10"
+                          : tokenSymbol === "DEUS"
+                            ? "border-orange-500 bg-orange-500/10"
+                            : tokenSymbol === "USDC"
+                              ? "border-green-500 bg-green-500/10"
+                              : "border-purple-500 bg-purple-500/10"
+                        : "border-white/10 bg-white/5 hover:border-white/20"
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          tokenSymbol === "ETH"
+                            ? "bg-blue-500/20 text-blue-400"
+                            : tokenSymbol === "DEUS"
+                              ? "bg-orange-500/20 text-orange-400"
+                              : tokenSymbol === "USDC"
+                                ? "bg-green-500/20 text-green-400"
+                                : "bg-purple-500/20 text-purple-400"
+                        }`}
+                      >
+                        {tokenSymbol === "ETH" ? "Ξ" : tokenSymbol === "DEUS" ? "Ð" : tokenSymbol[0]}
+                      </div>
+                      <span className="font-semibold text-sm">{tokenSymbol}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
+            </div>
+
+            {!hasDirectPool && fromAmount && (
               <Alert className="border-amber-500/50 bg-amber-500/10">
                 <AlertCircle className="h-4 w-4 text-amber-500" />
                 <AlertDescription className="text-sm text-amber-200">
@@ -403,17 +457,21 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
             <div className="space-y-2">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">You Pay</span>
-                <span className="text-muted-foreground">Balance: {ethBalance.toFixed(6)} ETH</span>
+                <span className="text-muted-foreground">
+                  Balance: {fundingBalance.toFixed(6)} {fundingToken}
+                </span>
               </div>
               <div className="relative">
                 <Input
                   type="number"
                   placeholder="0.0"
-                  value={ethAmount}
-                  onChange={(e) => setEthAmount(e.target.value)}
-                  className="text-2xl font-bold h-16 pr-20 bg-white/5 border-white/10 focus:border-orange-500/50"
+                  value={fromAmount}
+                  onChange={(e) => setFromAmount(e.target.value)}
+                  className="text-2xl font-bold h-16 pr-24 bg-white/5 border-white/10 focus:border-orange-500/50"
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 font-semibold text-muted-foreground">ETH</div>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 font-semibold text-muted-foreground">
+                  {fundingToken}
+                </div>
               </div>
               <div className="flex gap-2">
                 {[0.001, 0.005, 0.01].map((amount) => (
@@ -421,10 +479,10 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
                     key={amount}
                     variant="outline"
                     size="sm"
-                    onClick={() => setEthAmount(amount.toString())}
+                    onClick={() => setFromAmount(amount.toString())}
                     className="flex-1 border-orange-500/20 hover:border-orange-500/40 hover:bg-orange-500/10"
                   >
-                    {amount} ETH
+                    {amount} {fundingToken}
                   </Button>
                 ))}
               </div>
@@ -456,7 +514,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
 
             <Button
               onClick={handleSwap}
-              disabled={!ethAmount || !tokenAmount || isLoading || isSwapping || !hasDirectPool}
+              disabled={!fromAmount || !tokenAmount || isLoading || isSwapping || !hasDirectPool}
               className="w-full h-12 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSwapping ? (
@@ -471,7 +529,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
                 </>
               ) : !isConnected ? (
                 "Connect Wallet"
-              ) : !hasDirectPool && ethAmount ? (
+              ) : !hasDirectPool && fromAmount ? (
                 "No Liquidity Pool Available"
               ) : (
                 "Swap"
@@ -502,7 +560,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
       <Sheet open={isOpen} onOpenChange={handleClose}>
         <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl overflow-y-auto">
           <SheetHeader>
-            <SheetTitle className="text-xl">Swap ETH for {token.symbol}</SheetTitle>
+            <SheetTitle className="text-xl">Swap for {token.symbol}</SheetTitle>
           </SheetHeader>
           <div className="mt-6">{content}</div>
         </SheetContent>
@@ -514,7 +572,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">Swap ETH for {token.symbol}</DialogTitle>
+          <DialogTitle className="text-xl">Swap for {token.symbol}</DialogTitle>
         </DialogHeader>
         {content}
       </DialogContent>

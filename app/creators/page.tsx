@@ -331,14 +331,25 @@ export default function CreatorsPage() {
 
                         <div className="relative h-40 md:h-48 overflow-hidden bg-gradient-to-br from-orange-500/10 to-amber-500/5">
                           {coin.image && typeof coin.image === "string" && coin.image.trim() ? (
-                            <Image
-                              src={coin.image || "/placeholder.svg"}
-                              alt={coin.name}
-                              fill
-                              className="object-cover transition-transform duration-700 group-hover:scale-110"
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              unoptimized
-                            />
+                            coin.image.includes(".mp4") || coin.image.includes("video") ? (
+                              <video
+                                src={coin.image}
+                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                muted
+                                loop
+                                autoPlay
+                                playsInline
+                              />
+                            ) : (
+                              <Image
+                                src={coin.image || "/placeholder.svg"}
+                                alt={coin.name}
+                                fill
+                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                unoptimized
+                              />
+                            )
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Sparkles className="w-12 h-12 md:w-16 md:h-16 text-orange-400/20" />
@@ -482,6 +493,7 @@ export default function CreatorsPage() {
                             <motion.div
                               className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all duration-300 min-w-0"
                               whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
                               transition={{ type: "spring", stiffness: 400, damping: 25 }}
                             >
                               <div className="flex items-center gap-1.5 md:gap-2 mb-1">

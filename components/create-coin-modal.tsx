@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
@@ -14,6 +14,7 @@ import { useAccount, useSwitchChain, useChainId, useWalletClient } from "wagmi"
 import { Badge } from "@/components/ui/badge"
 import { deployCoin } from "@/lib/zora-sdk"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 interface CreateCoinModalProps {
   isOpen: boolean
@@ -31,12 +32,15 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
     name: "",
     symbol: "",
     description: "",
-    image: null as File | null,
+    media: null as File | null,
   })
+  const [currency, setCurrency] = useState<"ETH" | "ZORA" | "USDC">("ETH")
   const [imagePreview, setImagePreview] = useState<string>("")
+  const [videoPreview, setVideoPreview] = useState<string>("")
+  const [mediaType, setMediaType] = useState<"image" | "video" | null>(null)
   const [error, setError] = useState<string>("")
-  const [txHash, setTxHash] = useState<string>("")
   const [coinAddress, setCoinAddress] = useState<string>("")
+  const [txHash, setTxHash] = useState<string>("")
 
   useEffect(() => {
     if (isOpen && isConnected) {
@@ -47,17 +51,43 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
     }
   }, [isOpen, isConnected, chainId])
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setFormData({ ...formData, image: file })
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string)
+      setFormData((prev) => ({ ...prev, media: file }))
+
+      // Determine media type
+      if (file.type.startsWith("image/")) {
+        setMediaType("image")
+        setVideoPreview("")
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setImagePreview(reader.result as string)
+        }
+        reader.readAsDataURL(file)
+      } else if (file.type.startsWith("video/")) {
+        setMediaType("video")
+        setImagePreview("")
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          setVideoPreview(reader.result as string)
+        }
+        reader.readAsDataURL(file)
       }
-      reader.readAsDataURL(file)
     }
-  }
+  }, [])
+
+  const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, name: e.target.value }))
+  }, [])
+
+  const handleSymbolChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, symbol: e.target.value.toUpperCase() }))
+  }, [])
+
+  const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData((prev) => ({ ...prev, description: e.target.value }))
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -107,8 +137,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
       uploadData.append("name", formData.name)
       uploadData.append("symbol", formData.symbol)
       uploadData.append("description", formData.description)
-      if (formData.image) {
-        uploadData.append("image", formData.image)
+      if (formData.media) {
+        uploadData.append("media", formData.media)
+        uploadData.append("mediaType", mediaType || "image")
       }
       uploadData.append("creator", address)
 
@@ -127,6 +158,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
       console.log("[v0] Metadata uploaded, deploying coin...")
       console.log("[v0] Using chainId:", chainId)
       console.log("[v0] Using wallet client with chain:", walletClient.chain.id)
+      console.log("[v0] Using currency:", currency)
 
       const deployResult = await deployCoin({
         name: formData.name,
@@ -135,7 +167,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
         walletClient: walletClient,
         account: address,
         payoutRecipient: address,
-        currency: "ETH",
+        currency: currency,
       })
 
       if (!deployResult.success) {
@@ -155,8 +187,11 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
 
   const handleClose = () => {
     setStep("form")
-    setFormData({ name: "", symbol: "", description: "", image: null })
+    setFormData({ name: "", symbol: "", description: "", media: null })
+    setCurrency("ETH")
     setImagePreview("")
+    setVideoPreview("")
+    setMediaType(null)
     setError("")
     setTxHash("")
     setCoinAddress("")
@@ -189,26 +224,30 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
             </div>
           )}
 
-          {/* Coin Image */}
+          {/* Coin Media */}
           <div className="space-y-2">
-            <Label htmlFor="image">Coin Image</Label>
+            <Label htmlFor="media">Coin Media (Image or Video)</Label>
             <div className="flex items-center gap-4">
               <div className="relative w-24 h-24 rounded-xl border-2 border-dashed border-orange-500/30 overflow-hidden bg-gradient-to-br from-orange-500/10 to-amber-500/5 flex items-center justify-center">
                 {imagePreview ? (
                   <img src={imagePreview || "/placeholder.svg"} alt="Preview" className="w-full h-full object-cover" />
+                ) : videoPreview ? (
+                  <video src={videoPreview} className="w-full h-full object-cover" muted loop autoPlay />
                 ) : (
                   <Upload className="w-8 h-8 text-muted-foreground" />
                 )}
               </div>
               <div className="flex-1">
                 <Input
-                  id="image"
+                  id="media"
                   type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
+                  accept="image/*,video/*"
+                  onChange={handleMediaChange}
                   className="cursor-pointer"
                 />
-                <p className="text-xs text-muted-foreground mt-1">Recommended: 512x512px, PNG or JPG</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Image: 512x512px, PNG or JPG | Video: MP4, max 50MB
+                </p>
               </div>
             </div>
           </div>
@@ -220,7 +259,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               id="name"
               placeholder="My Awesome Coin"
               value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              onChange={handleNameChange}
               required
               className="bg-background/50"
             />
@@ -233,7 +272,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               id="symbol"
               placeholder="MAC"
               value={formData.symbol}
-              onChange={(e) => setFormData({ ...formData, symbol: e.target.value.toUpperCase() })}
+              onChange={handleSymbolChange}
               required
               maxLength={10}
               className="bg-background/50"
@@ -248,10 +287,63 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               id="description"
               placeholder="Tell people about your coin..."
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              onChange={handleDescriptionChange}
               rows={4}
               className="bg-background/50 resize-none"
             />
+          </div>
+
+          {/* Currency Selector */}
+          <div className="space-y-3">
+            <Label>Pool Pairing Currency *</Label>
+            <RadioGroup value={currency} onValueChange={(value) => setCurrency(value as "ETH" | "ZORA" | "USDC")}>
+              <div className="grid grid-cols-3 gap-3">
+                <label
+                  htmlFor="currency-eth"
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    currency === "ETH"
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-border hover:border-orange-500/50 bg-background/50"
+                  }`}
+                >
+                  <RadioGroupItem value="ETH" id="currency-eth" className="sr-only" />
+                  <div className="text-2xl">Ξ</div>
+                  <div className="text-sm font-medium">ETH</div>
+                  <div className="text-xs text-muted-foreground text-center">Most liquid</div>
+                </label>
+
+                <label
+                  htmlFor="currency-zora"
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    currency === "ZORA"
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-border hover:border-orange-500/50 bg-background/50"
+                  }`}
+                >
+                  <RadioGroupItem value="ZORA" id="currency-zora" className="sr-only" />
+                  <div className="text-2xl">⚡</div>
+                  <div className="text-sm font-medium">ZORA</div>
+                  <div className="text-xs text-muted-foreground text-center">Native token</div>
+                </label>
+
+                <label
+                  htmlFor="currency-usdc"
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    currency === "USDC"
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-border hover:border-orange-500/50 bg-background/50"
+                  }`}
+                >
+                  <RadioGroupItem value="USDC" id="currency-usdc" className="sr-only" />
+                  <div className="text-2xl">$</div>
+                  <div className="text-sm font-medium">USDC</div>
+                  <div className="text-xs text-muted-foreground text-center">Stable value</div>
+                </label>
+              </div>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              Choose which currency your coin will be paired with in the Uniswap V4 pool
+            </p>
           </div>
 
           {/* Info Box */}
@@ -263,7 +355,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                 <ul className="text-muted-foreground space-y-1 list-disc list-inside">
                   <li>Your coin will be deployed as an ERC20 token</li>
                   <li>A Uniswap V4 pool will be created automatically</li>
-                  <li>Initial liquidity will be set up with USDC pairing</li>
+                  <li>Initial liquidity will be set up with {currency} pairing</li>
                   <li>You'll earn fees from all trading activity</li>
                 </ul>
               </div>

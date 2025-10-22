@@ -7,7 +7,8 @@ export async function POST(request: NextRequest) {
     const name = formData.get("name") as string
     const symbol = formData.get("symbol") as string
     const description = formData.get("description") as string
-    const image = formData.get("image") as File | null
+    const media = formData.get("media") as File | null
+    const mediaType = formData.get("mediaType") as string | null
     const creator = formData.get("creator") as string
 
     if (!name || !symbol || !creator) {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
         name,
         symbol,
         description: description || undefined,
-        image: image || undefined,
+        image: media || undefined,
       },
       creator,
     )

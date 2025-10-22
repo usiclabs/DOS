@@ -627,7 +627,7 @@ export function TokenDiscoverMode() {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="text-center space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-emerald-400 mx-auto" />
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
           <p className="text-muted-foreground">Loading premium opportunities...</p>
         </div>
       </div>
@@ -638,10 +638,10 @@ export function TokenDiscoverMode() {
     return (
       <div className="flex items-center justify-center min-h-[600px]">
         <div className="text-center space-y-4">
-          <Sparkles className="w-16 h-16 text-emerald-400 mx-auto" />
+          <Sparkles className="w-16 h-16 text-primary mx-auto" />
           <h3 className="text-2xl font-bold">You've seen all tokens!</h3>
           <p className="text-muted-foreground">Check back later for more opportunities</p>
-          <Button onClick={() => setCurrentIndex(0)} className="bg-emerald-500 hover:bg-emerald-600">
+          <Button onClick={() => setCurrentIndex(0)} className="bg-primary hover:bg-primary/90">
             Start Over
           </Button>
         </div>
@@ -656,11 +656,10 @@ export function TokenDiscoverMode() {
       <div className="relative h-[620px] md:h-[640px]">
         {currentIndex + 1 < tokens.length && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Card className="w-full h-[600px] md:h-[620px] bg-card/20 border-border/20 scale-95 opacity-30 blur-md shadow-2xl" />
+            <Card className="w-full h-[600px] md:h-[620px] bg-card/20 border-primary/20 scale-95 opacity-30 blur-md shadow-2xl shadow-primary/10" />
           </div>
         )}
 
-        {/* Current card with enhanced glassmorphism */}
         <motion.div
           className="absolute inset-0 flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
           style={{ x, rotate, opacity }}
@@ -669,8 +668,9 @@ export function TokenDiscoverMode() {
           dragElastic={0.2}
           onDragEnd={handleDragEnd}
           whileTap={{ cursor: "grabbing", scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <Card className="w-full h-[600px] md:h-[620px] relative overflow-hidden border-2 border-emerald-500/30 shadow-2xl shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-shadow duration-500">
+          <Card className="w-full h-[600px] md:h-[620px] relative overflow-hidden border-2 border-primary/30 shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-500">
             <div className="absolute inset-0 overflow-hidden">
               {currentToken.image ? (
                 <>
@@ -688,7 +688,7 @@ export function TokenDiscoverMode() {
                   <div className="absolute inset-0 bg-gradient-to-b from-background/98 via-background/95 to-background/98 backdrop-blur-2xl" />
                 </>
               ) : (
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-background to-purple-500/10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-orange-500/10" />
               )}
             </div>
 
@@ -696,8 +696,8 @@ export function TokenDiscoverMode() {
               className="absolute inset-0 opacity-40"
               animate={{
                 background: [
-                  "linear-gradient(0deg, rgba(16,185,129,0.15) 0%, transparent 50%)",
-                  "linear-gradient(360deg, rgba(16,185,129,0.15) 0%, transparent 50%)",
+                  "linear-gradient(0deg, rgba(235,90,60,0.15) 0%, transparent 50%)",
+                  "linear-gradient(360deg, rgba(235,90,60,0.15) 0%, transparent 50%)",
                 ],
               }}
               transition={{
@@ -707,12 +707,11 @@ export function TokenDiscoverMode() {
               }}
             />
 
-            <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-emerald-500/40 rounded-tl-2xl" />
-            <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-emerald-500/40 rounded-tr-2xl" />
-            <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-emerald-500/40 rounded-bl-2xl" />
-            <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-emerald-500/40 rounded-br-2xl" />
+            <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-primary/40 rounded-tl-2xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+            <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-primary/40 rounded-tr-2xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-primary/40 rounded-bl-2xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+            <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-primary/40 rounded-br-2xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
 
-            {/* Content */}
             <div className="relative h-full flex flex-col">
               <div className="p-5 md:p-6 border-b border-border/40 backdrop-blur-xl bg-gradient-to-b from-background/50 to-background/30 shadow-lg">
                 <div className="flex items-start justify-between mb-3">
@@ -722,7 +721,7 @@ export function TokenDiscoverMode() {
                         {currentToken.symbol}
                       </h2>
                       {currentToken.isDeusPool && (
-                        <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 backdrop-blur-sm">
+                        <Badge className="bg-primary/20 text-primary/30 border-primary/40 backdrop-blur-sm">
                           <Zap className="w-3 h-3 mr-1" />
                           DEUS
                         </Badge>
@@ -734,7 +733,7 @@ export function TokenDiscoverMode() {
                         </Badge>
                       )}
                       {currentToken.isCreatorCoin && (
-                        <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/40 backdrop-blur-sm">
+                        <Badge className="bg-primary/20 text-primary/30 border-primary/40 backdrop-blur-sm">
                           <Sparkles className="w-3 h-3 mr-1" />
                           Creator
                         </Badge>
@@ -753,7 +752,7 @@ export function TokenDiscoverMode() {
                             unoptimized
                           />
                         )}
-                        <span className="text-xs text-emerald-400">by {currentToken.creator.name}</span>
+                        <span className="text-xs text-primary">by {currentToken.creator.name}</span>
                       </div>
                     )}
                   </div>
@@ -771,7 +770,8 @@ export function TokenDiscoverMode() {
                   <div className="grid grid-cols-2 gap-3 md:gap-4">
                     <motion.div
                       whileHover={{ scale: 1.03, y: -2 }}
-                      className="p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-emerald-500/20 transition-all duration-300"
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      className="p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
                     >
                       <div className="flex items-center text-sm text-muted-foreground mb-2">
                         <BarChart3 className="w-4 h-4 mr-2" />
@@ -781,7 +781,8 @@ export function TokenDiscoverMode() {
                     </motion.div>
                     <motion.div
                       whileHover={{ scale: 1.03, y: -2 }}
-                      className="p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-emerald-500/20 transition-all duration-300"
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      className="p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
                     >
                       <div className="flex items-center text-sm text-muted-foreground mb-2">
                         <Droplets className="w-4 h-4 mr-2" />
@@ -794,13 +795,14 @@ export function TokenDiscoverMode() {
                   {currentToken.isCreatorCoin && currentToken.holders && (
                     <motion.div
                       whileHover={{ scale: 1.02, y: -2 }}
-                      className="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 backdrop-blur-sm shadow-lg hover:shadow-emerald-500/20 transition-all duration-300"
+                      transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                      className="p-4 rounded-xl bg-primary/10 border border-primary/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 transition-all duration-300"
                     >
-                      <div className="flex items-center text-sm text-purple-300 mb-2">
+                      <div className="flex items-center text-sm text-primary/30 mb-2 font-medium">
                         <Users className="w-4 h-4 mr-2" />
                         Holders
                       </div>
-                      <div className="text-2xl md:text-3xl font-bold text-purple-200">
+                      <div className="text-2xl md:text-3xl font-bold text-primary/20">
                         {currentToken.holders.toLocaleString()}
                       </div>
                     </motion.div>
@@ -808,16 +810,17 @@ export function TokenDiscoverMode() {
 
                   <motion.div
                     whileHover={{ scale: 1.02, y: -2 }}
-                    className="p-5 md:p-6 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-600/30 border-2 border-emerald-500/40 backdrop-blur-sm shadow-2xl shadow-emerald-500/20 hover:shadow-emerald-500/30 transition-all duration-300"
+                    transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                    className="p-5 md:p-6 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/20 border-2 border-primary/40 backdrop-blur-sm shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-300"
                   >
-                    <div className="text-sm text-emerald-100 mb-2 font-medium flex items-center gap-2">
+                    <div className="text-sm text-orange-100 mb-2 font-medium flex items-center gap-2">
                       <Sparkles className="w-4 h-4" />
                       {currentToken.isCreatorCoin ? "Estimated APY" : "Average APY"}
                     </div>
-                    <div className="text-4xl md:text-5xl font-bold text-emerald-200 mb-1">
+                    <div className="text-4xl md:text-5xl font-bold text-orange-50 mb-1">
                       {currentToken.avgApy.toFixed(2)}%
                     </div>
-                    <div className="text-xs text-emerald-100/80">
+                    <div className="text-xs text-orange-100/80">
                       {currentToken.isCreatorCoin
                         ? "Based on volume/liquidity ratio"
                         : `Across ${currentToken.pools.length} pool${currentToken.pools.length > 1 ? "s" : ""}`}
@@ -848,7 +851,7 @@ export function TokenDiscoverMode() {
                               <div className="text-xs text-muted-foreground mt-0.5">{pool.dexId}</div>
                             </div>
                             <div className="text-right">
-                              <div className="text-sm font-bold text-emerald-400">{pool.apy.toFixed(1)}%</div>
+                              <div className="text-sm font-bold text-primary">{pool.apy.toFixed(1)}%</div>
                               <div className="text-xs text-muted-foreground">{formatNumber(pool.liquidity)}</div>
                             </div>
                           </motion.div>
@@ -875,7 +878,11 @@ export function TokenDiscoverMode() {
       </div>
 
       <div className="flex items-center justify-center gap-8 mt-8">
-        <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}>
+        <motion.div
+          whileHover={{ scale: 1.08 }}
+          whileTap={{ scale: 0.92 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
           <Button
             variant="outline"
             size="lg"
@@ -890,17 +897,9 @@ export function TokenDiscoverMode() {
         <motion.div
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
           animate={{
-            boxShadow: [
-              "0 0 30px rgba(16,185,129,0.5)",
-              "0 0 60px rgba(16,185,129,0.7)",
-              "0 0 30px rgba(16,185,129,0.5)",
-            ],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "easeInOut",
+            boxShadow: ["0 0 30px rgba(235,90,60,0.5)", "0 0 60px rgba(235,90,60,0.7)", "0 0 30px rgba(235,90,60,0.5)"],
           }}
           className="rounded-full"
         >
@@ -908,7 +907,7 @@ export function TokenDiscoverMode() {
             size="lg"
             onClick={handleBuy}
             disabled={isBuying || !address}
-            className="w-24 h-24 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-600 hover:from-emerald-400 hover:to-emerald-500 shadow-2xl border-2 border-emerald-400/50 backdrop-blur-sm transition-all duration-300 relative overflow-hidden group"
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-2xl border-2 border-primary/50 backdrop-blur-sm transition-all duration-300 relative overflow-hidden group"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             {isBuying ? (
@@ -934,13 +933,13 @@ export function TokenDiscoverMode() {
           {currentIndex + 1} / {tokens.length}
         </div>
         <motion.div
-          className="flex items-center gap-2 px-3 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 backdrop-blur-sm"
+          className="flex items-center gap-2 px-3 py-2 rounded-full bg-primary/10 border border-primary/20 backdrop-blur-sm"
           animate={{ x: [3, 0, 3] }}
           transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
         >
           <span className="hidden sm:inline font-medium">Swipe right to buy</span>
           <span className="sm:hidden font-medium">Buy</span>
-          <Heart className="w-4 h-4 text-emerald-400" />
+          <Heart className="w-4 h-4 text-primary" />
         </motion.div>
       </div>
     </div>

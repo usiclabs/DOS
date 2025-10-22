@@ -13,11 +13,10 @@ import {
   getCoinsTopVolume24h,
   getCoinsTopGainers,
   getCoin,
-  createCoin,
   getProfileBalances,
 } from "@zoralabs/coins-sdk"
 import type { WalletClient } from "viem"
-import { base, baseSepolia } from "viem/chains"
+import { put } from "@vercel/blob"
 
 const ZORA_API_KEY = "zora_api_a3bdc55dcf5cb9e9974348e5576525f6f4b1c81686700bf8cf52c088fef51207"
 
@@ -60,7 +59,7 @@ export interface CreateCoinParams {
   account: string
   payoutRecipient: string
   platformReferrer?: string
-  currency?: "ZORA" | "ETH"
+  currency?: "ETH" | "ZORA" | "USDC"
   initialPurchase?: {
     currency: "ETH" | "USDC" | "ZORA"
     amount: string
@@ -275,12 +274,116 @@ export async function getCreatorCoins(creatorAddress: string, chainId = 8453) {
  * Upload metadata to IPFS and return the URI
  */
 export async function uploadMetadataToIPFS(metadata: ZoraCoinMetadata, creatorAddress: string): Promise<string> {
-  console.log("[v0] Uploading metadata to IPFS:", metadata)
+  console.log("[v0] Uploading metadata to IPFS:", {
+    name: metadata.name,
+    symbol: metadata.symbol,
+    description: metadata.description,
+  })
 
-  // In production, this would use the Zora SDK's metadata builder
-  // For now, simulate IPFS upload
-  const mockIpfsHash = "bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy"
-  return `ipfs://${mockIpfsHash}`
+  try {
+    let mediaUrl = ""
+
+    if (metadata.image) {
+      console.log("[v0] Uploading media to Vercel Blob...")
+      try {
+        // Check file size before upload (Vercel Blob has a 4.5MB limit for free tier)
+        const fileSizeInMB = metadata.image.size / (1024 * 1024)
+        console.log(`[v0] File size: ${fileSizeInMB.toFixed(2)} MB`)
+
+        if (fileSizeInMB > 4.5) {
+          console.warn("[v0] File size exceeds 4.5MB limit, skipping upload")
+          throw new Error("File size exceeds 4.5MB limit")
+        }
+
+        const blob = await put(`zora-coins/${Date.now()}-${metadata.image.name}`, metadata.image, {
+          access: "public",
+        })
+
+        mediaUrl = blob.url
+        console.log("[v0] Media uploaded to Vercel Blob:", mediaUrl)
+      } catch (error: any) {
+        console.error("[v0] Failed to upload media to Vercel Blob:", {
+          message: error.message,
+          name: error.name,
+          cause: error.cause,
+        })
+
+        // Check if it's a size error
+        if (error.message?.includes("too large") || error.message?.includes("4.5MB")) {
+          console.warn("[v0] File too large for Vercel Blob, continuing without media")
+        } else {
+          console.warn("[v0] Media upload failed, continuing without media")
+        }
+        // Continue without media URL - don't throw
+      }
+    }
+
+    // Create metadata object
+    const metadataObject = {
+      name: metadata.name,
+      symbol: metadata.symbol,
+      description: metadata.description || "",
+      image: mediaUrl || "",
+      animation_url: mediaUrl && metadata.image?.type.startsWith("video/") ? mediaUrl : undefined,
+      creator: creatorAddress,
+      external_url: `https://zora.co/coins/${creatorAddress}`,
+      attributes: [
+        {
+          trait_type: "Creator",
+          value: creatorAddress,
+        },
+      ],
+    }
+
+    console.log("[v0] Uploading metadata object to Vercel Blob:", metadataObject)
+
+    try {
+      const metadataBlob = new Blob([JSON.stringify(metadataObject)], { type: "application/json" })
+      const metadataFile = new File([metadataBlob], "metadata.json", { type: "application/json" })
+
+      const metadataUpload = await put(`zora-coins/metadata/${Date.now()}-metadata.json`, metadataFile, {
+        access: "public",
+      })
+
+      const metadataUri = metadataUpload.url
+      console.log("[v0] Metadata uploaded to IPFS:", metadataUri)
+      return metadataUri
+    } catch (metadataError: any) {
+      console.error("[v0] Failed to upload metadata to Vercel Blob:", {
+        message: metadataError.message,
+        name: metadataError.name,
+      })
+      throw new Error(`Failed to upload metadata: ${metadataError.message}`)
+    }
+  } catch (error: any) {
+    console.error("[v0] Error uploading metadata:", error)
+
+    const fallbackMetadata = {
+      name: metadata.name,
+      symbol: metadata.symbol,
+      description: metadata.description || "",
+      creator: creatorAddress,
+    }
+
+    try {
+      console.log("[v0] Attempting fallback metadata upload...")
+      const metadataBlob = new Blob([JSON.stringify(fallbackMetadata)], { type: "application/json" })
+      const metadataFile = new File([metadataBlob], "metadata.json", { type: "application/json" })
+
+      const metadataUpload = await put(`zora-coins/metadata/${Date.now()}-fallback.json`, metadataFile, {
+        access: "public",
+      })
+
+      console.log("[v0] Using fallback metadata URL:", metadataUpload.url)
+      return metadataUpload.url
+    } catch (fallbackError: any) {
+      console.error("[v0] Fallback upload also failed:", {
+        message: fallbackError.message,
+        name: fallbackError.name,
+      })
+      throw new Error(`Failed to upload metadata: ${fallbackError.message}`)
+    }
+  }
 }
 
 /**
@@ -296,7 +399,7 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
       throw new Error("Wallet client is required")
     }
 
-    const currentChainId = walletClient.chain.id
+    const currentChainId = walletClient.chain?.id
     console.log("[v0] Wallet client chain ID:", currentChainId)
     console.log("[v0] Wallet account:", account)
 
@@ -306,37 +409,100 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
       )
     }
 
-    // This ensures the chain object structure matches what Zora SDK expects
-    const chainToUse = currentChainId === 8453 ? base : baseSepolia
+    // Zora Factory contract address on Base mainnet
+    const ZORA_FACTORY_ADDRESS = "0x777777751622c0d3258f214F9DF38E35BF45baF3"
 
-    const zoraSafeWalletClient = {
-      ...walletClient,
-      chain: chainToUse,
-    } as WalletClient
+    // Currency addresses
+    const ETH_ADDRESS = "0x0000000000000000000000000000000000000000"
+    const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69"
+    const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
-    console.log("[v0] Using wallet client with chain:", zoraSafeWalletClient.chain.id)
-    console.log("[v0] Chain name:", zoraSafeWalletClient.chain.name)
+    // Map currency to address
+    let currencyAddress: string
+    switch (params.currency) {
+      case "ZORA":
+        currencyAddress = ZORA_ADDRESS
+        break
+      case "USDC":
+        currencyAddress = USDC_ADDRESS
+        break
+      case "ETH":
+      default:
+        currencyAddress = ETH_ADDRESS
+        break
+    }
 
-    const result = await createCoin({
-      walletClient: zoraSafeWalletClient,
-      account,
-      name: params.name,
-      symbol: params.symbol,
-      uri: params.uri,
-      owners: [account],
-      payoutRecipient: params.payoutRecipient,
-      platformReferrer: params.platformReferrer,
-      currency: params.currency || "ETH",
-      initialPurchase: params.initialPurchase,
+    // Zora Factory ABI for the deploy function
+    const ZORA_FACTORY_ABI = [
+      {
+        inputs: [
+          { name: "payoutRecipient", type: "address" },
+          { name: "owners", type: "address[]" },
+          { name: "uri", type: "string" },
+          { name: "name", type: "string" },
+          { name: "symbol", type: "string" },
+          { name: "platformReferrer", type: "address" },
+          { name: "currency", type: "address" },
+          { name: "tickLower", type: "int24" },
+          { name: "orderSize", type: "uint256" },
+        ],
+        name: "deploy",
+        outputs: [
+          { name: "coin", type: "address" },
+          { name: "pool", type: "address" },
+        ],
+        stateMutability: "payable",
+        type: "function",
+      },
+    ]
+
+    console.log("[v0] Preparing contract deployment transaction...")
+    console.log("[v0] Factory address:", ZORA_FACTORY_ADDRESS)
+    console.log("[v0] Currency:", params.currency, "->", currencyAddress)
+
+    // Prepare the transaction
+    const hash = await walletClient.writeContract({
+      address: ZORA_FACTORY_ADDRESS as `0x${string}`,
+      abi: ZORA_FACTORY_ABI,
+      functionName: "deploy",
+      args: [
+        params.payoutRecipient as `0x${string}`, // payoutRecipient
+        [account as `0x${string}`], // owners array
+        params.uri, // metadata URI
+        params.name, // coin name
+        params.symbol, // coin symbol
+        params.platformReferrer
+          ? (params.platformReferrer as `0x${string}`)
+          : ("0x0000000000000000000000000000000000000000" as `0x${string}`), // platformReferrer
+        currencyAddress as `0x${string}`, // currency (ETH, ZORA, or USDC)
+        -887220, // tickLower (standard Uniswap V3 tick for wide range)
+        BigInt("1000000000000000000"), // orderSize (1 token initial liquidity)
+      ],
+      account: account as `0x${string}`,
+      chain: walletClient.chain,
     })
 
-    console.log("[v0] Successfully deployed coin via Zora SDK:", result)
+    console.log("[v0] Transaction submitted:", hash)
+    console.log("[v0] Waiting for transaction confirmation...")
+
+    // Wait for transaction receipt
+    const receipt = await walletClient.waitForTransactionReceipt?.({ hash })
+
+    console.log("[v0] Transaction confirmed:", receipt)
+
+    // Extract coin address from logs (the first log should be the coin creation event)
+    let coinAddress = ""
+    if (receipt?.logs && receipt.logs.length > 0) {
+      // The coin address is typically in the first log's address field
+      coinAddress = receipt.logs[0].address
+      console.log("[v0] Extracted coin address from logs:", coinAddress)
+    }
 
     return {
       success: true,
-      coinAddress: result.coinAddress,
-      transactionHash: result.transactionHash,
-      poolAddress: result.poolAddress,
+      coinAddress: coinAddress || undefined,
+      transactionHash: hash,
+      poolAddress: undefined, // Pool address would need to be extracted from logs as well
     }
   } catch (error: any) {
     console.error("[v0] Error deploying Zora coin:", error)

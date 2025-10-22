@@ -59,7 +59,7 @@ interface DeployModalProps {
   pool: PoolData | null
   isOpen: boolean
   onClose: () => void
-  defaultPairingToken?: "DEUS" | "ETH"
+  defaultPairingToken?: "DEUS" | "ETH" | "USDC" | "ZORA"
   allowPairingToggle?: boolean
 }
 
@@ -88,7 +88,7 @@ export function DeployModal({
   const [actualAmounts, setActualAmounts] = useState<{ base: string; quote: string } | null>(null)
   const [canResolveTokens, setCanResolveTokens] = useState(true)
   const [tokenResolutionError, setTokenResolutionError] = useState<string | null>(null)
-  const [pairingToken, setPairingToken] = useState<"DEUS" | "ETH">(defaultPairingToken)
+  const [pairingToken, setPairingToken] = useState<"DEUS" | "ETH" | "USDC" | "ZORA">(defaultPairingToken)
   const [tokenPrices, setTokenPrices] = useState<{ base: number; quote: number } | null>(null)
   const [advancedMode, setAdvancedMode] = useState(false)
   const [customRatio, setCustomRatio] = useState(50) // 50% = 50/50 split
@@ -97,6 +97,8 @@ export function DeployModal({
   // Assuming DEUS_TOKEN_ADDRESS and WETH_ADDRESS are defined elsewhere, e.g., in constants.ts
   // const DEUS_TOKEN_ADDRESS = "0x4200000000000000000000000000000000000005" // OLD - INCORRECT
   const WETH_ADDRESS = "0x4200000000000000000000000000000000000006" // WETH on Base
+  const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" // USDC on Base
+  const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69" // ZORA on Base
 
   useEffect(() => {
     if (!isOpen) {
@@ -166,7 +168,14 @@ export function DeployModal({
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress = pairingToken === "DEUS" ? DEUS_TOKEN_ADDRESS : WETH_ADDRESS
+        const quoteTokenAddress =
+          pairingToken === "DEUS"
+            ? DEUS_TOKEN_ADDRESS
+            : pairingToken === "USDC"
+              ? USDC_ADDRESS
+              : pairingToken === "ZORA"
+                ? ZORA_ADDRESS
+                : WETH_ADDRESS
 
         if (!baseTokenAddress || !quoteTokenAddress) {
           return
@@ -260,7 +269,14 @@ export function DeployModal({
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress = pairingToken === "DEUS" ? DEUS_TOKEN_ADDRESS : WETH_ADDRESS
+        const quoteTokenAddress =
+          pairingToken === "DEUS"
+            ? DEUS_TOKEN_ADDRESS
+            : pairingToken === "USDC"
+              ? USDC_ADDRESS
+              : pairingToken === "ZORA"
+                ? ZORA_ADDRESS
+                : WETH_ADDRESS
 
         if (!baseTokenAddress || !quoteTokenAddress) {
           return
@@ -432,7 +448,7 @@ export function DeployModal({
     }
   }
 
-  const handlePairingTokenChange = (newToken: "DEUS" | "ETH") => {
+  const handlePairingTokenChange = (newToken: "DEUS" | "ETH" | "USDC" | "ZORA") => {
     setPairingToken(newToken)
     // Reset amounts when switching pairing token
     setBaseAmount("")
@@ -612,7 +628,14 @@ export function DeployModal({
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress = pairingToken === "DEUS" ? DEUS_TOKEN_ADDRESS : WETH_ADDRESS
+        const quoteTokenAddress =
+          pairingToken === "DEUS"
+            ? DEUS_TOKEN_ADDRESS
+            : pairingToken === "USDC"
+              ? USDC_ADDRESS
+              : pairingToken === "ZORA"
+                ? ZORA_ADDRESS
+                : WETH_ADDRESS
 
         if (!baseTokenAddress || !quoteTokenAddress) {
           toast({
@@ -928,33 +951,90 @@ export function DeployModal({
               {allowPairingToggle && (
                 <Card className="glass-card border-orange-500/20">
                   <CardHeader className="pb-3">
-                    <CardTitle className="text-sm">Pairing Token</CardTitle>
+                    <CardTitle className="text-sm">Pairing Currency</CardTitle>
                     <CardDescription>Choose which token to pair with {pool.baseToken.symbol}</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="flex gap-2">
-                      <Button
-                        variant={pairingToken === "DEUS" ? "default" : "outline"}
-                        className={
-                          pairingToken === "DEUS" ? "flex-1 bg-gradient-to-r from-orange-500 to-amber-500" : "flex-1"
-                        }
-                        onClick={() => handlePairingTokenChange("DEUS")}
-                        disabled={!canResolveTokens || !isConnected}
-                      >
-                        <span className="mr-2">💎</span>
-                        DEUS
-                      </Button>
-                      <Button
-                        variant={pairingToken === "ETH" ? "default" : "outline"}
-                        className={
-                          pairingToken === "ETH" ? "flex-1 bg-gradient-to-r from-blue-500 to-cyan-500" : "flex-1"
-                        }
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        type="button"
                         onClick={() => handlePairingTokenChange("ETH")}
                         disabled={!canResolveTokens || !isConnected}
+                        className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                          pairingToken === "ETH"
+                            ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
                       >
-                        <span className="mr-2">Ξ</span>
-                        ETH
-                      </Button>
+                        {pairingToken === "ETH" && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircle2 className="w-4 h-4 text-blue-400" />
+                          </div>
+                        )}
+                        <div className="text-2xl mb-2">Ξ</div>
+                        <div className="font-semibold text-white">ETH</div>
+                        <div className="text-xs text-gray-400 mt-1">Ethereum</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePairingTokenChange("DEUS")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                          pairingToken === "DEUS"
+                            ? "border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {pairingToken === "DEUS" && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircle2 className="w-4 h-4 text-orange-400" />
+                          </div>
+                        )}
+                        <div className="text-2xl mb-2">💎</div>
+                        <div className="font-semibold text-white">DEUS</div>
+                        <div className="text-xs text-gray-400 mt-1">DEUS Finance</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePairingTokenChange("USDC")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                          pairingToken === "USDC"
+                            ? "border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {pairingToken === "USDC" && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircle2 className="w-4 h-4 text-green-400" />
+                          </div>
+                        )}
+                        <div className="text-2xl mb-2">💵</div>
+                        <div className="font-semibold text-white">USDC</div>
+                        <div className="text-xs text-gray-400 mt-1">USD Coin</div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handlePairingTokenChange("ZORA")}
+                        disabled={!canResolveTokens || !isConnected}
+                        className={`relative flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all ${
+                          pairingToken === "ZORA"
+                            ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {pairingToken === "ZORA" && (
+                          <div className="absolute top-2 right-2">
+                            <CheckCircle2 className="w-4 h-4 text-purple-400" />
+                          </div>
+                        )}
+                        <div className="text-2xl mb-2">⚡</div>
+                        <div className="font-semibold text-white">ZORA</div>
+                        <div className="text-xs text-gray-400 mt-1">Zora Network</div>
+                      </button>
                     </div>
                     {pairingToken === "DEUS" && (
                       <p className="text-xs text-muted-foreground mt-3">
