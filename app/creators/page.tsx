@@ -304,37 +304,14 @@ export default function CreatorsPage() {
                     <motion.div whileHover={{ y: -8 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
                       <Card
                         onClick={() => router.push(`/creators/coin/${coin.address}`)}
-                        className="group relative overflow-hidden glass-card backdrop-blur-xl bg-white/5 border-white/10 hover:border-orange-500/40 transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/20 max-w-full cursor-pointer"
+                        className="group relative overflow-hidden glass-card backdrop-blur-xl bg-white/5 border-white/10 hover:border-orange-500/40 transition-all duration-500 hover:shadow-2xl hover:shadow-orange-500/20 max-w-full cursor-pointer rounded-2xl"
                       >
-                        {coin.trending && (
-                          <motion.div
-                            className="absolute top-3 right-3 md:top-4 md:right-4 z-10"
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 20, delay: index * 0.03 + 0.2 }}
-                          >
-                            <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0 shadow-xl shadow-orange-500/50 backdrop-blur-sm text-xs md:text-sm px-2 py-0.5 md:px-2.5 md:py-1">
-                              <Flame className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1 animate-pulse" />
-                              Trending
-                            </Badge>
-                          </motion.div>
-                        )}
-
-                        {coin.verified && (
-                          <div className="absolute top-3 left-3 md:top-4 md:left-4 z-10">
-                            <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 backdrop-blur-sm text-xs md:text-sm px-2 py-0.5 md:px-2.5 md:py-1">
-                              <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
-                              Verified
-                            </Badge>
-                          </div>
-                        )}
-
-                        <div className="relative h-40 md:h-48 overflow-hidden bg-gradient-to-br from-orange-500/10 to-amber-500/5">
+                        <div className="absolute inset-0 overflow-hidden rounded-2xl">
                           {coin.image && typeof coin.image === "string" && coin.image.trim() ? (
                             coin.image.includes(".mp4") || coin.image.includes("video") ? (
                               <video
                                 src={coin.image}
-                                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                className="absolute inset-0 w-full h-full object-cover blur-3xl scale-110 opacity-30"
                                 muted
                                 loop
                                 autoPlay
@@ -343,249 +320,305 @@ export default function CreatorsPage() {
                             ) : (
                               <Image
                                 src={coin.image || "/placeholder.svg"}
-                                alt={coin.name}
+                                alt=""
                                 fill
-                                className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                className="object-cover blur-3xl scale-110 opacity-30"
                                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 unoptimized
+                                aria-hidden="true"
                               />
                             )
                           ) : (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Sparkles className="w-12 h-12 md:w-16 md:h-16 text-orange-400/20" />
-                            </div>
+                            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/5" />
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-80" />
                         </div>
 
-                        <div className="p-4 md:p-6 space-y-3 md:space-y-4 max-w-full overflow-hidden">
-                          <div className="max-w-full">
-                            <div className="flex items-center gap-2 mb-2 max-w-full overflow-hidden">
-                              <h3 className="text-lg md:text-xl font-bold text-white truncate flex-1 min-w-0">
-                                {coin.name}
-                              </h3>
-                              <Badge
-                                variant="outline"
-                                className="text-xs border-orange-500/30 text-orange-300 flex-shrink-0"
-                              >
-                                ${coin.symbol}
+                        <div className="relative z-10">
+                          {coin.trending && (
+                            <motion.div
+                              className="absolute top-3 right-3 md:top-4 md:right-4 z-10"
+                              initial={{ scale: 0, rotate: -180 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              transition={{ type: "spring", stiffness: 500, damping: 20, delay: index * 0.03 + 0.2 }}
+                            >
+                              <Badge className="bg-gradient-to-r from-orange-500 to-amber-500 text-white border-0 shadow-xl shadow-orange-500/50 backdrop-blur-sm text-xs md:text-sm px-2 py-0.5 md:px-2.5 md:py-1">
+                                <Flame className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1 animate-pulse" />
+                                Trending
+                              </Badge>
+                            </motion.div>
+                          )}
+
+                          {coin.verified && (
+                            <div className="absolute top-3 left-3 md:top-4 md:left-4 z-10">
+                              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 backdrop-blur-sm text-xs md:text-sm px-2 py-0.5 md:px-2.5 md:py-1">
+                                <CheckCircle2 className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
+                                Verified
                               </Badge>
                             </div>
-                            <p className="text-xs md:text-sm text-gray-400 line-clamp-2">{coin.description}</p>
-                          </div>
+                          )}
 
-                          <div
-                            onClick={(e) => {
-                              e.preventDefault()
-                              e.stopPropagation()
-                              router.push(`/creators/${coin.creator.address}`)
-                            }}
-                            className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors max-w-full overflow-hidden cursor-pointer group"
-                          >
-                            <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0 group-hover:border-orange-500/40 transition-colors">
-                              {coin.creator.avatar &&
-                              typeof coin.creator.avatar === "string" &&
-                              coin.creator.avatar.trim() ? (
-                                <Image
-                                  src={coin.creator.avatar || "/placeholder.svg"}
-                                  alt={coin.creator.name || "Creator"}
-                                  fill
-                                  className="object-cover"
-                                  sizes="40px"
-                                  unoptimized
+                          <div className="relative h-48 md:h-56 overflow-hidden rounded-t-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/5">
+                            {coin.image && typeof coin.image === "string" && coin.image.trim() ? (
+                              coin.image.includes(".mp4") || coin.image.includes("video") ? (
+                                <video
+                                  src={coin.image}
+                                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                                  muted
+                                  loop
+                                  autoPlay
+                                  playsInline
                                 />
                               ) : (
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                  <Users className="w-4 h-4 md:w-5 md:h-5 text-orange-400/50" />
-                                </div>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs md:text-sm font-medium truncate text-white group-hover:text-orange-300 transition-colors">
-                                {coin.creator.name}
-                              </p>
-                              <p className="text-[10px] md:text-xs text-gray-400 truncate">{coin.creator.bio}</p>
-                            </div>
+                                <Image
+                                  src={coin.image || "/placeholder.svg"}
+                                  alt={coin.name}
+                                  fill
+                                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                  unoptimized
+                                />
+                              )
+                            ) : (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <Sparkles className="w-12 h-12 md:w-16 md:h-16 text-orange-400/20" />
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                           </div>
 
-                          <motion.div
-                            className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-orange-500/5 border border-orange-500/20 shadow-lg max-w-full"
-                            whileHover={{ scale: 1.02 }}
-                            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[10px] md:text-xs text-gray-400 mb-1 font-medium">Live Price</p>
-                              <p className="text-xl md:text-2xl font-bold text-orange-300 tracking-tight truncate">
-                                {formatPrice(coin.metrics.price)}
-                              </p>
+                          <div className="p-4 md:p-6 pt-[15px] space-y-3 md:space-y-4 max-w-full overflow-hidden">
+                            <div className="max-w-full">
+                              <div className="flex items-center gap-2 mb-2 max-w-full overflow-hidden">
+                                <h3 className="text-lg md:text-xl font-bold text-white truncate flex-1 min-w-0">
+                                  {coin.name}
+                                </h3>
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs border-orange-500/30 text-orange-300 flex-shrink-0"
+                                >
+                                  ${coin.symbol}
+                                </Badge>
+                              </div>
+                              <p className="text-xs md:text-sm text-gray-400 line-clamp-2">{coin.description}</p>
                             </div>
-                            <div className="text-right flex-shrink-0 ml-2">
-                              <p className="text-[10px] md:text-xs text-gray-400 mb-1 font-medium">24h Change</p>
-                              <motion.div
-                                className={`flex items-center gap-1 text-base md:text-lg font-bold ${
-                                  coin.metrics.priceChange24h >= 0 ? "text-green-400" : "text-red-400"
-                                }`}
-                                initial={{ scale: 1 }}
-                                animate={{ scale: [1, 1.05, 1] }}
-                                transition={{ duration: 0.3 }}
-                              >
-                                {coin.metrics.priceChange24h >= 0 ? (
-                                  <TrendingUp className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+
+                            <div
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                router.push(`/creators/${coin.creator.address}`)
+                              }}
+                              className="flex items-center gap-2 md:gap-3 p-2.5 md:p-3 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors max-w-full overflow-hidden cursor-pointer group"
+                            >
+                              <div className="relative w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-orange-500/20 overflow-hidden bg-gradient-to-br from-orange-500/20 to-amber-500/20 flex-shrink-0 group-hover:border-orange-500/40 transition-colors">
+                                {coin.creator.avatar &&
+                                typeof coin.creator.avatar === "string" &&
+                                coin.creator.avatar.trim() ? (
+                                  <Image
+                                    src={coin.creator.avatar || "/placeholder.svg"}
+                                    alt={coin.creator.name || "Creator"}
+                                    fill
+                                    className="object-cover"
+                                    sizes="40px"
+                                    unoptimized
+                                  />
                                 ) : (
-                                  <TrendingDown className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+                                  <div className="absolute inset-0 flex items-center justify-center">
+                                    <Users className="w-4 h-4 md:w-5 md:h-5 text-orange-400/50" />
+                                  </div>
                                 )}
-                                <span className="truncate">{formatPercentChange(coin.metrics.priceChange24h)}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs md:text-sm font-medium truncate text-white group-hover:text-orange-300 transition-colors">
+                                  {coin.creator.name}
+                                </p>
+                                <p className="text-[10px] md:text-xs text-gray-400 truncate">{coin.creator.bio}</p>
+                              </div>
+                            </div>
+
+                            <motion.div
+                              className="flex items-center justify-between p-3 md:p-4 rounded-xl bg-gradient-to-br from-orange-500/10 via-amber-500/5 to-orange-500/5 border border-orange-500/20 shadow-lg max-w-full"
+                              whileHover={{ scale: 1.02 }}
+                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                            >
+                              <div className="min-w-0 flex-1">
+                                <p className="text-[10px] md:text-xs text-gray-400 mb-1 font-medium">Live Price</p>
+                                <p className="text-xl md:text-2xl font-bold text-orange-300 tracking-tight truncate">
+                                  {formatPrice(coin.metrics.price)}
+                                </p>
+                              </div>
+                              <div className="text-right flex-shrink-0 ml-2">
+                                <p className="text-[10px] md:text-xs text-gray-400 mb-1 font-medium">24h Change</p>
+                                <motion.div
+                                  className={`flex items-center gap-1 text-base md:text-lg font-bold ${
+                                    coin.metrics.priceChange24h >= 0 ? "text-green-400" : "text-red-400"
+                                  }`}
+                                  initial={{ scale: 1 }}
+                                  animate={{ scale: [1, 1.05, 1] }}
+                                  transition={{ duration: 0.3 }}
+                                >
+                                  {coin.metrics.priceChange24h >= 0 ? (
+                                    <TrendingUp className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+                                  ) : (
+                                    <TrendingDown className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0" />
+                                  )}
+                                  <span className="truncate">{formatPercentChange(coin.metrics.priceChange24h)}</span>
+                                </motion.div>
+                              </div>
+                            </motion.div>
+
+                            <div className="grid grid-cols-2 gap-2 md:gap-3 max-w-full">
+                              <motion.div
+                                className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all duration-300 min-w-0"
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                              >
+                                <div className="flex items-center gap-1.5 md:gap-2 mb-1">
+                                  <Droplets className="w-2.5 h-2.5 md:w-3 md:h-3 text-blue-400 flex-shrink-0" />
+                                  <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">
+                                    Market Cap
+                                  </p>
+                                </div>
+                                <p className="text-xs md:text-sm font-bold text-blue-400 truncate">
+                                  {formatNumber(coin.metrics.marketCap)}
+                                </p>
+                              </motion.div>
+                              <motion.div
+                                className={`p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-green-500/30 hover:bg-green-500/5 transition-all duration-300 min-w-0 ${
+                                  coin.metrics.volume24h > 1000
+                                    ? "relative before:absolute before:inset-0 before:rounded-xl before:bg-green-500/20 before:blur-md before:animate-pulse"
+                                    : ""
+                                }`}
+                                whileHover={{ scale: 1.05 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                animate={
+                                  coin.metrics.volume24h > 1000
+                                    ? {
+                                        boxShadow: [
+                                          "0 0 0px rgba(34, 197, 94, 0)",
+                                          "0 0 20px rgba(34, 197, 94, 0.4)",
+                                          "0 0 0px rgba(34, 197, 94, 0)",
+                                        ],
+                                      }
+                                    : {}
+                                }
+                                transition={{
+                                  duration: 2,
+                                  repeat: coin.metrics.volume24h > 1000 ? Number.POSITIVE_INFINITY : 0,
+                                  ease: "easeInOut",
+                                }}
+                              >
+                                <div className="flex items-center gap-1.5 md:gap-2 mb-1 relative z-10">
+                                  <Activity
+                                    className={`w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0 ${
+                                      coin.metrics.volume24h > 1000 ? "text-green-400 animate-pulse" : "text-green-400"
+                                    }`}
+                                  />
+                                  <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">
+                                    24h Volume
+                                  </p>
+                                </div>
+                                <p className="text-xs md:text-sm font-bold text-green-400 truncate relative z-10">
+                                  {formatNumber(coin.metrics.volume24h)}
+                                </p>
+                              </motion.div>
+                              <motion.div
+                                className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all duration-300 min-w-0"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                              >
+                                <div className="flex items-center gap-1.5 md:gap-2 mb-1">
+                                  <TrendingUp className="w-2.5 h-2.5 md:w-3 md:h-3 text-orange-400 flex-shrink-0" />
+                                  <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">Est. APY</p>
+                                </div>
+                                <p className="text-xs md:text-sm font-bold text-orange-400 truncate">
+                                  {coin.metrics.liquidity > 0
+                                    ? `${((coin.metrics.volume24h / coin.metrics.liquidity) * 365 * 0.3).toFixed(1)}%`
+                                    : "N/A"}
+                                </p>
+                              </motion.div>
+
+                              <motion.div
+                                className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all duration-300 min-w-0"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                              >
+                                <div className="flex items-center gap-1.5 md:gap-2 mb-1">
+                                  <Users className="w-2.5 h-2.5 md:w-3 md:h-3 text-purple-400 flex-shrink-0" />
+                                  <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">Holders</p>
+                                </div>
+                                <p className="text-xs md:text-sm font-bold text-purple-400 truncate">
+                                  {coin.metrics.holders.toLocaleString()}
+                                </p>
                               </motion.div>
                             </div>
-                          </motion.div>
 
-                          <div className="grid grid-cols-2 gap-2 md:gap-3 max-w-full">
-                            <motion.div
-                              className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-blue-500/30 hover:bg-blue-500/5 transition-all duration-300 min-w-0"
-                              whileHover={{ scale: 1.05 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <div className="flex items-center gap-1.5 md:gap-2 mb-1">
-                                <Droplets className="w-2.5 h-2.5 md:w-3 md:h-3 text-blue-400 flex-shrink-0" />
-                                <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">Market Cap</p>
-                              </div>
-                              <p className="text-xs md:text-sm font-bold text-blue-400 truncate">
-                                {formatNumber(coin.metrics.marketCap)}
-                              </p>
-                            </motion.div>
-                            <motion.div
-                              className={`p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-green-500/30 hover:bg-green-500/5 transition-all duration-300 min-w-0 ${
-                                coin.metrics.volume24h > 1000
-                                  ? "relative before:absolute before:inset-0 before:rounded-xl before:bg-green-500/20 before:blur-md before:animate-pulse"
-                                  : ""
-                              }`}
-                              whileHover={{ scale: 1.05 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                              animate={
-                                coin.metrics.volume24h > 1000
-                                  ? {
-                                      boxShadow: [
-                                        "0 0 0px rgba(34, 197, 94, 0)",
-                                        "0 0 20px rgba(34, 197, 94, 0.4)",
-                                        "0 0 0px rgba(34, 197, 94, 0)",
-                                      ],
-                                    }
-                                  : {}
-                              }
-                              transition={{
-                                duration: 2,
-                                repeat: coin.metrics.volume24h > 1000 ? Number.POSITIVE_INFINITY : 0,
-                                ease: "easeInOut",
-                              }}
-                            >
-                              <div className="flex items-center gap-1.5 md:gap-2 mb-1 relative z-10">
-                                <Activity
-                                  className={`w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0 ${
-                                    coin.metrics.volume24h > 1000 ? "text-green-400 animate-pulse" : "text-green-400"
-                                  }`}
-                                />
-                                <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">24h Volume</p>
-                              </div>
-                              <p className="text-xs md:text-sm font-bold text-green-400 truncate relative z-10">
-                                {formatNumber(coin.metrics.volume24h)}
-                              </p>
-                            </motion.div>
-                            <motion.div
-                              className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-orange-500/30 hover:bg-orange-500/5 transition-all duration-300 min-w-0"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <div className="flex items-center gap-1.5 md:gap-2 mb-1">
-                                <TrendingUp className="w-2.5 h-2.5 md:w-3 md:h-3 text-orange-400 flex-shrink-0" />
-                                <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">Est. APY</p>
-                              </div>
-                              <p className="text-xs md:text-sm font-bold text-orange-400 truncate">
-                                {coin.metrics.liquidity > 0
-                                  ? `${((coin.metrics.volume24h / coin.metrics.liquidity) * 365 * 0.3).toFixed(1)}%`
-                                  : "N/A"}
-                              </p>
-                            </motion.div>
-
-                            <motion.div
-                              className="p-2.5 md:p-3 rounded-xl glass-card border-white/10 hover:border-purple-500/30 hover:bg-purple-500/5 transition-all duration-300 min-w-0"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <div className="flex items-center gap-1.5 md:gap-2 mb-1">
-                                <Users className="w-2.5 h-2.5 md:w-3 md:h-3 text-purple-400 flex-shrink-0" />
-                                <p className="text-[10px] md:text-xs text-gray-400 font-medium truncate">Holders</p>
-                              </div>
-                              <p className="text-xs md:text-sm font-bold text-purple-400 truncate">
-                                {coin.metrics.holders.toLocaleString()}
-                              </p>
-                            </motion.div>
-                          </div>
-
-                          <div className="flex gap-2 pt-2 max-w-full">
-                            <motion.div
-                              className="flex-1 min-w-0"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  handleSwapToken(coin)
-                                }}
-                                variant="outline"
-                                className="w-full border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50 text-orange-300 transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
+                            <div className="flex gap-2 pt-2 max-w-full">
+                              <motion.div
+                                className="flex-1 min-w-0"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
                               >
-                                <ArrowRightLeft className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
-                                <span className="truncate">Swap</span>
-                              </Button>
-                            </motion.div>
-                            <motion.div
-                              className="flex-1 min-w-0"
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                            >
-                              <Button
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                  handleDeployLiquidity(coin)
-                                }}
-                                className="w-full btn-premium text-white transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
-                              >
-                                <Droplets className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
-                                <span className="truncate">Deploy</span>
-                              </Button>
-                            </motion.div>
-                            <motion.div
-                              whileHover={{ scale: 1.1, rotate: 5 }}
-                              whileTap={{ scale: 0.9 }}
-                              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                              className="flex-shrink-0"
-                            >
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                className="border-white/10 hover:bg-white/10 hover:border-white/20 bg-transparent transition-all duration-300 h-10 w-10 md:h-auto md:w-auto"
-                                asChild
-                                onClick={(e: React.MouseEvent) => {
-                                  e.preventDefault()
-                                  e.stopPropagation()
-                                }}
-                              >
-                                <a
-                                  href={`https://zora.co/coins/${coin.address}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <Button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handleSwapToken(coin)
+                                  }}
+                                  variant="outline"
+                                  className="w-full border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50 text-orange-300 transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
                                 >
-                                  <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                                </a>
-                              </Button>
-                            </motion.div>
+                                  <ArrowRightLeft className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Swap</span>
+                                </Button>
+                              </motion.div>
+                              <motion.div
+                                className="flex-1 min-w-0"
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                              >
+                                <Button
+                                  onClick={(e) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                    handleDeployLiquidity(coin)
+                                  }}
+                                  className="w-full btn-premium text-white transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
+                                >
+                                  <Droplets className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
+                                  <span className="truncate">Deploy</span>
+                                </Button>
+                              </motion.div>
+                              <motion.div
+                                whileHover={{ scale: 1.1, rotate: 5 }}
+                                whileTap={{ scale: 0.9 }}
+                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                                className="flex-shrink-0"
+                              >
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="border-white/10 hover:bg-white/10 hover:border-white/20 bg-transparent transition-all duration-300 h-10 w-10 md:h-auto md:w-auto"
+                                  asChild
+                                  onClick={(e: React.MouseEvent) => {
+                                    e.preventDefault()
+                                    e.stopPropagation()
+                                  }}
+                                >
+                                  <a
+                                    href={`https://zora.co/coins/${coin.address}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                  </a>
+                                </Button>
+                              </motion.div>
+                            </div>
                           </div>
                         </div>
                       </Card>
