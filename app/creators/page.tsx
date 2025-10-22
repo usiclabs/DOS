@@ -543,7 +543,7 @@ export default function CreatorsPage() {
                                   e.stopPropagation()
                                   handleDeployLiquidity(coin)
                                 }}
-                                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white border-0 transition-all duration-300 shadow-lg shadow-orange-500/30 hover:shadow-xl hover:shadow-orange-500/40 h-10 md:h-auto text-xs md:text-sm"
+                                className="w-full btn-premium text-white transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
                               >
                                 <Droplets className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
                                 <span className="truncate">Deploy</span>

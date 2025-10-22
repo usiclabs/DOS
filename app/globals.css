@@ -285,6 +285,17 @@
     }
   }
 
+  /* Added text-specific pulsing glow animation for menu items */
+  @keyframes pulse-text-glow {
+    0%,
+    100% {
+      text-shadow: 0 0 10px rgba(235, 90, 60, 0.6), 0 0 20px rgba(235, 90, 60, 0.4), 0 0 30px rgba(235, 90, 60, 0.2);
+    }
+    50% {
+      text-shadow: 0 0 15px rgba(235, 90, 60, 0.8), 0 0 30px rgba(235, 90, 60, 0.6), 0 0 45px rgba(235, 90, 60, 0.3);
+    }
+  }
+
   @keyframes float {
     0%,
     100% {
@@ -395,6 +406,11 @@
 
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  /* Added text pulsing glow animation class */
+  .animate-pulse-text-glow {
+    animation: pulse-text-glow 2s ease-in-out infinite;
   }
 
   .animate-float {

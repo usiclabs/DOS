@@ -35,7 +35,7 @@ const NavItem = memo(
           variant="ghost"
           className={cn(
             "text-gray-300 hover:text-white hover:bg-accent/20 font-medium transition-all duration-300 px-3 py-2 rounded-xl text-xs",
-            isActive && "text-white bg-accent/30 shadow-lg border border-accent/30",
+            isActive && "text-orange-500 bg-accent/30 shadow-lg border border-accent/30 animate-pulse-glow",
           )}
           aria-current={isActive ? "page" : undefined}
         >

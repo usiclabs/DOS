@@ -78,27 +78,7 @@ const NavigationItem = memo(
         >
           <Icon className="h-5 w-5 mb-1" aria-hidden="true" />
         </motion.div>
-        <motion.span
-          className="text-xs font-medium truncate"
-          animate={
-            isActive
-              ? {
-                  textShadow: [
-                    "0 0 8px rgba(249, 115, 22, 0.6), 0 0 16px rgba(249, 115, 22, 0.4)",
-                    "0 0 12px rgba(249, 115, 22, 0.8), 0 0 24px rgba(249, 115, 22, 0.6)",
-                    "0 0 8px rgba(249, 115, 22, 0.6), 0 0 16px rgba(249, 115, 22, 0.4)",
-                  ],
-                }
-              : {}
-          }
-          transition={{
-            duration: 2,
-            repeat: Number.POSITIVE_INFINITY,
-            ease: "easeInOut",
-          }}
-        >
-          {item.name}
-        </motion.span>
+        <span className="text-xs font-medium truncate">{item.name}</span>
         {isActive && (
           <motion.div
             layoutId="activeTab"
