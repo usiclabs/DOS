@@ -1,3 +1,6 @@
+import { createPublicClient, http } from "viem"
+import { base } from "viem/chains"
+
 export interface PriceSource {
   name: string
   priority: number
@@ -95,6 +98,40 @@ const TOKEN_CONFIG = {
   },
 }
 
+const UNISWAP_V3_POOL_ABI = [
+  {
+    inputs: [],
+    name: "slot0",
+    outputs: [
+      { name: "sqrtPriceX96", type: "uint160" },
+      { name: "tick", type: "int24" },
+      { name: "observationIndex", type: "uint16" },
+      { name: "observationCardinality", type: "uint16" },
+      { name: "observationCardinalityNext", type: "uint16" },
+      { name: "feeProtocol", type: "uint8" },
+      { name: "unlocked", type: "bool" },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "token0",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "token1",
+    outputs: [{ name: "", type: "address" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const
+
+const DEUS_WETH_POOL = "0x8b8149dd385955dc1ce77a4be7700ccd6a212e65" // Replace with actual pool address
+
 async function fetchCoinGeckoPrice(tokens: string[]): Promise<Record<string, TokenPrice>> {
   const startTime = Date.now()
   const prices: Record<string, TokenPrice> = {}
@@ -190,6 +227,80 @@ async function fetchDeusTickerPrice(): Promise<Record<string, TokenPrice>> {
     return {}
   } catch (error) {
     console.error("[v0] DEUS Ticker price fetch failed:", error)
+    console.log("[v0] Falling back to Uniswap V3 direct query...")
+    return fetchDeusFromUniswapV3()
+  }
+}
+
+async function fetchDeusFromUniswapV3(): Promise<Record<string, TokenPrice>> {
+  const startTime = Date.now()
+
+  try {
+    // Create public client with BlastAPI endpoint
+    const client = createPublicClient({
+      chain: base,
+      transport: http("https://base-mainnet.blastapi.io/b8e6c5f3-fc0e-4b3e-8b5e-3c5e8b5e3c5e"),
+    })
+
+    console.log("[v0] Fetching DEUS price from Uniswap V3 pool via BlastAPI...")
+
+    // Get pool data
+    const [slot0Data, token0, token1] = await Promise.all([
+      client.readContract({
+        address: DEUS_WETH_POOL as `0x${string}`,
+        abi: UNISWAP_V3_POOL_ABI,
+        functionName: "slot0",
+      }),
+      client.readContract({
+        address: DEUS_WETH_POOL as `0x${string}`,
+        abi: UNISWAP_V3_POOL_ABI,
+        functionName: "token0",
+      }),
+      client.readContract({
+        address: DEUS_WETH_POOL as `0x${string}`,
+        abi: UNISWAP_V3_POOL_ABI,
+        functionName: "token1",
+      }),
+    ])
+
+    const sqrtPriceX96 = slot0Data[0]
+
+    // Calculate price from sqrtPriceX96
+    // price = (sqrtPriceX96 / 2^96)^2
+    const sqrtPrice = Number(sqrtPriceX96) / 2 ** 96
+    let price = sqrtPrice ** 2
+
+    // Determine if DEUS is token0 or token1 and adjust price accordingly
+    const deusAddress = TOKEN_CONFIG.DEUS.addresses.base.toLowerCase()
+    const isDeusToken0 = token0.toLowerCase() === deusAddress
+
+    if (!isDeusToken0) {
+      // If DEUS is token1, invert the price
+      price = 1 / price
+    }
+
+    // Get WETH price to convert to USD
+    const wethPriceResult = await fetchCoinGeckoPrice(["WETH"])
+    const wethPrice = wethPriceResult.WETH?.price || TOKEN_CONFIG.WETH.fallbackPrice
+
+    // Calculate DEUS price in USD
+    const deusPriceUsd = price * wethPrice
+
+    const responseTime = Date.now() - startTime
+
+    console.log(`[v0] DEUS price from Uniswap V3: $${deusPriceUsd} (${responseTime}ms)`)
+
+    return {
+      DEUS: {
+        symbol: "DEUS",
+        price: deusPriceUsd,
+        source: "Uniswap V3 (BlastAPI)",
+        timestamp: Date.now(),
+        confidence: calculateConfidence("dexscreener", responseTime),
+      },
+    }
+  } catch (error) {
+    console.error("[v0] Uniswap V3 DEUS price fetch failed:", error)
     return {}
   }
 }

@@ -1,7 +1,8 @@
-import { DEUS_TOKEN_ADDRESS as DEUS_ADDRESS } from "./constants"
+import { DEUS_TOKEN_ADDRESS as DEUS_ADDRESS, DEUS_ONE_PERCENT_THRESHOLD } from "./constants"
 
-// Re-export the DEUS token address
+// Re-export the DEUS token address and threshold
 export const DEUS_TOKEN_ADDRESS = DEUS_ADDRESS
+export { DEUS_ONE_PERCENT_THRESHOLD }
 
 // Standard ERC20 ABI (only the functions we need)
 export const DEUS_ABI = [

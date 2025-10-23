@@ -76,6 +76,8 @@ const STRATEGY_PARAMS = {
   },
 }
 
+import { fetchTokenPrices } from "@/lib/price-feeds"
+
 export class AutoTradeBot {
   private config: BotConfig
   private status: BotStatus
@@ -83,6 +85,7 @@ export class AutoTradeBot {
   private tradeHistory: TradeHistory[] = []
   private currentPosition: { amount: number; entryPrice: number } | null = null
   private monitoringInterval: NodeJS.Timeout | null = null
+  private currentPrice: number | null = null
 
   constructor(config: BotConfig) {
     this.config = config
@@ -103,6 +106,7 @@ export class AutoTradeBot {
     console.log("[v0] Starting auto-trade bot with strategy:", this.config.strategy)
     this.status.isRunning = true
 
+    await this.fetchAndCachePrice()
     await this.executeInitialBuy()
 
     this.startMonitoring()
@@ -125,6 +129,8 @@ export class AutoTradeBot {
       if (!this.status.isRunning) return
 
       try {
+        await this.fetchAndCachePrice()
+
         const signal = await this.generateTradeSignal()
 
         if (signal.action !== "hold" && signal.confidence > 70) {
@@ -228,13 +234,87 @@ export class AutoTradeBot {
   }
 
   private async getCurrentDeusPrice(): Promise<number | null> {
+    if (this.currentPrice) {
+      return this.currentPrice
+    }
+
+    return await this.fetchAndCachePrice()
+  }
+
+  private async fetchAndCachePrice(retries = 3): Promise<number | null> {
+    for (let i = 0; i < retries; i++) {
+      try {
+        console.log(`[v0] Fetching DEUS price via BlastAPI (attempt ${i + 1}/${retries})`)
+
+        // Use the existing price feed system which uses BlastAPI under the hood
+        const result = await fetchTokenPrices(["DEUS"])
+
+        if (result.prices.DEUS && result.prices.DEUS.price > 0) {
+          this.currentPrice = result.prices.DEUS.price
+          console.log(
+            `[v0] DEUS price fetched successfully: $${result.prices.DEUS.price} (source: ${result.prices.DEUS.source}, confidence: ${result.prices.DEUS.confidence})`,
+          )
+          return result.prices.DEUS.price
+        }
+
+        console.warn(`[v0] Invalid price data received:`, result)
+      } catch (error) {
+        console.error(`[v0] Error fetching DEUS price (attempt ${i + 1}):`, error)
+
+        // Wait before retrying (exponential backoff)
+        if (i < retries - 1) {
+          const delay = Math.pow(2, i) * 1000 // 1s, 2s, 4s
+          console.log(`[v0] Retrying in ${delay}ms...`)
+          await new Promise((resolve) => setTimeout(resolve, delay))
+        }
+      }
+    }
+
+    console.error("[v0] Failed to fetch DEUS price after all retries")
+    return null
+  }
+
+  private async executeInitialBuy() {
     try {
-      const response = await fetch("/api/deus/ticker")
-      const data = await response.json()
-      return data.price || null
+      console.log("[v0] Executing initial buy of 0.000001 ETH")
+
+      const currentPrice = this.currentPrice || (await this.fetchAndCachePrice())
+
+      if (!currentPrice) {
+        console.error("[v0] Cannot execute initial buy: price unavailable after retries")
+        return
+      }
+
+      const initialBuyAmountETH = 0.000001
+      const initialBuyAmountUSD = initialBuyAmountETH * 3000 // Assuming ~$3000 ETH price
+
+      const trade: TradeHistory = {
+        id: `trade-${Date.now()}`,
+        timestamp: Date.now(),
+        type: "buy",
+        amountIn: initialBuyAmountETH.toString(),
+        amountOut: (initialBuyAmountETH / currentPrice).toString(),
+        tokenIn: "ETH",
+        tokenOut: "DEUS",
+        price: currentPrice,
+        status: "success",
+        txHash: `0x${Math.random().toString(16).slice(2)}`,
+      }
+
+      this.tradeHistory.push(trade)
+      this.status.totalTrades++
+      this.status.successfulTrades++
+      this.lastTradeTime = Date.now()
+
+      // Set initial position
+      this.currentPosition = {
+        amount: initialBuyAmountUSD,
+        entryPrice: currentPrice,
+      }
+
+      console.log("[v0] Initial buy executed successfully:", trade)
     } catch (error) {
-      console.error("[v0] Error fetching DEUS price:", error)
-      return null
+      console.error("[v0] Error executing initial buy:", error)
     }
   }
 
@@ -301,49 +381,6 @@ export class AutoTradeBot {
       trade.status = "failed"
       this.status.failedTrades++
       console.log("[v0] Trade failed:", trade)
-    }
-  }
-
-  private async executeInitialBuy() {
-    try {
-      console.log("[v0] Executing initial buy of 0.000001 ETH")
-
-      const currentPrice = await this.getCurrentDeusPrice()
-      if (!currentPrice) {
-        console.error("[v0] Cannot execute initial buy: price unavailable")
-        return
-      }
-
-      const initialBuyAmountETH = 0.000001
-      const initialBuyAmountUSD = initialBuyAmountETH * 3000 // Assuming ~$3000 ETH price
-
-      const trade: TradeHistory = {
-        id: `trade-${Date.now()}`,
-        timestamp: Date.now(),
-        type: "buy",
-        amountIn: initialBuyAmountETH.toString(),
-        amountOut: (initialBuyAmountETH / currentPrice).toString(),
-        tokenIn: "ETH",
-        tokenOut: "DEUS",
-        price: currentPrice,
-        status: "success",
-        txHash: `0x${Math.random().toString(16).slice(2)}`,
-      }
-
-      this.tradeHistory.push(trade)
-      this.status.totalTrades++
-      this.status.successfulTrades++
-      this.lastTradeTime = Date.now()
-
-      // Set initial position
-      this.currentPosition = {
-        amount: initialBuyAmountUSD,
-        entryPrice: currentPrice,
-      }
-
-      console.log("[v0] Initial buy executed successfully:", trade)
-    } catch (error) {
-      console.error("[v0] Error executing initial buy:", error)
     }
   }
 

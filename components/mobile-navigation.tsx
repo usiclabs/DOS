@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Home, Users, BarChart3, Droplets, Vote, Vault, Bot } from "lucide-react"
+import { Home, Users, BarChart3, Droplets, Vote, Vault } from "lucide-react"
 import { motion } from "framer-motion"
 import { memo, useCallback } from "react"
 
@@ -21,11 +21,6 @@ const navigationItems = [
     name: "Creators",
     href: "/creators",
     icon: Users,
-  },
-  {
-    name: "Auto-Trade",
-    href: "/auto-trade",
-    icon: Bot,
   },
   {
     name: "Treasury",

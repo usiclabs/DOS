@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useWallet } from "@/hooks/use-wallet"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,11 +11,27 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Bot, TrendingUp, Shield, Zap, Activity, DollarSign, Target, AlertTriangle } from "lucide-react"
+import {
+  Bot,
+  TrendingUp,
+  Shield,
+  Zap,
+  Activity,
+  Target,
+  Play,
+  Square,
+  RefreshCw,
+  TrendingDown,
+  Clock,
+  Wallet,
+  Sparkles,
+  Lock,
+} from "lucide-react"
 import { fadeInUp, staggerContainer } from "@/lib/animations"
-import { DEUS_TOKEN_ADDRESS, DEUS_ABI } from "@/lib/contracts"
-import { createPublicClient, http, type Address } from "viem"
+import { DEUS_TOKEN_ADDRESS, DEUS_ABI, DEUS_ONE_PERCENT_THRESHOLD } from "@/lib/contracts"
+import { createPublicClient, http, type Address, formatUnits } from "viem"
 import { base } from "viem/chains"
+import { toast } from "sonner"
 
 const publicClient = createPublicClient({
   chain: base,
@@ -61,6 +77,9 @@ export function AutoTradeContent() {
   })
   const [isEligible, setIsEligible] = useState(false)
   const [isCheckingBalance, setIsCheckingBalance] = useState(false)
+  const [isStarting, setIsStarting] = useState(false)
+  const [isStopping, setIsStopping] = useState(false)
+  const [userBalance, setUserBalance] = useState<bigint>(0n)
 
   useEffect(() => {
     const checkBalance = async () => {
@@ -75,7 +94,17 @@ export function AutoTradeContent() {
           args: [address as Address],
         })
 
-        setIsEligible(BigInt(balance.toString()) > 0n)
+        const balanceBigInt = BigInt(balance.toString())
+        setUserBalance(balanceBigInt)
+
+        const meetsThreshold = balanceBigInt >= DEUS_ONE_PERCENT_THRESHOLD
+        setIsEligible(meetsThreshold)
+
+        console.log("[v0] DEUS balance check:", {
+          balance: formatUnits(balanceBigInt, 18),
+          threshold: formatUnits(DEUS_ONE_PERCENT_THRESHOLD, 18),
+          eligible: meetsThreshold,
+        })
       } catch (error) {
         console.error("[v0] Failed to check DEUS balance:", error)
         setIsEligible(false)
@@ -119,7 +148,8 @@ export function AutoTradeContent() {
 
   const handleStartBot = async () => {
     try {
-      setBotStatus({ ...botStatus, isRunning: true })
+      setIsStarting(true)
+      toast.loading("Starting auto-trade bot...")
 
       const response = await fetch("/api/auto-trade/status", {
         method: "POST",
@@ -134,18 +164,26 @@ export function AutoTradeContent() {
       if (response.ok) {
         const data = await response.json()
         setBotStatus(data)
+        toast.success("Bot started successfully! Initial buy executed.")
         setTimeout(() => {
           fetchHistory()
         }, 1000)
+      } else {
+        toast.error("Failed to start bot")
       }
     } catch (error) {
       console.error("[v0] Failed to start bot:", error)
-      setBotStatus({ ...botStatus, isRunning: false })
+      toast.error("Error starting bot")
+    } finally {
+      setIsStarting(false)
     }
   }
 
   const handleStopBot = async () => {
     try {
+      setIsStopping(true)
+      toast.loading("Stopping auto-trade bot...")
+
       const response = await fetch("/api/auto-trade/status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -158,9 +196,15 @@ export function AutoTradeContent() {
       if (response.ok) {
         const data = await response.json()
         setBotStatus(data)
+        toast.success("Bot stopped successfully")
+      } else {
+        toast.error("Failed to stop bot")
       }
     } catch (error) {
       console.error("[v0] Failed to stop bot:", error)
+      toast.error("Error stopping bot")
+    } finally {
+      setIsStopping(false)
     }
   }
 
@@ -208,17 +252,33 @@ export function AutoTradeContent() {
       <div className="flex min-h-[60vh] items-center justify-center">
         <Card className="w-full max-w-md border-destructive">
           <CardHeader className="text-center">
-            <AlertTriangle className="mx-auto mb-4 h-12 w-12 text-destructive" />
-            <CardTitle>Access Restricted</CardTitle>
-            <CardDescription>You need to hold $DEUS tokens to access the Auto-Trade Bot</CardDescription>
+            <Lock className="mx-auto mb-4 h-12 w-12 text-destructive" />
+            <CardTitle>Exclusive Access Required</CardTitle>
+            <CardDescription>You need to hold at least 1% of $DEUS supply to access the Auto-Trade Bot</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="rounded-lg bg-muted p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Your Balance:</span>
+                <span className="font-mono font-medium">{formatUnits(userBalance, 18)} $DEUS</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Required (1%):</span>
+                <span className="font-mono font-medium">{formatUnits(DEUS_ONE_PERCENT_THRESHOLD, 18)} $DEUS</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Still Needed:</span>
+                <span className="font-mono font-medium text-destructive">
+                  {formatUnits(DEUS_ONE_PERCENT_THRESHOLD - userBalance, 18)} $DEUS
+                </span>
+              </div>
+            </div>
             <p className="text-center text-sm text-muted-foreground">
-              The Auto-Trade Bot is exclusively available to $DEUS token holders.
+              The Auto-Trade Bot is an exclusive feature for major $DEUS holders. Acquire more tokens to unlock access.
             </p>
             <div className="flex justify-center">
               <Button asChild>
-                <a href="/swap">Get $DEUS Tokens</a>
+                <a href="/swap">Get More $DEUS</a>
               </Button>
             </div>
           </CardContent>
@@ -229,227 +289,598 @@ export function AutoTradeContent() {
 
   return (
     <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-6">
-      {/* Status Cards */}
+      <motion.div
+        variants={fadeInUp}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary/20 via-primary/10 to-background p-8 md:p-12 border border-primary/20"
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 animate-pulse" />
+        <motion.div
+          className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-primary/10 blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-primary/10 blur-3xl"
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.5, 0.3, 0.5],
+          }}
+          transition={{
+            duration: 4,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+
+        <div className="relative z-10 flex flex-col items-center text-center space-y-4">
+          <motion.div
+            className="relative"
+            animate={{
+              y: [0, -10, 0],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: "easeInOut",
+            }}
+          >
+            <motion.div
+              className="absolute inset-0 rounded-full bg-primary/20 blur-2xl"
+              animate={{
+                scale: [1, 1.5, 1],
+                opacity: [0.5, 0.8, 0.5],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "easeInOut",
+              }}
+            />
+            <Bot className="relative h-16 w-16 text-primary" />
+            {botStatus.isRunning && (
+              <motion.div
+                className="absolute -top-1 -right-1"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+              >
+                <Sparkles className="h-6 w-6 text-green-500" />
+              </motion.div>
+            )}
+          </motion.div>
+          <div>
+            <motion.h1
+              className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              Auto-Trade Bot
+            </motion.h1>
+            <motion.p
+              className="mt-2 text-lg text-muted-foreground"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Automated trading powered by AI • Exclusive for $DEUS holders
+            </motion.p>
+          </div>
+          <motion.div
+            className="flex items-center gap-2"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, type: "spring" }}
+          >
+            <motion.div
+              className={`h-3 w-3 rounded-full ${botStatus.isRunning ? "bg-green-500" : "bg-gray-400"}`}
+              animate={
+                botStatus.isRunning
+                  ? {
+                      scale: [1, 1.2, 1],
+                      opacity: [1, 0.7, 1],
+                    }
+                  : {}
+              }
+              transition={{
+                duration: 2,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "easeInOut",
+              }}
+            />
+            <span className="text-sm font-medium">{botStatus.isRunning ? "Bot Active" : "Bot Inactive"}</span>
+          </motion.div>
+        </div>
+      </motion.div>
+
       <div className="grid gap-4 md:grid-cols-4">
-        <motion.div variants={fadeInUp}>
-          <Card>
+        <motion.div
+          variants={fadeInUp}
+          whileHover={{ scale: 1.02, y: -4 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <Card className="relative overflow-hidden border-primary/20 hover:border-primary/40 transition-colors">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Bot Status</CardTitle>
-              <Activity className="h-4 w-4 text-muted-foreground" />
+              <motion.div
+                animate={botStatus.isRunning ? { rotate: 360 } : {}}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+              >
+                <Activity className={`h-4 w-4 ${botStatus.isRunning ? "text-green-500" : "text-muted-foreground"}`} />
+              </motion.div>
             </CardHeader>
             <CardContent>
-              <Badge variant={botStatus.isRunning ? "default" : "secondary"}>
-                {botStatus.isRunning ? "Running" : "Stopped"}
-              </Badge>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={botStatus.isRunning ? "running" : "stopped"}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <Badge variant={botStatus.isRunning ? "default" : "secondary"} className="text-xs">
+                    {botStatus.isRunning ? "Running" : "Stopped"}
+                  </Badge>
+                </motion.div>
+              </AnimatePresence>
+              {botStatus.lastTradeTime && (
+                <motion.p
+                  className="mt-2 text-xs text-muted-foreground flex items-center gap-1"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
+                  <Clock className="h-3 w-3" />
+                  Last trade: {new Date(botStatus.lastTradeTime).toLocaleTimeString()}
+                </motion.p>
+              )}
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div variants={fadeInUp}>
-          <Card>
+        <motion.div
+          variants={fadeInUp}
+          whileHover={{ scale: 1.02, y: -4 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <Card
+            className={`relative overflow-hidden border-${(botStatus.profitLoss ?? 0) >= 0 ? "green" : "red"}-500/20 hover:border-${(botStatus.profitLoss ?? 0) >= 0 ? "green" : "red"}-500/40 transition-colors`}
+          >
+            <motion.div
+              className={`absolute inset-0 bg-gradient-to-br ${(botStatus.profitLoss ?? 0) >= 0 ? "from-green-500/5" : "from-red-500/5"} to-transparent`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Profit/Loss</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <motion.div
+                animate={{ y: [0, -4, 0] }}
+                transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+              >
+                {(botStatus.profitLoss ?? 0) >= 0 ? (
+                  <TrendingUp className="h-4 w-4 text-green-500" />
+                ) : (
+                  <TrendingDown className="h-4 w-4 text-red-500" />
+                )}
+              </motion.div>
             </CardHeader>
             <CardContent>
-              <div
+              <motion.div
                 className={`text-2xl font-bold ${(botStatus.profitLoss ?? 0) >= 0 ? "text-green-500" : "text-red-500"}`}
+                key={botStatus.profitLoss}
+                initial={{ scale: 1.2, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 300 }}
               >
                 {(botStatus.profitLoss ?? 0) >= 0 ? "+" : ""}${(botStatus.profitLoss ?? 0).toFixed(2)}
-              </div>
+              </motion.div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {(botStatus.profitLoss ?? 0) >= 0 ? "In profit" : "In loss"}
+              </p>
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div variants={fadeInUp}>
-          <Card>
+        <motion.div
+          variants={fadeInUp}
+          whileHover={{ scale: 1.02, y: -4 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <Card className="relative overflow-hidden border-blue-500/20 hover:border-blue-500/40 transition-colors">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Trades</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Total Trades</CardTitle>
+              <RefreshCw className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{botStatus.tradesExecuted}</div>
+              <motion.div
+                className="text-2xl font-bold"
+                key={botStatus.tradesExecuted}
+                initial={{ scale: 1.2, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                {botStatus.tradesExecuted}
+              </motion.div>
+              <p className="text-xs text-muted-foreground mt-1">Trades executed</p>
             </CardContent>
           </Card>
         </motion.div>
 
-        <motion.div variants={fadeInUp}>
-          <Card>
+        <motion.div
+          variants={fadeInUp}
+          whileHover={{ scale: 1.02, y: -4 }}
+          transition={{ type: "spring", stiffness: 400 }}
+        >
+          <Card className="relative overflow-hidden border-purple-500/20 hover:border-purple-500/40 transition-colors">
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
+              <Target className="h-4 w-4 text-purple-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{(botStatus.successRate ?? 0).toFixed(1)}%</div>
+              <motion.div
+                className="text-2xl font-bold"
+                key={botStatus.successRate}
+                initial={{ scale: 1.2, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                {(botStatus.successRate ?? 0).toFixed(1)}%
+              </motion.div>
+              <p className="text-xs text-muted-foreground mt-1">Win rate</p>
             </CardContent>
           </Card>
         </motion.div>
       </div>
 
-      {/* Main Control Panel */}
       <motion.div variants={fadeInUp}>
         <Tabs defaultValue="control" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="control">Control Panel</TabsTrigger>
-            <TabsTrigger value="history">Trade History</TabsTrigger>
+            <TabsTrigger value="history">
+              Trade History
+              {tradeHistory.length > 0 && (
+                <motion.span
+                  className="ml-1"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ type: "spring", stiffness: 500 }}
+                >
+                  ({tradeHistory.length})
+                </motion.span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="control" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bot Configuration</CardTitle>
-                <CardDescription>Configure your auto-trading bot parameters</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Strategy Selection */}
-                <div className="space-y-2">
-                  <Label>Trading Strategy</Label>
-                  <Select
-                    value={config.strategy}
-                    onValueChange={(value) => setConfig({ ...config, strategy: value })}
-                    disabled={botStatus.isRunning}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Shield className="h-5 w-5" />
+                    Bot Configuration
+                  </CardTitle>
+                  <CardDescription>Configure your auto-trading bot parameters and strategy</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-base font-semibold">Trading Strategy</Label>
+                    <Select
+                      value={config.strategy}
+                      onValueChange={(value) => setConfig({ ...config, strategy: value })}
+                      disabled={botStatus.isRunning}
+                    >
+                      <SelectTrigger className="h-12">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="conservative">
+                          <div className="flex items-center gap-3 py-2">
+                            <Shield className="h-5 w-5 text-green-500" />
+                            <div>
+                              <div className="font-medium">Conservative</div>
+                              <div className="text-xs text-muted-foreground">Low risk, steady gains</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="moderate">
+                          <div className="flex items-center gap-3 py-2">
+                            <Activity className="h-5 w-5 text-blue-500" />
+                            <div>
+                              <div className="font-medium">Moderate</div>
+                              <div className="text-xs text-muted-foreground">Balanced risk/reward</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="aggressive">
+                          <div className="flex items-center gap-3 py-2">
+                            <Zap className="h-5 w-5 text-orange-500" />
+                            <div>
+                              <div className="font-medium">Aggressive</div>
+                              <div className="text-xs text-muted-foreground">High risk, high reward</div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-semibold">Trade Amount</Label>
+                      <Badge variant="outline" className="text-sm font-mono">
+                        {config.tradeAmount}%
+                      </Badge>
+                    </div>
+                    <Slider
+                      value={[config.tradeAmount]}
+                      onValueChange={([value]) => setConfig({ ...config, tradeAmount: value })}
+                      min={10}
+                      max={100}
+                      step={10}
+                      disabled={botStatus.isRunning}
+                      className="py-4"
+                    />
+                    <p className="text-xs text-muted-foreground">Percentage of available balance to use per trade</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-semibold">Stop Loss</Label>
+                      <Badge variant="outline" className="text-sm font-mono text-red-500">
+                        -{config.stopLoss}%
+                      </Badge>
+                    </div>
+                    <Slider
+                      value={[config.stopLoss]}
+                      onValueChange={([value]) => setConfig({ ...config, stopLoss: value })}
+                      min={1}
+                      max={20}
+                      step={1}
+                      disabled={botStatus.isRunning}
+                      className="py-4"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Automatically sell if price drops by this percentage
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-base font-semibold">Take Profit</Label>
+                      <Badge variant="outline" className="text-sm font-mono text-green-500">
+                        +{config.takeProfit}%
+                      </Badge>
+                    </div>
+                    <Slider
+                      value={[config.takeProfit]}
+                      onValueChange={([value]) => setConfig({ ...config, takeProfit: value })}
+                      min={5}
+                      max={50}
+                      step={5}
+                      disabled={botStatus.isRunning}
+                      className="py-4"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Automatically sell if price rises by this percentage
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between rounded-lg border p-4">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto-restart" className="text-base font-semibold cursor-pointer">
+                        Auto Restart
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Automatically restart bot after stop-loss is triggered
+                      </p>
+                    </div>
+                    <Switch
+                      id="auto-restart"
+                      checked={config.autoRestart}
+                      onCheckedChange={(checked) => setConfig({ ...config, autoRestart: checked })}
+                      disabled={botStatus.isRunning}
+                    />
+                  </div>
+
+                  <div className="flex gap-4 pt-4">
+                    {!botStatus.isRunning ? (
+                      <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={handleStartBot}
+                          className="w-full h-12 text-base relative overflow-hidden group"
+                          size="lg"
+                          disabled={isStarting}
+                        >
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/30 to-primary/0"
+                            animate={isStarting ? { x: ["-100%", "100%"] } : {}}
+                            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                          />
+                          {isStarting ? (
+                            <>
+                              <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                              Starting...
+                            </>
+                          ) : (
+                            <>
+                              <Play className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                              Start Bot
+                            </>
+                          )}
+                        </Button>
+                      </motion.div>
+                    ) : (
+                      <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                        <Button
+                          onClick={handleStopBot}
+                          variant="destructive"
+                          className="w-full h-12 text-base relative overflow-hidden group"
+                          size="lg"
+                          disabled={isStopping}
+                        >
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-destructive/0 via-destructive/30 to-destructive/0"
+                            animate={isStopping ? { x: ["-100%", "100%"] } : {}}
+                            transition={{ duration: 1, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                          />
+                          {isStopping ? (
+                            <>
+                              <RefreshCw className="mr-2 h-5 w-5 animate-spin" />
+                              Stopping...
+                            </>
+                          ) : (
+                            <>
+                              <Square className="mr-2 h-5 w-5 group-hover:scale-110 transition-transform" />
+                              Stop Bot
+                            </>
+                          )}
+                        </Button>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  <motion.div
+                    className="rounded-lg bg-primary/5 p-4 border border-primary/20 relative overflow-hidden"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
                   >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="conservative">
-                        <div className="flex items-center gap-2">
-                          <Shield className="h-4 w-4" />
-                          Conservative (Low Risk)
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="moderate">
-                        <div className="flex items-center gap-2">
-                          <Activity className="h-4 w-4" />
-                          Moderate (Balanced)
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="aggressive">
-                        <div className="flex items-center gap-2">
-                          <Zap className="h-4 w-4" />
-                          Aggressive (High Risk)
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Trade Amount */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Trade Amount (%)</Label>
-                    <span className="text-sm text-muted-foreground">{config.tradeAmount}%</span>
-                  </div>
-                  <Slider
-                    value={[config.tradeAmount]}
-                    onValueChange={([value]) => setConfig({ ...config, tradeAmount: value })}
-                    min={10}
-                    max={100}
-                    step={10}
-                    disabled={botStatus.isRunning}
-                  />
-                </div>
-
-                {/* Stop Loss */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Stop Loss (%)</Label>
-                    <span className="text-sm text-muted-foreground">{config.stopLoss}%</span>
-                  </div>
-                  <Slider
-                    value={[config.stopLoss]}
-                    onValueChange={([value]) => setConfig({ ...config, stopLoss: value })}
-                    min={1}
-                    max={20}
-                    step={1}
-                    disabled={botStatus.isRunning}
-                  />
-                </div>
-
-                {/* Take Profit */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label>Take Profit (%)</Label>
-                    <span className="text-sm text-muted-foreground">{config.takeProfit}%</span>
-                  </div>
-                  <Slider
-                    value={[config.takeProfit]}
-                    onValueChange={([value]) => setConfig({ ...config, takeProfit: value })}
-                    min={5}
-                    max={50}
-                    step={5}
-                    disabled={botStatus.isRunning}
-                  />
-                </div>
-
-                {/* Auto Restart */}
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="auto-restart">Auto Restart on Stop Loss</Label>
-                  <Switch
-                    id="auto-restart"
-                    checked={config.autoRestart}
-                    onCheckedChange={(checked) => setConfig({ ...config, autoRestart: checked })}
-                    disabled={botStatus.isRunning}
-                  />
-                </div>
-
-                {/* Control Buttons */}
-                <div className="flex gap-4">
-                  {!botStatus.isRunning ? (
-                    <Button onClick={handleStartBot} className="flex-1" size="lg">
-                      <Bot className="mr-2 h-4 w-4" />
-                      Start Bot
-                    </Button>
-                  ) : (
-                    <Button onClick={handleStopBot} variant="destructive" className="flex-1" size="lg">
-                      Stop Bot
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-primary/10 to-transparent"
+                      animate={{ x: ["-100%", "100%"] }}
+                      transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                    />
+                    <div className="flex gap-3 relative z-10">
+                      <Wallet className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">Initial Buy: 0.000001 ETH</p>
+                        <p className="text-xs text-muted-foreground">
+                          When you start the bot, it will automatically execute an initial buy of 0.000001 ETH worth of
+                          $DEUS tokens to establish a position.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </TabsContent>
 
           <TabsContent value="history">
-            <Card>
-              <CardHeader>
-                <CardTitle>Trade History</CardTitle>
-                <CardDescription>Recent trades executed by your bot</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {tradeHistory.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <Activity className="mb-4 h-12 w-12 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">No trades yet. Start the bot to begin trading.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {tradeHistory.map((trade) => (
-                      <div key={trade.id} className="flex items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant={trade.type === "buy" ? "default" : "secondary"}>
-                              {trade.type.toUpperCase()}
-                            </Badge>
-                            <span className="text-sm font-medium">{trade.amount} $DEUS</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground">{new Date(trade.timestamp).toLocaleString()}</p>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">${trade.price}</div>
-                          <div
-                            className={`text-xs ${(trade.profitLoss ?? 0) >= 0 ? "text-green-500" : "text-red-500"}`}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+              <Card className="border-primary/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    Trade History
+                  </CardTitle>
+                  <CardDescription>Recent trades executed by your auto-trade bot</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {tradeHistory.length === 0 ? (
+                    <motion.div
+                      className="flex flex-col items-center justify-center py-12 text-center"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <motion.div
+                        className="rounded-full bg-muted p-6 mb-4"
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                      >
+                        <Activity className="h-12 w-12 text-muted-foreground" />
+                      </motion.div>
+                      <h3 className="text-lg font-semibold mb-2">No trades yet</h3>
+                      <p className="text-sm text-muted-foreground max-w-sm">
+                        Start the bot to begin automated trading. Your trade history will appear here.
+                      </p>
+                    </motion.div>
+                  ) : (
+                    <div className="space-y-3">
+                      <AnimatePresence mode="popLayout">
+                        {tradeHistory.map((trade, index) => (
+                          <motion.div
+                            key={trade.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 20 }}
+                            transition={{ delay: index * 0.05, type: "spring", stiffness: 300 }}
+                            whileHover={{ scale: 1.02, x: 4 }}
+                            className="flex items-center justify-between rounded-lg border p-4 hover:bg-muted/50 transition-colors cursor-pointer border-primary/10 hover:border-primary/30"
                           >
-                            {(trade.profitLoss ?? 0) >= 0 ? "+" : ""}${(trade.profitLoss ?? 0).toFixed(2)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                            <div className="flex items-center gap-4">
+                              <motion.div
+                                className={`rounded-full p-2 ${trade.type === "buy" ? "bg-green-500/10" : "bg-red-500/10"}`}
+                                whileHover={{ rotate: 360 }}
+                                transition={{ duration: 0.5 }}
+                              >
+                                {trade.type === "buy" ? (
+                                  <TrendingUp className="h-4 w-4 text-green-500" />
+                                ) : (
+                                  <TrendingDown className="h-4 w-4 text-red-500" />
+                                )}
+                              </motion.div>
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={trade.type === "buy" ? "default" : "secondary"} className="text-xs">
+                                    {trade.type.toUpperCase()}
+                                  </Badge>
+                                  <span className="text-sm font-medium">{trade.amount} $DEUS</span>
+                                </div>
+                                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(trade.timestamp).toLocaleString()}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="text-sm font-medium">${trade.price}</div>
+                              {trade.profitLoss !== null && (
+                                <motion.div
+                                  className={`text-xs font-medium ${(trade.profitLoss ?? 0) >= 0 ? "text-green-500" : "text-red-500"}`}
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: 1 }}
+                                  transition={{ type: "spring", stiffness: 500, delay: 0.1 }}
+                                >
+                                  {(trade.profitLoss ?? 0) >= 0 ? "+" : ""}${(trade.profitLoss ?? 0).toFixed(2)}
+                                </motion.div>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </motion.div>
           </TabsContent>
         </Tabs>
       </motion.div>
