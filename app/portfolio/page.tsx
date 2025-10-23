@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion } from "framer-motion"
+import { motion, useSpring, useTransform } from "framer-motion"
 import useSWR from "swr"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -13,7 +13,18 @@ import { PositionCard } from "@/components/position-card"
 import { useWallet } from "@/hooks/use-wallet"
 import { toast } from "@/components/ui/use-toast"
 import { usePortfolioActions } from "@/hooks/use-portfolio-actions"
-import { TrendingDown, RefreshCw, PieChart, Activity, Coins, Wallet, Clock } from "lucide-react"
+import {
+  TrendingDown,
+  RefreshCw,
+  PieChart,
+  Activity,
+  Coins,
+  Wallet,
+  Clock,
+  TrendingUp,
+  DollarSign,
+  Percent,
+} from "lucide-react"
 
 interface TokenBalance {
   address: string
@@ -136,6 +147,27 @@ function EnhancedWalletConnect({ onConnect }: { onConnect: (walletType: string) 
   )
 }
 
+function AnimatedNumber({
+  value,
+  prefix = "",
+  suffix = "",
+  decimals = 2,
+}: { value: number; prefix?: string; suffix?: string; decimals?: number }) {
+  const spring = useSpring(value, { mass: 0.8, stiffness: 75, damping: 15 })
+  const display = useTransform(spring, (current) => {
+    if (value > 0 && value < 0.01) {
+      return `${prefix}${current.toFixed(8)}${suffix}`
+    }
+    return `${prefix}${current.toFixed(decimals)}${suffix}`
+  })
+
+  useEffect(() => {
+    spring.set(value)
+  }, [spring, value])
+
+  return <motion.span>{display}</motion.span>
+}
+
 function TokenBalanceCard({
   tokens,
   ethBalance,
@@ -151,74 +183,119 @@ function TokenBalanceCard({
   const totalValue = ethValue + totalTokenValue
 
   return (
-    <Card className="bg-card border border-white/5 shadow-[8px_8px_16px_rgba(0,0,0,0.6),-8px_-8px_16px_rgba(255,255,255,0.02)]">
+    <Card className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_32px_rgba(255,107,53,0.2)] transition-all duration-500 group">
+      <motion.div
+        className="absolute -top-20 -right-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl"
+        animate={{
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Number.POSITIVE_INFINITY,
+          ease: "easeInOut",
+        }}
+      />
+
       <CardHeader>
         <CardTitle className="flex items-center text-white">
-          <Wallet className="h-5 w-5 mr-2" />
+          <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
+            <Wallet className="h-5 w-5 mr-2 text-primary" />
+          </motion.div>
           Token Holdings
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {/* ETH Balance */}
-        <div className="flex justify-between items-center p-3 bg-muted/20 rounded-lg">
+      <CardContent className="space-y-3 relative z-10">
+        <motion.div
+          className="flex justify-between items-center p-4 bg-gradient-to-r from-blue-500/10 to-blue-500/5 rounded-xl border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300 cursor-pointer"
+          whileHover={{ scale: 1.02, x: 4 }}
+        >
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">ETH</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30">
+              <span className="text-white text-sm font-bold">ETH</span>
             </div>
             <div>
               <div className="font-medium text-white">Ethereum</div>
-              <div className="text-sm text-muted-foreground">{ethBalance.toFixed(6)} ETH</div>
+              <div className="text-sm text-blue-300">{ethBalance.toFixed(6)} ETH</div>
             </div>
           </div>
           <div className="text-right">
-            <div className="font-semibold text-white">{formatNumber(ethValue)}</div>
+            <div className="font-semibold text-white text-lg">
+              <AnimatedNumber value={ethValue} prefix="$" decimals={2} />
+            </div>
             <div className="text-sm text-muted-foreground">${(ethValue / ethBalance || 0).toFixed(0)}</div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Token Balances */}
-        {tokens.slice(0, 10).map((token) => (
-          <div key={token.address} className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">{token.symbol.slice(0, 2)}</span>
-              </div>
-              <div>
-                <div className="font-medium text-white">{token.symbol}</div>
-                <div className="text-sm text-muted-foreground">
-                  {token.balanceFormatted >= 1000
-                    ? `${(token.balanceFormatted / 1000).toFixed(1)}K`
-                    : token.balanceFormatted.toFixed(2)}
-                  {token.balance === "0" && <span className="ml-2 text-xs text-accent-light">(in LP)</span>}
+        <motion.div
+          className="space-y-2"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: {
+              transition: {
+                staggerChildren: 0.05,
+              },
+            },
+          }}
+        >
+          {tokens.slice(0, 10).map((token, index) => (
+            <motion.div
+              key={token.address}
+              variants={{
+                hidden: { opacity: 0, x: -20 },
+                visible: { opacity: 1, x: 0 },
+              }}
+              whileHover={{ scale: 1.02, x: 4 }}
+              className="flex justify-between items-center p-3 bg-gradient-to-r from-white/5 to-transparent rounded-lg border border-white/5 hover:border-primary/30 transition-all duration-300 cursor-pointer"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-9 h-9 bg-gradient-to-br from-primary/30 to-primary/10 rounded-full flex items-center justify-center border border-primary/20">
+                  <span className="text-white text-xs font-bold">{token.symbol.slice(0, 2)}</span>
+                </div>
+                <div>
+                  <div className="font-medium text-white">{token.symbol}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {token.balanceFormatted >= 1000
+                      ? `${(token.balanceFormatted / 1000).toFixed(1)}K`
+                      : token.balanceFormatted.toFixed(2)}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold text-white">{formatNumber(token.value)}</div>
-              <div className="text-sm text-muted-foreground">${token.price.toFixed(6)}</div>
-            </div>
-          </div>
-        ))}
+              <div className="text-right">
+                <div className="font-semibold text-white">
+                  <AnimatedNumber value={token.value} prefix="$" decimals={2} />
+                </div>
+                <div className="text-sm text-muted-foreground">${token.price.toFixed(6)}</div>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
 
         {tokens.length === 0 && (
-          <div className="text-center py-6 px-4 bg-muted/10 rounded-lg border border-accent/20">
-            <Coins className="h-10 w-10 mx-auto mb-3 text-accent opacity-50" />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-8 px-4 bg-gradient-to-br from-primary/10 to-transparent rounded-xl border border-primary/20"
+          >
+            <Coins className="h-12 w-12 mx-auto mb-3 text-primary opacity-50" />
             <p className="text-sm text-white font-medium mb-1">No Token Holdings</p>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Your tokens are currently deployed in liquidity positions. Check your LP positions below to see your token
-              allocations.
+              Your tokens are currently deployed in liquidity positions
             </p>
-          </div>
+          </motion.div>
         )}
 
         {tokens.length > 10 && (
-          <div className="text-center py-2 text-sm text-muted-foreground">+ {tokens.length - 10} more tokens</div>
+          <div className="text-center py-2 text-sm text-primary">+ {tokens.length - 10} more tokens</div>
         )}
 
-        <div className="border-t border-border pt-3">
-          <div className="flex justify-between items-center font-semibold">
-            <span className="text-white">Total Value</span>
-            <span className="text-white">{formatNumber(totalValue)}</span>
+        <div className="border-t border-white/10 pt-4 mt-4">
+          <div className="flex justify-between items-center p-3 bg-gradient-to-r from-primary/20 to-primary/10 rounded-lg">
+            <span className="text-white font-semibold">Total Value</span>
+            <span className="text-white font-bold text-lg">
+              <AnimatedNumber value={totalValue} prefix="$" decimals={2} />
+            </span>
           </div>
         </div>
       </CardContent>
@@ -248,7 +325,8 @@ const scaleIn = {
 
 function StatCardSkeleton() {
   return (
-    <Card className="glass-card backdrop-blur-xl animate-pulse">
+    <Card className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 border border-white/10 backdrop-blur-xl">
+      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       <CardHeader className="pb-2">
         <div className="h-4 bg-white/10 rounded w-32"></div>
       </CardHeader>
@@ -684,44 +762,85 @@ export default function PortfolioPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-gradient-to-br from-black via-accent/10 to-black p-3 sm:p-6">
-        <div className="max-w-7xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-black via-primary/5 to-black p-3 sm:p-6 relative overflow-hidden">
+        <motion.div
+          className="absolute top-20 left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.3, 1],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Number.POSITIVE_INFINITY,
+            ease: "easeInOut",
+            delay: 2,
+          }}
+        />
+
+        <div className="max-w-7xl mx-auto relative z-10">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.5 }}
-            className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 sm:mb-8 gap-4"
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4"
           >
             <div className="w-full sm:w-auto">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 bg-gradient-to-r from-white to-accent-light bg-clip-text text-transparent">
+              <motion.h1
+                className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-3 bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
+                animate={{
+                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                }}
+                transition={{
+                  duration: 5,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "linear",
+                }}
+              >
                 Portfolio
-              </h1>
-              <p className="text-gray-300 text-sm sm:text-base lg:text-lg leading-relaxed">
-                Manage your liquidity positions and track performance across DeFi protocols
+              </motion.h1>
+              <p className="text-gray-300 text-base lg:text-lg leading-relaxed">
+                Track your holdings and performance across the DEUS ecosystem
               </p>
               {address && (
-                <p className="text-xs sm:text-sm text-accent-light mt-2 font-mono break-all">
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-primary mt-2 font-mono break-all"
+                >
                   {address.slice(0, 6)}...{address.slice(-4)}
-                </p>
+                </motion.p>
               )}
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-3 w-full sm:w-auto">
+            <div className="flex items-center space-x-3 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleManualRefresh}
                 disabled={isLoading}
-                className="glass-card hover:bg-white/10 transition-all duration-300 bg-transparent flex-1 sm:flex-none"
+                className="relative overflow-hidden bg-gradient-to-r from-white/5 to-white/10 border-white/20 hover:border-primary/50 transition-all duration-300 flex-1 sm:flex-none group"
               >
-                <RefreshCw className={`h-4 w-4 sm:mr-2 ${isLoading ? "animate-spin" : ""}`} />
-                <span className="hidden sm:inline">Refresh</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <RefreshCw className={`h-4 w-4 sm:mr-2 relative z-10 ${isLoading ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline relative z-10">Refresh</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={disconnectWallet}
-                className="glass-card hover:bg-red-500/20 text-red-300 border-red-500/30 transition-all duration-300 bg-transparent flex-1 sm:flex-none"
+                className="bg-gradient-to-r from-red-500/10 to-red-500/5 border-red-500/30 hover:border-red-500/50 text-red-300 transition-all duration-300 flex-1 sm:flex-none"
               >
                 <span className="text-xs sm:text-sm">Disconnect</span>
               </Button>
@@ -775,10 +894,17 @@ export default function PortfolioPage() {
                   <StatCardSkeleton key={i} />
                 ))}
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                {[1, 2].map((i) => (
-                  <PositionCardSkeleton key={i} />
-                ))}
+              {/* Updated skeleton for grid layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <motion.div className="lg:col-span-1">
+                  <Card className="glass-card h-full" />
+                </motion.div>
+                <motion.div className="lg:col-span-1">
+                  <Card className="glass-card h-full" />
+                </motion.div>
+                <motion.div className="lg:col-span-1">
+                  <Card className="glass-card h-full" />
+                </motion.div>
               </div>
             </motion.div>
           ) : error ? (
@@ -798,37 +924,75 @@ export default function PortfolioPage() {
             </div>
           ) : data ? (
             <>
-              <motion.div
-                initial="hidden"
-                animate="visible"
-                variants={staggerContainer}
-                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
-              >
-                {[].map((stat, index) => (
-                  <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.05, y: -5 }}>
-                    <Card className="glass-card backdrop-blur-xl hover:bg-white/5 transition-all duration-300">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium flex items-center text-gray-300">
-                          <span className="h-4 w-4 mr-2 text-accent-400" />
-                          {stat.label}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-3xl font-bold mb-1 text-accent-400">{stat.value}</div>
-                        <p className="text-sm text-gray-400">{stat.sublabel}</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+                <Card className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-card/80 to-card/40 border border-primary/30 backdrop-blur-xl shadow-[0_8px_32px_rgba(255,107,53,0.3)]">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0"
+                    animate={{
+                      x: ["-100%", "100%"],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  />
+                  <CardContent className="p-6 sm:p-8 relative z-10">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="text-center md:text-left">
+                        <div className="flex items-center justify-center md:justify-start mb-2">
+                          <DollarSign className="h-5 w-5 text-primary mr-2" />
+                          <span className="text-sm text-gray-300 font-medium">Total Portfolio Value</span>
+                        </div>
+                        <div className="text-4xl sm:text-5xl font-bold text-white mb-1">
+                          <AnimatedNumber value={data.summary.totalValue} prefix="$" decimals={2} />
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          {data.summary.positionCount} positions • {data.summary.tokenCount} tokens
+                        </div>
+                      </div>
+
+                      <div className="text-center">
+                        <div className="flex items-center justify-center mb-2">
+                          <TrendingUp className="h-5 w-5 text-green-400 mr-2" />
+                          <span className="text-sm text-gray-300 font-medium">Net P&L</span>
+                        </div>
+                        <div
+                          className={`text-3xl sm:text-4xl font-bold mb-1 ${data.summary.totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+                        >
+                          <AnimatedNumber
+                            value={data.summary.totalPnl}
+                            prefix={data.summary.totalPnl >= 0 ? "+$" : "-$"}
+                            decimals={2}
+                          />
+                        </div>
+                        <div className="text-sm text-gray-400">
+                          Fees: <span className="text-green-400">${data.summary.totalFeesEarned.toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-center md:text-right">
+                        <div className="flex items-center justify-center md:justify-end mb-2">
+                          <Percent className="h-5 w-5 text-blue-400 mr-2" />
+                          <span className="text-sm text-gray-300 font-medium">Average APR</span>
+                        </div>
+                        <div className="text-3xl sm:text-4xl font-bold text-blue-400 mb-1">
+                          <AnimatedNumber value={data.summary.avgApr} suffix="%" decimals={2} />
+                        </div>
+                        <div className="text-sm text-gray-400">Across all positions</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </motion.div>
 
               <motion.div
                 initial="hidden"
                 animate="visible"
                 variants={staggerContainer}
-                className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8"
               >
-                <motion.div variants={fadeInUp} whileHover={{ scale: 1.02 }}>
+                <motion.div variants={fadeInUp} className="lg:col-span-1">
                   <TokenBalanceCard
                     tokens={data.tokens}
                     ethBalance={data.summary.ethBalance}
@@ -836,99 +1000,128 @@ export default function PortfolioPage() {
                   />
                 </motion.div>
 
-                {[].map((card, index) => (
-                  <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.02 }}>
-                    <Card className="glass-card backdrop-blur-xl">
-                      <CardHeader>
-                        <CardTitle className="flex items-center text-white">
-                          <span className="h-5 w-5 mr-2 text-accent" />
-                          {card.title}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4">
-                        {card.content === "performance" && (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300">Fees Earned</span>
-                              <span className="text-green-400 font-semibold">
-                                {formatNumber(data.summary.totalFeesEarned)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300">Impermanent Loss</span>
-                              <span className="text-red-400 font-semibold">
-                                -{formatNumber(data.summary.totalImpermanentLoss)}
-                              </span>
-                            </div>
-                            <div className="border-t border-white/10 pt-3">
-                              <div className="flex justify-between items-center">
-                                <span className="text-white font-medium">Net Result</span>
-                                <span
-                                  className={`font-bold ${data.summary.totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}
-                                >
-                                  {formatNumber(data.summary.totalPnl)}
-                                </span>
-                              </div>
-                            </div>
-                          </>
-                        )}
-                        {card.content === "distribution" && (
-                          <>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300">DEUS Pools</span>
-                              <span className="text-purple-300 font-semibold">
-                                {data.positions.filter((p) => p.isDeusPool).length}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300">Other Pools</span>
-                              <span className="text-white font-semibold">
-                                {data.positions.filter((p) => !p.isDeusPool).length}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300">V3 Positions</span>
-                              <span className="text-blue-400 font-semibold">
-                                {data.positions.filter((p) => p.poolType === "v3").length}
-                              </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-gray-300">In Range</span>
-                              <span className="text-green-400 font-semibold">
-                                {data.positions.filter((p) => p.inRange).length}
-                              </span>
-                            </div>
-                          </>
-                        )}
-                        {card.content === "actions" && (
-                          <>
-                            <Button
-                              className="w-full glass-card hover:bg-white/10 transition-all duration-300"
-                              onClick={handleRebalancePositions}
-                              disabled={!data || data.positions.length === 0 || isProcessing}
-                            >
-                              {isProcessing ? "Processing..." : "Rebalance Positions"}
-                            </Button>
-                            <Button
-                              className="w-full glass-card hover:bg-white/10 transition-all duration-300"
-                              onClick={handleHarvestAllFees}
-                              disabled={!data || data.positions.length === 0 || isProcessing}
-                            >
-                              {isProcessing ? "Processing..." : "Harvest All Fees"}
-                            </Button>
-                            <Button
-                              className="w-full glass-card hover:bg-white/10 transition-all duration-300"
-                              onClick={handleExportReport}
-                              disabled={!data}
-                            >
-                              Export Report
-                            </Button>
-                          </>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
+                <motion.div variants={fadeInUp} className="lg:col-span-1">
+                  <Card className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_32px_rgba(34,197,94,0.2)] transition-all duration-500 h-full">
+                    <motion.div
+                      className="absolute -top-20 -right-20 w-40 h-40 bg-green-500/20 rounded-full blur-3xl"
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.3, 0.5, 0.3],
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "easeInOut",
+                      }}
+                    />
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-white">
+                        <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
+                          <Activity className="h-5 w-5 mr-2 text-green-400" />
+                        </motion.div>
+                        Performance
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 relative z-10">
+                      <motion.div
+                        className="flex justify-between items-center p-3 bg-gradient-to-r from-green-500/10 to-transparent rounded-lg border border-green-500/20"
+                        whileHover={{ x: 4 }}
+                      >
+                        <span className="text-gray-300">Fees Earned</span>
+                        <span className="text-green-400 font-semibold text-lg">
+                          <AnimatedNumber value={data.summary.totalFeesEarned} prefix="$" decimals={2} />
+                        </span>
+                      </motion.div>
+                      <motion.div
+                        className="flex justify-between items-center p-3 bg-gradient-to-r from-red-500/10 to-transparent rounded-lg border border-red-500/20"
+                        whileHover={{ x: 4 }}
+                      >
+                        <span className="text-gray-300">Impermanent Loss</span>
+                        <span className="text-red-400 font-semibold text-lg">
+                          <AnimatedNumber value={data.summary.totalImpermanentLoss} prefix="-$" decimals={2} />
+                        </span>
+                      </motion.div>
+                      <div className="border-t border-white/10 pt-4">
+                        <div className="flex justify-between items-center p-3 bg-gradient-to-r from-primary/20 to-primary/10 rounded-lg">
+                          <span className="text-white font-medium">Net Result</span>
+                          <span
+                            className={`font-bold text-xl ${data.summary.totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}
+                          >
+                            <AnimatedNumber
+                              value={data.summary.totalPnl}
+                              prefix={data.summary.totalPnl >= 0 ? "+$" : "-$"}
+                              decimals={2}
+                            />
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+
+                <motion.div variants={fadeInUp} className="lg:col-span-1">
+                  <Card className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.2)] transition-all duration-500 h-full">
+                    <motion.div
+                      className="absolute -top-20 -left-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"
+                      animate={{
+                        scale: [1, 1.2, 1],
+                        opacity: [0.3, 0.5, 0.3],
+                      }}
+                      transition={{
+                        duration: 4,
+                        repeat: Number.POSITIVE_INFINITY,
+                        ease: "easeInOut",
+                        delay: 1,
+                      }}
+                    />
+                    <CardHeader>
+                      <CardTitle className="flex items-center text-white">
+                        <motion.div whileHover={{ rotate: 360 }} transition={{ duration: 0.6 }}>
+                          <PieChart className="h-5 w-5 mr-2 text-purple-400" />
+                        </motion.div>
+                        Distribution
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3 relative z-10">
+                      <motion.div
+                        className="flex justify-between items-center p-3 bg-gradient-to-r from-purple-500/10 to-transparent rounded-lg border border-purple-500/20"
+                        whileHover={{ x: 4 }}
+                      >
+                        <span className="text-gray-300">DEUS Pools</span>
+                        <span className="text-purple-300 font-semibold text-lg">
+                          {data.positions.filter((p) => p.isDeusPool).length}
+                        </span>
+                      </motion.div>
+                      <motion.div
+                        className="flex justify-between items-center p-3 bg-gradient-to-r from-blue-500/10 to-transparent rounded-lg border border-blue-500/20"
+                        whileHover={{ x: 4 }}
+                      >
+                        <span className="text-gray-300">V3 Positions</span>
+                        <span className="text-blue-400 font-semibold text-lg">
+                          {data.positions.filter((p) => p.poolType === "v3").length}
+                        </span>
+                      </motion.div>
+                      <motion.div
+                        className="flex justify-between items-center p-3 bg-gradient-to-r from-green-500/10 to-transparent rounded-lg border border-green-500/20"
+                        whileHover={{ x: 4 }}
+                      >
+                        <span className="text-gray-300">In Range</span>
+                        <span className="text-green-400 font-semibold text-lg">
+                          {data.positions.filter((p) => p.inRange).length}
+                        </span>
+                      </motion.div>
+                      <motion.div
+                        className="flex justify-between items-center p-3 bg-gradient-to-r from-white/5 to-transparent rounded-lg border border-white/10"
+                        whileHover={{ x: 4 }}
+                      >
+                        <span className="text-gray-300">Other Pools</span>
+                        <span className="text-white font-semibold text-lg">
+                          {data.positions.filter((p) => !p.isDeusPool).length}
+                        </span>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </motion.div>
 
               <motion.div
