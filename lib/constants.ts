@@ -17,6 +17,13 @@ export const KNOWN_TOKEN_ADDRESSES: Record<string, string> = {
   ZORA: "0x78a087d713Be963Bf307b18F2Ff8122EF9A63ae9",
 }
 
+// Uniswap version availability on Base
+export const UNISWAP_VERSIONS = {
+  V3_AVAILABLE: true,
+  V4_AVAILABLE: false, // V4 not yet deployed on Base as of October 2025
+  V4_EXPECTED: true, // Expected to deploy in the future
+} as const
+
 // Helper function to get token address by symbol
 export function getTokenAddress(symbol: string): string | null {
   const upperSymbol = symbol.toUpperCase()

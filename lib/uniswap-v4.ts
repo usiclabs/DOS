@@ -37,9 +37,36 @@ const V4_POSITION_MANAGER_ABI = [
   "function getPositionInfo(uint256 tokenId) view returns (tuple(address currency0, address currency1, uint24 fee, int24 tickLower, int24 tickUpper, uint128 liquidity, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128, uint128 tokensOwed0, uint128 tokensOwed1))",
 ]
 
+// Uniswap V4 contract addresses - Base deployment pending
+// Reference: https://docs.uniswap.org/contracts/v4/deployments
+export const UNISWAP_V4_ADDRESSES = {
+  // Base mainnet (8453) - NOT YET DEPLOYED
+  // When deployed, addresses will follow the pattern from other chains
+  POOL_MANAGER: "0x0000000000000000000000000000000000000000", // Pending deployment
+  POSITION_DESCRIPTOR: "0x0000000000000000000000000000000000000000", // Pending deployment
+  POSITION_MANAGER: "0x0000000000000000000000000000000000000000", // Pending deployment
+  QUOTER: "0x0000000000000000000000000000000000000000", // Pending deployment
+  STATE_VIEW: "0x0000000000000000000000000000000000000000", // Pending deployment
+  UNIVERSAL_ROUTER: "0x0000000000000000000000000000000000000000", // Pending deployment
+  PERMIT2: "0x000000000022D473030F116dDEE9F6B43aC78BA3", // Already deployed
+
+  // Reference addresses from Ethereum mainnet (for when Base deploys):
+  // POOL_MANAGER: "0x000000000004444c5dc75cB358380D2e3dE08A90"
+  // POSITION_DESCRIPTOR: "0xd1428ba554f4c8450b763a0b2040a4935c63f06c"
+  // POSITION_MANAGER: "0xbd216513d74c8cf14cf4747e6aaa6420ff64ee9e"
+  // QUOTER: "0x52f0e24d1c21c8a0cb1e5a5dd6198556bd9e1203"
+  // STATE_VIEW: "0x7ffe42c4a5deea5b0fec41c94c136cf115597227"
+  // UNIVERSAL_ROUTER: "0x66a9893cc07d91d95644aedd05d03f95e1dba8af"
+} as const
+
+export function isV4Available(): boolean {
+  return UNISWAP_V4_ADDRESSES.POOL_MANAGER !== "0x0000000000000000000000000000000000000000"
+}
+
 export async function fetchV4UserPositions(userAddress: string): Promise<UniswapV4Position[]> {
   try {
-    if (UNISWAP_V4_POSITION_MANAGER === "0x0000000000000000000000000000000000000000") {
+    if (!isV4Available()) {
+      console.log("[v0] Uniswap V4 not yet deployed on Base mainnet")
       return []
     }
 
@@ -62,7 +89,7 @@ export async function fetchV4UserPositions(userAddress: string): Promise<Uniswap
         method: "eth_call",
         params: [
           {
-            to: UNISWAP_V4_POSITION_MANAGER,
+            to: UNISWAP_V4_ADDRESSES.POSITION_MANAGER,
             data: `0x70a08231000000000000000000000000${userAddress.slice(2).padStart(40, "0")}`,
           },
           "latest",
@@ -97,7 +124,7 @@ export async function fetchV4UserPositions(userAddress: string): Promise<Uniswap
     const transferFilter = {
       fromBlock: "0x" + fromBlock.toString(16),
       toBlock: "latest",
-      address: UNISWAP_V4_POSITION_MANAGER,
+      address: UNISWAP_V4_ADDRESSES.POSITION_MANAGER,
       topics: [
         "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef", // Transfer event
         null,
@@ -141,7 +168,7 @@ export async function fetchV4UserPositions(userAddress: string): Promise<Uniswap
             method: "eth_call",
             params: [
               {
-                to: UNISWAP_V4_POSITION_MANAGER,
+                to: UNISWAP_V4_ADDRESSES.POSITION_MANAGER,
                 data: `0x6352211e${tokenId.toString(16).padStart(64, "0")}`,
               },
               "latest",

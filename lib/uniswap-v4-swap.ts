@@ -1,21 +1,17 @@
 /**
  * Uniswap V4 Swap Integration for Base Chain
  * Handles swaps through V4 pools with hooks support
+ *
+ * Note: V4 is not yet deployed on Base mainnet as of October 2025
+ * This file is prepared for when deployment occurs
+ * Reference: https://docs.uniswap.org/contracts/v4/deployments
  */
 
 import { encodeAbiParameters } from "viem"
 import { rpcCall } from "./rpc-config"
+import { UNISWAP_V4_ADDRESSES, isV4Available } from "./uniswap-v4"
 
-export const UNISWAP_V4_ADDRESSES = {
-  POOL_MANAGER: "0x498581ff718922c3f8e6a244956af09b2652b2b",
-  POSITION_DESCRIPTOR: "0x25d093633990dc94bedeed76c8f3cdaa75f3e7d5",
-  POSITION_MANAGER: "0x7c5f5a4bbd8fd631845775253326123b519429bdc",
-  QUOTER: "0x0d5e0f971ed27fbff6c2837bf313161215320048d",
-  STATE_VIEW: "0xa3c0c9b65bad0b08107aa264b0f3db444b867a71",
-  UNIVERSAL_ROUTER: "0x6ff5693b99212da76ad316178a184ab56d299b43",
-  PERMIT2: "0x000000000022D473030F116ddEE9F6B43aC78BA3",
-  WETH: "0x4200000000000000000000000000000000000006",
-} as const
+export { UNISWAP_V4_ADDRESSES } from "./uniswap-v4"
 
 export interface PoolKey {
   currency0: string
@@ -44,6 +40,11 @@ export async function getV4SwapQuote(
   priceImpact: number
 } | null> {
   try {
+    if (!isV4Available()) {
+      console.log("[v0] Uniswap V4 not yet deployed on Base mainnet")
+      return null
+    }
+
     console.log("[v0] Getting V4 swap quote:", { poolKey, amountIn, zeroForOne })
 
     // Encode the pool key
