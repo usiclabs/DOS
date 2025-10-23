@@ -534,10 +534,10 @@ export default function SwapPage() {
                 ))}
               </div>
 
-              <div className="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
-              <div className="absolute top-0 right-0 w-24 h-24 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
-              <div className="absolute bottom-0 left-0 w-24 h-24 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
-              <div className="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+              <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
 
               {[
                 { position: "top-0 left-0", delay: 0 },
@@ -547,7 +547,7 @@ export default function SwapPage() {
               ].map((corner, i) => (
                 <motion.div
                   key={i}
-                  className={`absolute ${corner.position} w-24 h-24`}
+                  className={`absolute ${corner.position} w-32 h-32`}
                   animate={{ opacity: [0.2, 0.5, 0.2] }}
                   transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
                 >
@@ -556,7 +556,7 @@ export default function SwapPage() {
               ))}
 
               <div className="relative p-8 text-center">
-                <div className="relative w-24 h-24 mx-auto mb-6">
+                <div className="relative w-16 h-16 mx-auto mb-6">
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-2xl"
                     animate={{
@@ -564,7 +564,7 @@ export default function SwapPage() {
                       opacity: [0.3, 0.6, 0.3],
                     }}
                     transition={{
-                      duration: 3,
+                      duration: 2,
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "easeInOut",
                     }}
@@ -576,7 +576,7 @@ export default function SwapPage() {
                       opacity: [0.2, 0.5, 0.2],
                     }}
                     transition={{
-                      duration: 3,
+                      duration: 2,
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "easeInOut",
                       delay: 0.5,
@@ -584,10 +584,10 @@ export default function SwapPage() {
                   />
 
                   <motion.div
-                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 rounded-full border-2 border-primary/30 backdrop-blur-sm shadow-[0_0_40px_rgba(235,90,60,0.3)]"
+                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 rounded-full border-2 border-primary/30 backdrop-blur-sm shadow-[0_0_40px_rgba(255,107,53,0.3)]"
                     animate={{ rotate: 360 }}
                     transition={{
-                      duration: 20,
+                      duration: 8,
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "linear",
                     }}
@@ -598,7 +598,7 @@ export default function SwapPage() {
 
                 <div className="relative mb-4">
                   <motion.h2
-                    className="text-4xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
+                    className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
@@ -628,7 +628,7 @@ export default function SwapPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-gray-300 text-base mb-6 max-w-md mx-auto leading-relaxed"
+                  className="text-gray-300 text-lg mb-6 max-w-md mx-auto leading-relaxed"
                 >
                   Connect your wallet to swap tokens instantly with the best rates across the DEUS ecosystem
                 </motion.p>

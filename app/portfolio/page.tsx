@@ -487,147 +487,191 @@ export default function PortfolioPage() {
           <DeusTicker />
         </ErrorBoundary>
 
-        <div className="relative min-h-[calc(100vh-200px)] bg-black overflow-hidden p-4">
-          {/* Floating particles */}
-          {[...Array(20)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-0.5 h-0.5 bg-orange-500/60 rounded-full blur-sm"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                y: [0, -30, 0],
-                x: [0, Math.random() * 20 - 10, 0],
-                opacity: [0.3, 0.8, 0.3],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Number.POSITIVE_INFINITY,
-                delay: Math.random() * 2,
-              }}
-            />
-          ))}
-
-          <div className="relative max-w-3xl mx-auto">
-            <motion.div
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0, scale: 0.95 },
-                visible: { opacity: 1, scale: 1 },
-              }}
-              transition={{ duration: 0.6 }}
-              className="text-center py-8"
-            >
-              {/* Premium corner decorations */}
-              <div className="relative glass-card rounded-2xl p-8 max-w-lg mx-auto backdrop-blur-xl border border-orange-500/20 shadow-2xl">
-                {/* Corner accents */}
-                <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-orange-500/40 rounded-tl-2xl" />
-                <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-orange-500/40 rounded-tr-2xl" />
-                <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-orange-500/40 rounded-bl-2xl" />
-                <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-orange-500/40 rounded-br-2xl" />
-
-                {/* Icon with multiple glow layers and rotation */}
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="relative w-24 h-24 mx-auto mb-4"
-                >
-                  {/* Rotating rings */}
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 py-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="w-full max-w-xl"
+          >
+            <Card className="glass-card relative overflow-hidden border-2 border-primary/20 shadow-2xl shadow-primary/10">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(30)].map((_, i) => (
                   <motion.div
-                    className="absolute inset-0 rounded-full border-2 border-orange-500/30"
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  />
-                  <motion.div
-                    className="absolute inset-2 rounded-full border-2 border-orange-400/20"
-                    animate={{ rotate: -360 }}
-                    transition={{ duration: 6, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                  />
-
-                  <motion.div
-                    className="absolute inset-0 rounded-full bg-orange-500/10 blur-lg"
+                    key={i}
+                    className="absolute w-1 h-1 bg-primary/40 rounded-full blur-[1px]"
+                    initial={{
+                      x: Math.random() * 100 + "%",
+                      y: Math.random() * 100 + "%",
+                    }}
                     animate={{
-                      scale: [1, 1.1, 1],
-                      opacity: [0.2, 0.4, 0.2],
+                      y: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      x: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      opacity: [0.2, 0.8, 0.2],
+                      scale: [1, 1.5, 1],
                     }}
-                    transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
+                    transition={{
+                      duration: Math.random() * 8 + 12,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+
+              {[
+                { position: "top-0 left-0", delay: 0 },
+                { position: "top-0 right-0", delay: 0.75 },
+                { position: "bottom-0 left-0", delay: 1.5 },
+                { position: "bottom-0 right-0", delay: 2.25 },
+              ].map((corner, i) => (
+                <motion.div
+                  key={i}
+                  className={`absolute ${corner.position} w-32 h-32`}
+                  animate={{ opacity: [0.2, 0.5, 0.2] }}
+                  transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
+                >
+                  <div className={`absolute ${corner.position} w-16 h-16 bg-primary/30 blur-2xl rounded-full`} />
+                </motion.div>
+              ))}
+
+              <div className="relative p-8 text-center">
+                <div className="relative w-16 h-16 mx-auto mb-6">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-2xl"
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.3, 0.6, 0.3],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 bg-primary/20 rounded-full blur-3xl"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.2, 0.5, 0.2],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                      delay: 0.5,
+                    }}
                   />
 
-                  {/* Icon container */}
-                  <div className="absolute inset-0 glass-card rounded-full flex items-center justify-center border border-orange-500/30 shadow-2xl">
-                    <Activity className="h-12 w-12 text-orange-400" />
-                  </div>
-                </motion.div>
-
-                {/* Animated text with gradient */}
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                  <motion.h1
-                    className="text-3xl font-bold mb-3 bg-gradient-to-r from-white via-orange-200 to-orange-400 to-white bg-clip-text text-transparent"
-                    style={{
-                      backgroundSize: "200% 100%",
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 rounded-full border-2 border-primary/30 backdrop-blur-sm shadow-[0_0_40px_rgba(255,107,53,0.3)]"
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 8,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
                     }}
+                  >
+                    <Activity className="w-6 h-6 text-primary" />
+                  </motion.div>
+                </div>
+
+                <div className="relative mb-4">
+                  <motion.h2
+                    className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
                     transition={{
-                      duration: 3,
+                      duration: 5,
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "linear",
                     }}
                   >
                     Portfolio Management
-                  </motion.h1>
-                </motion.div>
+                  </motion.h2>
+                  <motion.div
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full"
+                    animate={{
+                      opacity: [0.3, 0.8, 0.3],
+                      scaleX: [0.8, 1, 0.8],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </div>
 
                 <motion.p
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-gray-200 text-sm mb-6 leading-relaxed"
+                  transition={{ delay: 0.2 }}
+                  className="text-gray-300 text-lg mb-6 max-w-md mx-auto leading-relaxed"
                 >
                   Connect your wallet to view your liquidity positions and track performance across the DEUS ecosystem
                 </motion.p>
 
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
-                  <EnhancedWalletConnect onConnect={connectWallet} />
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Button
+                    onClick={() => connectWallet("metamask")}
+                    className="btn-premium relative px-8 py-4 text-base rounded-2xl font-medium overflow-hidden group"
+                    size="lg"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <Wallet className="w-5 h-5 mr-2 relative z-10" />
+                    <span className="relative z-10">Connect Wallet</span>
+                  </Button>
                 </motion.div>
 
-                {/* Premium badge with sparkles */}
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 }}
-                  className="mt-6 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500/20 to-orange-600/20 border border-orange-500/30 rounded-full"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-6 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/10"
                 >
-                  {/* Sparkle animations */}
-                  {[...Array(3)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="absolute w-1 h-1 bg-orange-400 rounded-full"
-                      style={{
-                        left: `${30 + i * 20}%`,
-                        top: "20%",
-                      }}
-                      animate={{
-                        scale: [0, 1, 0],
-                        opacity: [0, 1, 0],
-                      }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Number.POSITIVE_INFINITY,
-                        delay: i * 0.3,
-                      }}
-                    />
-                  ))}
-                  <span className="text-sm font-semibold text-orange-400">PREMIUM FEATURE</span>
+                  <motion.span
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                    className="text-primary text-lg"
+                  >
+                    ✦
+                  </motion.span>
+                  <span className="text-sm font-semibold text-primary tracking-wide">
+                    TRACK PERFORMANCE • MANAGE POSITIONS
+                  </span>
+                  <motion.span
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                      delay: 1,
+                    }}
+                    className="text-primary text-lg"
+                  >
+                    ✦
+                  </motion.span>
                 </motion.div>
               </div>
-            </motion.div>
-          </div>
+            </Card>
+          </motion.div>
         </div>
       </div>
     )

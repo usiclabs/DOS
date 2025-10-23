@@ -12,6 +12,7 @@ import { StickyHeader } from "@/components/sticky-header"
 import { motion } from "framer-motion"
 import { useWalletContext } from "@/contexts/wallet-context"
 import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
+import { Wallet } from "lucide-react"
 
 const MINIMUM_DEUS_BALANCE = 10_000_000 // 10 million DEUS (1% of supply)
 
@@ -21,7 +22,7 @@ export default function TokenFactoryPage() {
   const [deusBalance, setDeusBalance] = useState<number>(0)
   const [isLoading, setIsLoading] = useState(true)
   const [hasAccess, setHasAccess] = useState(false)
-  const { address, isConnected } = useWalletContext()
+  const { address, isConnected, connectWallet } = useWalletContext()
 
   useEffect(() => {
     async function checkBalance() {
@@ -57,193 +58,189 @@ export default function TokenFactoryPage() {
       <div className="min-h-screen bg-background">
         <StickyHeader />
         <DeusTicker />
-        <div className="container mx-auto px-4 py-6 pt-16 max-w-3xl">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Card className="relative p-6 md:p-8 bg-black border-2 border-orange-500/30 text-center overflow-hidden shadow-2xl">
-              <motion.div
-                className="absolute inset-0 opacity-40"
-                animate={{
-                  background: [
-                    "radial-gradient(circle at 20% 50%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
-                    "radial-gradient(circle at 80% 50%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
-                    "radial-gradient(circle at 50% 80%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
-                    "radial-gradient(circle at 50% 20%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
-                    "radial-gradient(circle at 20% 50%, rgba(249, 115, 22, 0.15) 0%, transparent 50%)",
-                  ],
-                }}
-                transition={{
-                  duration: 8,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "linear",
-                }}
-              />
-
-              {[...Array(12)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-2 h-2 bg-orange-500/60 rounded-full blur-sm"
-                  initial={{
-                    x: `${Math.random() * 100}%`,
-                    y: `${Math.random() * 100}%`,
-                  }}
-                  animate={{
-                    y: ["-10%", "110%"],
-                    x: [`${Math.random() * 100}%`, `${Math.random() * 100}%`],
-                    opacity: [0, 0.8, 0],
-                    scale: [0.5, 1.5, 0.5],
-                  }}
-                  transition={{
-                    duration: 4 + Math.random() * 3,
-                    repeat: Number.POSITIVE_INFINITY,
-                    delay: Math.random() * 3,
-                    ease: "easeInOut",
-                  }}
-                />
-              ))}
-
-              <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-orange-500/40 rounded-tl-3xl" />
-              <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-orange-500/40 rounded-tr-3xl" />
-              <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-orange-500/40 rounded-bl-3xl" />
-              <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-orange-500/40 rounded-br-3xl" />
-
-              <motion.div
-                initial={{ scale: 0, rotate: -180 }}
-                animate={{
-                  scale: 1,
-                  rotate: 0,
-                }}
-                transition={{
-                  delay: 0.2,
-                  type: "spring",
-                  stiffness: 200,
-                  damping: 15,
-                }}
-                className="relative h-24 w-24 rounded-3xl bg-gradient-to-br from-orange-500/40 to-orange-600/20 flex items-center justify-center mx-auto mb-4 border-2 border-orange-500/60 shadow-2xl z-10"
-              >
-                <motion.div
-                  className="absolute inset-0 rounded-3xl bg-orange-500/40 blur-xl"
-                  animate={{
-                    scale: [1, 1.4, 1],
-                    opacity: [0.6, 0.3, 0.6],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                  }}
-                />
-                <motion.div
-                  className="absolute inset-0 rounded-3xl bg-orange-400/30 blur-2xl"
-                  animate={{
-                    scale: [1, 1.6, 1],
-                    opacity: [0.4, 0.1, 0.4],
-                  }}
-                  transition={{
-                    duration: 3,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                    delay: 0.5,
-                  }}
-                />
-
-                <motion.div
-                  className="absolute inset-0 rounded-3xl border-4 border-orange-500/50"
-                  animate={{
-                    rotate: 360,
-                  }}
-                  transition={{
-                    duration: 6,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                  style={{
-                    borderTopColor: "transparent",
-                    borderRightColor: "transparent",
-                  }}
-                />
-                <motion.div
-                  className="absolute inset-2 rounded-3xl border-2 border-orange-400/40"
-                  animate={{
-                    rotate: -360,
-                  }}
-                  transition={{
-                    duration: 8,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                  style={{
-                    borderBottomColor: "transparent",
-                    borderLeftColor: "transparent",
-                  }}
-                />
-
-                <motion.div
-                  animate={{
-                    y: [0, -6, 0],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "easeInOut",
-                  }}
-                >
-                  <Lock className="h-12 w-12 text-orange-500 relative z-10 drop-shadow-2xl" />
-                </motion.div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.6 }}
-                className="relative z-10"
-              >
-                <motion.h2
-                  className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-white via-orange-400 to-white bg-clip-text text-transparent drop-shadow-lg"
-                  animate={{
-                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                  }}
-                  transition={{
-                    duration: 5,
-                    repeat: Number.POSITIVE_INFINITY,
-                    ease: "linear",
-                  }}
-                  style={{
-                    backgroundSize: "200% 200%",
-                  }}
-                >
-                  Connect Your Wallet
-                </motion.h2>
-
-                <motion.p
-                  className="text-gray-300 text-base md:text-lg mb-4 max-w-2xl mx-auto font-medium"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.6, duration: 0.6 }}
-                >
-                  Please connect your wallet to access the Token Factory.
-                </motion.p>
-
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8, duration: 0.5 }}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-orange-500/20 to-orange-600/20 border-2 border-orange-500/50 shadow-lg shadow-orange-500/20"
-                >
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 py-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="w-full max-w-xl"
+          >
+            <Card className="glass-card relative overflow-hidden border-2 border-primary/20 shadow-2xl shadow-primary/10">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(30)].map((_, i) => (
                   <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-primary/40 rounded-full blur-[1px]"
+                    initial={{
+                      x: Math.random() * 100 + "%",
+                      y: Math.random() * 100 + "%",
+                    }}
                     animate={{
-                      rotate: [0, 360],
+                      y: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      x: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      opacity: [0.2, 0.8, 0.2],
+                      scale: [1, 1.5, 1],
                     }}
                     transition={{
-                      duration: 3,
+                      duration: Math.random() * 8 + 12,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  />
+                ))}
+              </div>
+
+              <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+
+              {[
+                { position: "top-0 left-0", delay: 0 },
+                { position: "top-0 right-0", delay: 0.75 },
+                { position: "bottom-0 left-0", delay: 1.5 },
+                { position: "bottom-0 right-0", delay: 2.25 },
+              ].map((corner, i) => (
+                <motion.div
+                  key={i}
+                  className={`absolute ${corner.position} w-32 h-32`}
+                  animate={{ opacity: [0.2, 0.5, 0.2] }}
+                  transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
+                >
+                  <div className={`absolute ${corner.position} w-16 h-16 bg-primary/30 blur-2xl rounded-full`} />
+                </motion.div>
+              ))}
+
+              <div className="relative p-8 text-center">
+                <div className="relative w-16 h-16 mx-auto mb-6">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-2xl"
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.3, 0.6, 0.3],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 bg-primary/20 rounded-full blur-3xl"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.2, 0.5, 0.2],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                      delay: 0.5,
+                    }}
+                  />
+
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 rounded-full border-2 border-primary/30 backdrop-blur-sm shadow-[0_0_40px_rgba(255,107,53,0.3)]"
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 8,
                       repeat: Number.POSITIVE_INFINITY,
                       ease: "linear",
                     }}
                   >
-                    <Sparkles className="h-5 w-5 text-orange-400" />
+                    <Lock className="w-6 h-6 text-primary" />
                   </motion.div>
-                  <span className="text-base text-orange-400 font-bold tracking-wide">EXCLUSIVE FEATURE</span>
+                </div>
+
+                <div className="relative mb-4">
+                  <motion.h2
+                    className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
+                    animate={{
+                      backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  >
+                    Token Factory
+                  </motion.h2>
+                  <motion.div
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full"
+                    animate={{
+                      opacity: [0.3, 0.8, 0.3],
+                      scaleX: [0.8, 1, 0.8],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </div>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-gray-300 text-lg mb-6 max-w-md mx-auto leading-relaxed"
+                >
+                  Connect your wallet to access the Token Factory and deploy tokens with DEUS liquidity pools
+                </motion.p>
+
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Button
+                    onClick={() => connectWallet("metamask")}
+                    className="btn-premium relative px-8 py-4 text-base rounded-2xl font-medium overflow-hidden group"
+                    size="lg"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <Wallet className="w-5 h-5 mr-2 relative z-10" />
+                    <span className="relative z-10">Connect Wallet</span>
+                  </Button>
                 </motion.div>
-              </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                  className="mt-6 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/10"
+                >
+                  <motion.span
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                    className="text-primary text-lg"
+                  >
+                    ✦
+                  </motion.span>
+                  <span className="text-sm font-semibold text-primary tracking-wide">
+                    EXCLUSIVE FEATURE • TOKEN DEPLOYMENT
+                  </span>
+                  <motion.span
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                      delay: 1,
+                    }}
+                    className="text-primary text-lg"
+                  >
+                    ✦
+                  </motion.span>
+                </motion.div>
+              </div>
             </Card>
           </motion.div>
         </div>
