@@ -57,9 +57,9 @@ export default function TokenFactoryPage() {
       <div className="min-h-screen bg-background">
         <StickyHeader />
         <DeusTicker />
-        <div className="container mx-auto px-4 py-8 pt-20 max-w-4xl">
+        <div className="container mx-auto px-4 py-6 pt-16 max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Card className="relative p-8 md:p-12 bg-black border-2 border-orange-500/30 text-center overflow-hidden shadow-2xl">
+            <Card className="relative p-6 md:p-8 bg-black border-2 border-orange-500/30 text-center overflow-hidden shadow-2xl">
               <motion.div
                 className="absolute inset-0 opacity-40"
                 animate={{
@@ -101,10 +101,10 @@ export default function TokenFactoryPage() {
                 />
               ))}
 
-              <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-orange-500/40 rounded-tl-3xl" />
-              <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-orange-500/40 rounded-tr-3xl" />
-              <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-orange-500/40 rounded-bl-3xl" />
-              <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-orange-500/40 rounded-br-3xl" />
+              <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-orange-500/40 rounded-tl-3xl" />
+              <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-orange-500/40 rounded-tr-3xl" />
+              <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-orange-500/40 rounded-bl-3xl" />
+              <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-orange-500/40 rounded-br-3xl" />
 
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
@@ -118,7 +118,7 @@ export default function TokenFactoryPage() {
                   stiffness: 200,
                   damping: 15,
                 }}
-                className="relative h-32 w-32 rounded-3xl bg-gradient-to-br from-orange-500/40 to-orange-600/20 flex items-center justify-center mx-auto mb-8 border-2 border-orange-500/60 shadow-2xl z-10"
+                className="relative h-24 w-24 rounded-3xl bg-gradient-to-br from-orange-500/40 to-orange-600/20 flex items-center justify-center mx-auto mb-4 border-2 border-orange-500/60 shadow-2xl z-10"
               >
                 <motion.div
                   className="absolute inset-0 rounded-3xl bg-orange-500/40 blur-xl"
@@ -187,7 +187,7 @@ export default function TokenFactoryPage() {
                     ease: "easeInOut",
                   }}
                 >
-                  <Lock className="h-16 w-16 text-orange-500 relative z-10 drop-shadow-2xl" />
+                  <Lock className="h-12 w-12 text-orange-500 relative z-10 drop-shadow-2xl" />
                 </motion.div>
               </motion.div>
 
@@ -198,7 +198,7 @@ export default function TokenFactoryPage() {
                 className="relative z-10"
               >
                 <motion.h2
-                  className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-white via-orange-400 to-white bg-clip-text text-transparent drop-shadow-lg"
+                  className="text-3xl md:text-4xl font-bold mb-4 bg-gradient-to-r from-white via-orange-400 to-white bg-clip-text text-transparent drop-shadow-lg"
                   animate={{
                     backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                   }}
@@ -215,7 +215,7 @@ export default function TokenFactoryPage() {
                 </motion.h2>
 
                 <motion.p
-                  className="text-gray-300 text-lg md:text-xl mb-6 max-w-2xl mx-auto font-medium"
+                  className="text-gray-300 text-base md:text-lg mb-4 max-w-2xl mx-auto font-medium"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.6, duration: 0.6 }}
@@ -256,9 +256,9 @@ export default function TokenFactoryPage() {
       <div className="min-h-screen bg-background">
         <StickyHeader />
         <DeusTicker />
-        <div className="container mx-auto px-4 py-8 pt-20 max-w-4xl">
+        <div className="container mx-auto px-4 py-6 pt-16 max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Card className="p-8 md:p-12 bg-gradient-to-br from-accent/10 via-background to-accent/5 border-accent/30 text-center">
+            <Card className="p-6 md:p-8 bg-gradient-to-br from-accent/10 via-background to-accent/5 border-accent/30 text-center">
               <div className="h-20 w-20 rounded-2xl bg-accent/20 flex items-center justify-center mx-auto mb-6 border border-accent/30">
                 <div className="h-8 w-8 border-4 border-accent/30 border-t-accent rounded-full animate-spin" />
               </div>
@@ -276,9 +276,9 @@ export default function TokenFactoryPage() {
       <div className="min-h-screen bg-background">
         <StickyHeader />
         <DeusTicker />
-        <div className="container mx-auto px-4 py-8 pt-20 max-w-4xl">
+        <div className="container mx-auto px-4 py-6 pt-16 max-w-3xl">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <Card className="p-8 md:p-12 bg-gradient-to-br from-red-500/10 via-background to-red-500/5 border-red-500/30 text-center">
+            <Card className="p-6 md:p-8 bg-gradient-to-br from-red-500/10 via-background to-red-500/5 border-red-500/30 text-center">
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -398,7 +398,7 @@ export default function TokenFactoryPage() {
       <StickyHeader />
       <DeusTicker />
 
-      <div className="container mx-auto px-4 py-8 pt-20 max-w-7xl">
+      <div className="container mx-auto px-4 py-6 pt-16 max-w-3xl">
         {/* Header Section */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

@@ -502,12 +502,12 @@ export default function SwapPage() {
       <div className="min-h-screen bg-background">
         <StickyHeader />
         <DeusTicker />
-        <div className="flex items-center justify-center min-h-[80vh] px-6">
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 py-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
-            className="w-full max-w-2xl"
+            className="w-full max-w-xl"
           >
             <Card className="glass-card relative overflow-hidden border-2 border-primary/20 shadow-2xl shadow-primary/10">
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -534,10 +534,10 @@ export default function SwapPage() {
                 ))}
               </div>
 
-              <div className="absolute top-0 left-0 w-40 h-40 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
-              <div className="absolute top-0 right-0 w-40 h-40 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
-              <div className="absolute bottom-0 left-0 w-40 h-40 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
-              <div className="absolute bottom-0 right-0 w-40 h-40 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+              <div className="absolute top-0 left-0 w-24 h-24 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+              <div className="absolute top-0 right-0 w-24 h-24 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+              <div className="absolute bottom-0 right-0 w-24 h-24 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
 
               {[
                 { position: "top-0 left-0", delay: 0 },
@@ -547,18 +547,18 @@ export default function SwapPage() {
               ].map((corner, i) => (
                 <motion.div
                   key={i}
-                  className={`absolute ${corner.position} w-40 h-40`}
+                  className={`absolute ${corner.position} w-24 h-24`}
                   animate={{ opacity: [0.2, 0.5, 0.2] }}
                   transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
                 >
-                  <div className={`absolute ${corner.position} w-20 h-20 bg-primary/30 blur-2xl rounded-full`} />
+                  <div className={`absolute ${corner.position} w-16 h-16 bg-primary/30 blur-2xl rounded-full`} />
                 </motion.div>
               ))}
 
-              <div className="relative p-16 text-center">
-                <div className="relative w-40 h-40 mx-auto mb-12">
+              <div className="relative p-8 text-center">
+                <div className="relative w-24 h-24 mx-auto mb-6">
                   <motion.div
-                    className="absolute inset-0 bg-primary/30 rounded-full blur-2xl"
+                    className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-2xl"
                     animate={{
                       scale: [1, 1.3, 1],
                       opacity: [0.3, 0.6, 0.3],
@@ -592,13 +592,13 @@ export default function SwapPage() {
                       ease: "linear",
                     }}
                   >
-                    <Wallet className="w-8 h-8 text-primary" />
+                    <Wallet className="w-6 h-6 text-primary" />
                   </motion.div>
                 </div>
 
-                <div className="relative mb-8">
+                <div className="relative mb-4">
                   <motion.h2
-                    className="text-6xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
+                    className="text-4xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
                     animate={{
                       backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
                     }}
@@ -628,7 +628,7 @@ export default function SwapPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="text-gray-300 text-xl mb-12 max-w-md mx-auto leading-relaxed"
+                  className="text-gray-300 text-base mb-6 max-w-md mx-auto leading-relaxed"
                 >
                   Connect your wallet to swap tokens instantly with the best rates across the DEUS ecosystem
                 </motion.p>
@@ -636,11 +636,11 @@ export default function SwapPage() {
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Button
                     onClick={() => connectWallet("metamask")}
-                    className="btn-premium relative px-12 py-8 text-xl rounded-2xl font-medium overflow-hidden group"
+                    className="btn-premium relative px-8 py-4 text-base rounded-2xl font-medium overflow-hidden group"
                     size="lg"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-                    <Wallet className="w-6 h-6 mr-3 relative z-10" />
+                    <Wallet className="w-5 h-5 mr-2 relative z-10" />
                     <span className="relative z-10">Connect Wallet</span>
                   </Button>
                 </motion.div>
@@ -649,7 +649,7 @@ export default function SwapPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="mt-10 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/10"
+                  className="mt-6 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/10"
                 >
                   <motion.span
                     animate={{

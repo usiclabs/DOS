@@ -1173,7 +1173,7 @@ export default function LPManagerPage() {
           <DeusTicker />
         </ErrorBoundary>
 
-        <div className="relative min-h-screen bg-black overflow-hidden p-6">
+        <div className="relative min-h-[calc(100vh-200px)] bg-black overflow-hidden p-4">
           {/* Floating particles */}
           {[...Array(20)].map((_, i) => (
             <motion.div
@@ -1196,7 +1196,7 @@ export default function LPManagerPage() {
             />
           ))}
 
-          <div className="relative max-w-4xl mx-auto">
+          <div className="relative max-w-3xl mx-auto">
             <motion.div
               initial="hidden"
               animate="visible"
@@ -1205,22 +1205,20 @@ export default function LPManagerPage() {
                 visible: { opacity: 1, scale: 1 },
               }}
               transition={{ duration: 0.6 }}
-              className="text-center py-16"
+              // Reduced padding from py-16 to py-8
+              className="text-center py-8"
             >
-              {/* Premium corner decorations */}
-              <div className="relative glass-card rounded-2xl p-12 max-w-md mx-auto backdrop-blur-xl border border-blue-500/20 shadow-2xl">
-                {/* Corner accents */}
-                <div className="absolute top-0 left-0 w-20 h-20 border-t-2 border-l-2 border-blue-500/40 rounded-tl-2xl" />
-                <div className="absolute top-0 right-0 w-20 h-20 border-t-2 border-r-2 border-blue-500/40 rounded-tr-2xl" />
-                <div className="absolute bottom-0 left-0 w-20 h-20 border-b-2 border-l-2 border-blue-500/40 rounded-bl-2xl" />
-                <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-blue-500/40 rounded-br-2xl" />
+              <div className="relative glass-card rounded-2xl p-8 max-w-lg mx-auto backdrop-blur-xl border border-blue-500/20 shadow-2xl">
+                <div className="absolute top-0 left-0 w-16 h-16 border-t-2 border-l-2 border-blue-500/40 rounded-tl-2xl" />
+                <div className="absolute top-0 right-0 w-16 h-16 border-t-2 border-r-2 border-blue-500/40 rounded-tr-2xl" />
+                <div className="absolute bottom-0 left-0 w-16 h-16 border-b-2 border-l-2 border-blue-500/40 rounded-bl-2xl" />
+                <div className="absolute bottom-0 right-0 w-16 h-16 border-b-2 border-r-2 border-blue-500/40 rounded-br-2xl" />
 
-                {/* Icon with multiple glow layers and rotation */}
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="relative w-32 h-32 mx-auto mb-6"
+                  className="relative w-24 h-24 mx-auto mb-4"
                 >
                   {/* Rotating rings */}
                   <motion.div
@@ -1245,14 +1243,13 @@ export default function LPManagerPage() {
 
                   {/* Icon container */}
                   <div className="absolute inset-0 glass-card rounded-full flex items-center justify-center border border-blue-500/30 shadow-2xl">
-                    <Target className="h-16 w-16 text-blue-400" />
+                    <Target className="h-12 w-12 text-blue-400" />
                   </div>
                 </motion.div>
 
-                {/* Animated text with gradient */}
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
                   <motion.h1
-                    className="text-4xl font-bold mb-4 bg-gradient-to-r from-white via-blue-200 to-blue-400 to-white bg-clip-text text-transparent"
+                    className="text-3xl font-bold mb-3 bg-gradient-to-r from-white via-blue-200 to-blue-400 to-white bg-clip-text text-transparent"
                     style={{
                       backgroundSize: "200% 100%",
                     }}
@@ -1273,7 +1270,7 @@ export default function LPManagerPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.5 }}
-                  className="text-gray-200 mb-8 leading-relaxed"
+                  className="text-gray-200 text-sm mb-6 leading-relaxed"
                 >
                   Connect your wallet to view and manage your Uniswap V3 liquidity positions on Base chain
                 </motion.p>
@@ -1282,25 +1279,23 @@ export default function LPManagerPage() {
                   <EnhancedWalletConnect onConnect={connectWallet} />
                 </motion.div>
 
-                {/* Info badge */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.8 }}
-                  className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg"
+                  className="mt-6 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg"
                 >
-                  <p className="text-sm text-blue-300">
+                  <p className="text-xs text-blue-300">
                     This manager displays Uniswap V3 positions on Base chain. Make sure your wallet is connected to Base
                     network.
                   </p>
                 </motion.div>
 
-                {/* Premium badge with sparkles */}
                 <motion.div
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 1 }}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-full"
+                  className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500/20 to-blue-600/20 border border-blue-500/30 rounded-full"
                 >
                   {/* Sparkle animations */}
                   {[...Array(3)].map((_, i) => (
