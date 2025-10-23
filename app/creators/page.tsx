@@ -61,7 +61,7 @@ interface ZoraCreatorCoin {
 export default function CreatorsPage() {
   const [coins, setCoins] = useState<ZoraCreatorCoin[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<"trending" | "top-volume">("trending")
+  const [filter, setFilter] = useState<"trending" | "top-volume" | "creator-only">("trending")
   const [selectedCoin, setSelectedCoin] = useState<any | null>(null)
   const [selectedSwapCoin, setSelectedSwapCoin] = useState<ZoraCreatorCoin | null>(null)
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
@@ -79,7 +79,16 @@ export default function CreatorsPage() {
     try {
       const response = await fetch(`/api/zora/creators?filter=${filter}`)
       const data = await response.json()
-      setCoins(data.coins || [])
+      let processedCoins = data.coins || []
+
+      if (filter === "creator-only") {
+        // Sort by market cap descending and take top 10
+        processedCoins = processedCoins
+          .sort((a: ZoraCreatorCoin, b: ZoraCreatorCoin) => b.metrics.marketCap - a.metrics.marketCap)
+          .slice(0, 10)
+      }
+
+      setCoins(processedCoins)
     } catch (error) {
       console.error("Error fetching creator coins:", error)
     } finally {
@@ -214,7 +223,7 @@ export default function CreatorsPage() {
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
           >
             <Tabs value={filter} onValueChange={(v) => setFilter(v as any)} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 gap-2 md:gap-3 glass-card backdrop-blur-xl bg-white/5 p-1.5 md:p-2 border border-white/10 shadow-2xl shadow-black/20">
+              <TabsList className="grid w-full grid-cols-3 gap-2 md:gap-3 glass-card backdrop-blur-xl bg-white/5 p-1.5 md:p-2 border border-white/10 shadow-2xl shadow-black/20">
                 <TabsTrigger
                   value="trending"
                   className="text-xs sm:text-sm md:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-orange-200 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 transition-all duration-300 rounded-lg font-medium py-2 md:py-2.5"
@@ -229,6 +238,14 @@ export default function CreatorsPage() {
                   <Activity className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   <span className="hidden sm:inline">Top Volume</span>
                   <span className="sm:hidden">Volume</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="creator-only"
+                  className="text-xs sm:text-sm md:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-orange-200 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 transition-all duration-300 rounded-lg font-medium py-2 md:py-2.5"
+                >
+                  <Sparkles className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Creators</span>
+                  <span className="sm:hidden">Creators</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
