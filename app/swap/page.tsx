@@ -158,8 +158,16 @@ export default function SwapPage() {
       }
 
       console.log("[v0] Fetching swap quote:", {
-        fromToken: fromToken.address,
-        toToken: toToken.address,
+        fromToken: {
+          symbol: fromToken.symbol,
+          address: fromToken.address,
+          decimals: fromToken.decimals,
+        },
+        toToken: {
+          symbol: toToken.symbol,
+          address: toToken.address,
+          decimals: toToken.decimals,
+        },
         amount: fromAmount,
         userAddress: address,
       })
@@ -182,6 +190,9 @@ export default function SwapPage() {
         if (response.ok) {
           const quote = await response.json()
           console.log("[v0] Quote received successfully:", {
+            fromToken: fromToken.symbol,
+            toToken: toToken.symbol,
+            fromAmount: fromAmount,
             toAmount: quote.toAmount,
             hasUniswapV3Data: !!quote.uniswapV3Data,
           })
@@ -214,7 +225,7 @@ export default function SwapPage() {
 
     const debounce = setTimeout(getQuote, 500)
     return () => clearTimeout(debounce)
-  }, [fromAmount, fromToken, toToken, address])
+  }, [fromAmount, fromToken, toToken, address, toast])
 
   const TokenSelector = ({
     isOpen,
@@ -269,6 +280,11 @@ export default function SwapPage() {
                   whileHover={{ scale: 1.03, y: -2 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => {
+                    console.log("[v0] Token selected:", {
+                      symbol: token.symbol,
+                      address: token.address,
+                      decimals: token.decimals,
+                    })
                     onSelect(token)
                     onClose()
                   }}

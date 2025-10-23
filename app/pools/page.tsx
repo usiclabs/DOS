@@ -39,6 +39,7 @@ export default function PoolsPage() {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000,
+    keepPreviousData: true,
   })
 
   const { data: deusPoolStats } = useSWR("/api/pools?deusOnly=true&limit=100", fetcher, {
@@ -46,6 +47,7 @@ export default function PoolsPage() {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000,
+    keepPreviousData: true,
   })
 
   const { data: creatorCoins } = useSWR("/api/zora/creators?filter=trending&limit=2", fetcher, {
@@ -53,6 +55,7 @@ export default function PoolsPage() {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     dedupingInterval: 60000,
+    keepPreviousData: true,
   })
 
   const deusPoolCount = deusPoolStats?.totalCount || 0
@@ -169,7 +172,7 @@ export default function PoolsPage() {
       </ErrorBoundary>
 
       <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black p-3 sm:p-6">
-        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-20 md:pb-8">
+        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-20 md:pb-8 scroll-smooth">
           <motion.div
             initial="hidden"
             animate="visible"

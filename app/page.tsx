@@ -95,9 +95,9 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-accent/5 blur-3xl" />
           <div className="max-w-5xl mx-auto relative space-y-6 md:space-y-8 lg:space-y-10">
             <motion.div variants={fadeInUp}>
-              <Badge className="mb-6 md:mb-8 lg:mb-10 backdrop-blur-lg bg-white/10 text-white border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all duration-500 px-4 py-2 md:px-6 md:py-3 text-sm md:text-base">
-                <LiveDataIndicator size="sm" label="Live on Base" className="mr-2 md:mr-3" />
-                Base's Most Advanced Liquidity Hub
+              <Badge className="mb-6 md:mb-8 lg:mb-10 backdrop-blur-lg bg-white/10 text-white border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all duration-500 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm">
+                <LiveDataIndicator size="sm" label="Live on Base" className="mr-1.5 md:mr-2" />
+                <span className="text-xs md:text-sm">Base's Most Advanced Liquidity Hub</span>
               </Badge>
             </motion.div>
 

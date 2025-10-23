@@ -230,7 +230,7 @@ export function AutoTradeContent() {
 
   if (!isConnected) {
     return (
-      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 py-6">
+      <div className="flex items-center justify-center min-h-[calc(100vh-280px)] px-4 py-2">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -283,7 +283,7 @@ export function AutoTradeContent() {
               </motion.div>
             ))}
 
-            <div className="relative p-8 text-center">
+            <div className="relative p-6 text-center">
               <div className="relative w-16 h-16 mx-auto mb-6">
                 <motion.div
                   className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-2xl"
