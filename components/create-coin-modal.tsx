@@ -34,7 +34,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
     description: "",
     media: null as File | null,
   })
-  const [currency, setCurrency] = useState<"ETH" | "ZORA" | "USDC">("ETH")
+  const [currency, setCurrency] = useState<"ETH" | "DEUS" | "USDC" | "ZORA">("ETH")
   const [imagePreview, setImagePreview] = useState<string>("")
   const [videoPreview, setVideoPreview] = useState<string>("")
   const [mediaType, setMediaType] = useState<"image" | "video" | null>(null)
@@ -75,19 +75,19 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
         reader.readAsDataURL(file)
       }
     }
-  }, [])
+  }, []) // Empty dependency array ensures this function is only created once
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, name: e.target.value }))
-  }, [])
+  }, []) // Empty dependency array ensures this function is only created once
 
   const handleSymbolChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, symbol: e.target.value.toUpperCase() }))
-  }, [])
+  }, []) // Empty dependency array ensures this function is only created once
 
   const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData((prev) => ({ ...prev, description: e.target.value }))
-  }, [])
+  }, []) // Empty dependency array ensures this function is only created once
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -296,8 +296,11 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
           {/* Currency Selector */}
           <div className="space-y-3">
             <Label>Pool Pairing Currency *</Label>
-            <RadioGroup value={currency} onValueChange={(value) => setCurrency(value as "ETH" | "ZORA" | "USDC")}>
-              <div className="grid grid-cols-3 gap-3">
+            <RadioGroup
+              value={currency}
+              onValueChange={(value) => setCurrency(value as "ETH" | "DEUS" | "USDC" | "ZORA")}
+            >
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                 <label
                   htmlFor="currency-eth"
                   className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
@@ -313,6 +316,20 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                 </label>
 
                 <label
+                  htmlFor="currency-deus"
+                  className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                    currency === "DEUS"
+                      ? "border-orange-500 bg-orange-500/10"
+                      : "border-border hover:border-orange-500/50 bg-background/50"
+                  }`}
+                >
+                  <RadioGroupItem value="DEUS" id="currency-deus" className="sr-only" />
+                  <div className="text-2xl">⚡</div>
+                  <div className="text-sm font-medium">DEUS</div>
+                  <div className="text-xs text-muted-foreground text-center">Platform token</div>
+                </label>
+
+                <label
                   htmlFor="currency-zora"
                   className={`relative flex flex-col items-center gap-2 p-4 rounded-lg border-2 cursor-pointer transition-all ${
                     currency === "ZORA"
@@ -321,7 +338,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                   }`}
                 >
                   <RadioGroupItem value="ZORA" id="currency-zora" className="sr-only" />
-                  <div className="text-2xl">⚡</div>
+                  <div className="text-2xl">Z</div>
                   <div className="text-sm font-medium">ZORA</div>
                   <div className="text-xs text-muted-foreground text-center">Native token</div>
                 </label>

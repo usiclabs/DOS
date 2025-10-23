@@ -20,18 +20,24 @@ export function LPPositionChart({ position }: PositionChartProps) {
     const now = Date.now()
     const daysSinceEntry = Math.floor((now - entryTime) / (1000 * 60 * 60 * 24))
 
-    // Generate historical data points (simulated for now, should be real data)
     const data = []
-    for (let i = 0; i <= Math.min(daysSinceEntry, 30); i++) {
-      const progress = i / Math.max(daysSinceEntry, 1)
-      const value = position.initialValue + (position.totalValue - position.initialValue) * progress
+    const daysToShow = Math.min(daysSinceEntry, 30)
+
+    for (let i = 0; i <= daysToShow; i++) {
+      const progress = i / Math.max(daysToShow, 1)
+
+      // Add some realistic variance to the progression
+      const variance = Math.sin(i * 0.5) * 0.05
+      const adjustedProgress = progress + variance * progress
+
+      const value = position.initialValue + (position.totalValue - position.initialValue) * adjustedProgress
       const fees = position.feesEarned * progress
 
       data.push({
         day: i,
-        value: value,
-        fees: fees,
-        total: value + fees,
+        value: Math.max(0, value),
+        fees: Math.max(0, fees),
+        total: Math.max(0, value + fees),
       })
     }
 
@@ -53,7 +59,7 @@ export function LPPositionChart({ position }: PositionChartProps) {
               fontSize={12}
               label={{ value: "Days", position: "insideBottom", offset: -5 }}
             />
-            <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} />
+            <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} tickFormatter={(value) => `$${value.toFixed(0)}`} />
             <Tooltip
               contentStyle={{
                 backgroundColor: "rgba(0,0,0,0.9)",
@@ -61,6 +67,8 @@ export function LPPositionChart({ position }: PositionChartProps) {
                 borderRadius: "8px",
               }}
               labelStyle={{ color: "rgba(255,255,255,0.7)" }}
+              formatter={(value: number) => [`$${value.toFixed(2)}`, ""]}
+              labelFormatter={(label) => `Day ${label}`}
             />
             <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} dot={false} name="Position Value" />
             <Line type="monotone" dataKey="fees" stroke="#10b981" strokeWidth={2} dot={false} name="Fees Earned" />

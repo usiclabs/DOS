@@ -1443,34 +1443,57 @@ export default function LPManagerPage() {
                   value: `${data.totalPnl >= 0 ? "+" : ""}${formatNumber(data.totalPnl)}`,
                   sublabel: `${data.totalValue > 0 ? formatPercent((data.totalPnl / (data.totalValue - data.totalPnl)) * 100) : "0.00%"} return`,
                   color: data.totalPnl >= 0 ? "green" : "red",
+                  glow: true,
                 },
                 {
                   icon: Target,
                   label: "Fees Earned",
                   value: formatNumber(data.totalFeesEarned),
-                  sublabel: "All-time", // Changed from "All-time earnings" for brevity
+                  sublabel: "All-time",
                   color: "green",
+                  glow: true,
                 },
                 {
                   icon: Activity,
-                  label: "Active", // Changed from "Active Positions" for brevity
+                  label: "Active",
                   value: data.positions.filter((p) => p.inRange).length,
-                  sublabel: `of ${data.positionCount}`, // Changed from "In range / total" for brevity
+                  sublabel: `of ${data.positionCount}`,
                 },
               ].map((stat, index) => (
                 <motion.div key={index} variants={fadeInUp} whileHover={{ scale: 1.05, y: -5 }}>
-                  <Card className="bg-card border border-white/5 shadow-lg">
-                    <CardHeader className="pb-2 p-3 sm:p-4">
+                  <Card
+                    className={`bg-card border border-white/5 shadow-lg ${
+                      stat.glow && stat.color === "green"
+                        ? "relative overflow-hidden before:absolute before:inset-0 before:bg-green-500/5 before:animate-pulse"
+                        : ""
+                    }`}
+                  >
+                    {stat.glow && stat.color === "green" && (
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-green-500/20 via-green-400/20 to-green-500/20 animate-pulse blur-sm" />
+                    )}
+                    <CardHeader className="pb-2 p-3 sm:p-4 relative z-10">
                       <CardTitle className="text-xs sm:text-sm font-medium flex items-center text-muted-foreground">
                         <stat.icon
-                          className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${stat.color ? `text-${stat.color}-400` : ""}`}
+                          className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 ${
+                            stat.color === "green" ? "text-green-400" : stat.color === "red" ? "text-red-400" : ""
+                          } ${stat.glow && stat.color === "green" ? "drop-shadow-[0_0_8px_rgba(34,197,94,0.6)]" : ""}`}
                         />
                         {stat.label}
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-3 sm:p-4 pt-0">
+                    <CardContent className="p-3 sm:p-4 pt-0 relative z-10">
                       <div
-                        className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-1 ${stat.color ? `text-${stat.color}-400` : "text-white"}`}
+                        className={`text-xl sm:text-2xl lg:text-3xl font-bold mb-1 ${
+                          stat.color === "green"
+                            ? "text-green-400"
+                            : stat.color === "red"
+                              ? "text-red-400"
+                              : "text-white"
+                        } ${
+                          stat.glow && stat.color === "green"
+                            ? "drop-shadow-[0_0_12px_rgba(34,197,94,0.8)] animate-pulse"
+                            : ""
+                        }`}
                       >
                         {stat.value}
                       </div>

@@ -20,7 +20,26 @@ export function ImpermanentLossCalculator({ position }: ILCalculatorProps) {
 
   const ilData = useMemo(() => {
     const change = Number.parseFloat(priceChange) / 100
+
+    if (Number.isNaN(change) || !Number.isFinite(change)) {
+      return {
+        ilPercent: 0,
+        holdValue: position.initialValue,
+        lpValue: position.initialValue,
+        difference: 0,
+      }
+    }
+
     const ratio = 1 + change
+
+    if (ratio <= 0) {
+      return {
+        ilPercent: -100,
+        holdValue: position.initialValue * (1 + change / 2),
+        lpValue: 0,
+        difference: -position.initialValue * (1 + change / 2),
+      }
+    }
 
     // Calculate impermanent loss using the formula: IL = 2*sqrt(ratio)/(1+ratio) - 1
     const il = (2 * Math.sqrt(ratio)) / (1 + ratio) - 1
@@ -60,6 +79,7 @@ export function ImpermanentLossCalculator({ position }: ILCalculatorProps) {
             onChange={(e) => setPriceChange(e.target.value)}
             placeholder="Enter price change %"
             className="h-9"
+            step="0.1"
           />
         </div>
 

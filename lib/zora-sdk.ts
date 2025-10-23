@@ -59,7 +59,7 @@ export interface CreateCoinParams {
   account: string
   payoutRecipient: string
   platformReferrer?: string
-  currency?: "ETH" | "ZORA" | "USDC"
+  currency?: "ETH" | "DEUS" | "ZORA" | "USDC"
   initialPurchase?: {
     currency: "ETH" | "USDC" | "ZORA"
     amount: string
@@ -412,14 +412,18 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
     // Zora Factory contract address on Base mainnet
     const ZORA_FACTORY_ADDRESS = "0x777777751622c0d3258f214F9DF38E35BF45baF3"
 
-    // Currency addresses
+    // Currency addresses on Base mainnet
     const ETH_ADDRESS = "0x0000000000000000000000000000000000000000"
+    const DEUS_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
     const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69"
     const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
     // Map currency to address
     let currencyAddress: string
     switch (params.currency) {
+      case "DEUS":
+        currencyAddress = DEUS_ADDRESS
+        break
       case "ZORA":
         currencyAddress = ZORA_ADDRESS
         break
