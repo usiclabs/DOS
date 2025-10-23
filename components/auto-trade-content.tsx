@@ -230,19 +230,197 @@ export function AutoTradeContent() {
 
   if (!isConnected) {
     return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <Bot className="mx-auto mb-4 h-12 w-12 text-primary" />
-            <CardTitle>Connect Your Wallet</CardTitle>
-            <CardDescription>Connect your wallet to access the Auto-Trade Bot</CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button onClick={() => connectWallet()} size="lg">
-              Connect Wallet
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex items-center justify-center min-h-[80vh] px-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="w-full max-w-2xl"
+        >
+          <Card className="glass-card relative overflow-hidden border-2 border-primary/20 shadow-2xl shadow-primary/10">
+            {/* Animated background particles */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+              {[...Array(30)].map((_, i) => (
+                <motion.div
+                  key={i}
+                  className="absolute w-1 h-1 bg-primary/40 rounded-full blur-[1px]"
+                  initial={{
+                    x: Math.random() * 100 + "%",
+                    y: Math.random() * 100 + "%",
+                  }}
+                  animate={{
+                    y: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                    x: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                    opacity: [0.2, 0.8, 0.2],
+                    scale: [1, 1.5, 1],
+                  }}
+                  transition={{
+                    duration: Math.random() * 8 + 12,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "linear",
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Corner borders */}
+            <div className="absolute top-0 left-0 w-40 h-40 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+            <div className="absolute top-0 right-0 w-40 h-40 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+            <div className="absolute bottom-0 left-0 w-40 h-40 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+            <div className="absolute bottom-0 right-0 w-40 h-40 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
+
+            {/* Corner glow effects */}
+            {[
+              { position: "top-0 left-0", delay: 0 },
+              { position: "top-0 right-0", delay: 0.75 },
+              { position: "bottom-0 left-0", delay: 1.5 },
+              { position: "bottom-0 right-0", delay: 2.25 },
+            ].map((corner, i) => (
+              <motion.div
+                key={i}
+                className={`absolute ${corner.position} w-40 h-40`}
+                animate={{ opacity: [0.2, 0.5, 0.2] }}
+                transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
+              >
+                <div className={`absolute ${corner.position} w-20 h-20 bg-primary/30 blur-2xl rounded-full`} />
+              </motion.div>
+            ))}
+
+            <div className="relative p-16 text-center">
+              {/* Animated Bot Icon */}
+              <div className="relative w-40 h-40 mx-auto mb-12">
+                <motion.div
+                  className="absolute inset-0 bg-primary/30 rounded-full blur-2xl"
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.3, 0.6, 0.3],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                />
+                <motion.div
+                  className="absolute inset-0 bg-primary/20 rounded-full blur-3xl"
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.2, 0.5, 0.2],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                    delay: 0.5,
+                  }}
+                />
+
+                <motion.div
+                  className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 rounded-full border-2 border-primary/30 backdrop-blur-sm shadow-[0_0_40px_rgba(235,90,60,0.3)]"
+                  animate={{ rotate: 360 }}
+                  transition={{
+                    duration: 20,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "linear",
+                  }}
+                >
+                  <Bot className="w-16 h-16 text-primary" />
+                </motion.div>
+              </div>
+
+              {/* Title */}
+              <div className="relative mb-8">
+                <motion.h2
+                  className="text-6xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
+                  animate={{
+                    backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                  }}
+                  transition={{
+                    duration: 5,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "linear",
+                  }}
+                >
+                  Auto-Trade Bot
+                </motion.h2>
+                <motion.div
+                  className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full"
+                  animate={{
+                    opacity: [0.3, 0.8, 0.3],
+                    scaleX: [0.8, 1, 0.8],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                />
+              </div>
+
+              {/* Description */}
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="text-gray-300 text-xl mb-12 max-w-md mx-auto leading-relaxed"
+              >
+                Connect your wallet to access AI-powered automated trading. Exclusive for $DEUS holders.
+              </motion.p>
+
+              {/* Connect Button */}
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                <Button
+                  onClick={() => connectWallet()}
+                  className="btn-premium relative px-12 py-8 text-xl rounded-2xl font-medium overflow-hidden group"
+                  size="lg"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                  <Wallet className="w-6 h-6 mr-3 relative z-10" />
+                  <span className="relative z-10">Connect Wallet</span>
+                </Button>
+              </motion.div>
+
+              {/* Feature Badge */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mt-10 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/10"
+              >
+                <motion.span
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.5, 1, 0.5],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                  className="text-primary text-lg"
+                >
+                  ✦
+                </motion.span>
+                <span className="text-sm font-semibold text-primary tracking-wide">AI-POWERED • AUTOMATED TRADING</span>
+                <motion.span
+                  animate={{
+                    scale: [1, 1.3, 1],
+                    opacity: [0.5, 1, 0.5],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                    delay: 1,
+                  }}
+                  className="text-primary text-lg"
+                >
+                  ✦
+                </motion.span>
+              </motion.div>
+            </div>
+          </Card>
+        </motion.div>
       </div>
     )
   }
