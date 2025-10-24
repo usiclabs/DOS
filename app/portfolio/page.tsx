@@ -179,6 +179,13 @@ function TokenBalanceCard({
     return `$${num.toFixed(2)}`
   }
 
+  const formatTokenBalance = (balance: number) => {
+    if (balance >= 1e6) return `${(balance / 1e6).toFixed(1)}M`
+    if (balance >= 1e3) return `${(balance / 1e3).toFixed(1)}K`
+    if (balance >= 1) return balance.toFixed(2)
+    return balance.toFixed(4)
+  }
+
   const totalTokenValue = tokens.reduce((sum, token) => sum + token.value, 0)
   const totalValue = ethValue + totalTokenValue
 
@@ -255,11 +262,7 @@ function TokenBalanceCard({
                 </div>
                 <div>
                   <div className="font-medium text-white">{token.symbol}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {token.balanceFormatted >= 1000
-                      ? `${(token.balanceFormatted / 1000).toFixed(1)}K`
-                      : token.balanceFormatted.toFixed(2)}
-                  </div>
+                  <div className="text-sm text-muted-foreground">{formatTokenBalance(token.balanceFormatted)}</div>
                 </div>
               </div>
               <div className="text-right">
