@@ -711,7 +711,7 @@ export default function SwapPage() {
       <StickyHeader />
       <DeusTicker />
 
-      <div className="flex items-center justify-center min-h-[80vh] px-6 py-12">
+      <div className="flex items-center justify-center min-h-[calc(100vh-180px)] px-4 py-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -719,27 +719,27 @@ export default function SwapPage() {
           className="w-full max-w-lg"
         >
           <Tabs defaultValue="swap" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-8 p-1.5 bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg">
+            <TabsList className="grid w-full grid-cols-2 mb-4 p-1 bg-white/5 backdrop-blur-sm border border-white/10 shadow-lg">
               <TabsTrigger
                 value="swap"
-                className="flex items-center gap-2 py-3 text-base data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/20 data-[state=active]:to-primary/10 data-[state=active]:border data-[state=active]:border-primary/30 data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all duration-300"
+                className="flex items-center gap-2 py-2 text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-primary/20 data-[state=active]:to-primary/10 data-[state=active]:border data-[state=active]:border-primary/30 data-[state=active]:shadow-lg data-[state=active]:shadow-primary/20 transition-all duration-300"
               >
-                <ArrowDownUp className="w-5 h-5" />
+                <ArrowDownUp className="w-4 h-4" />
                 Swap
               </TabsTrigger>
               <TabsTrigger
                 value="discover"
-                className="flex items-center gap-2 py-3 text-base data-[state=active]:bg-gradient-to-br data-[state=active]:from-gold/20 data-[state=active]:to-gold/10 data-[state=active]:border data-[state=active]:border-gold/30 data-[state=active]:shadow-lg data-[state=active]:shadow-gold/20 transition-all duration-300"
+                className="flex items-center gap-2 py-2 text-sm data-[state=active]:bg-gradient-to-br data-[state=active]:from-gold/20 data-[state=active]:to-gold/10 data-[state=active]:border data-[state=active]:border-gold/30 data-[state=active]:shadow-lg data-[state=active]:shadow-gold/20 transition-all duration-300"
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-4 h-4" />
                 Discover
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="swap">
-              <Card className="glass-card p-8 border-2 border-white/10 shadow-2xl">
-                <div className="flex items-center justify-between mb-8">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+              <Card className="glass-card p-6 border-2 border-white/10 shadow-2xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                     Swap
                   </h2>
                   <Button
@@ -748,7 +748,7 @@ export default function SwapPage() {
                     onClick={() => setShowSettings(!showSettings)}
                     className="hover:bg-white/10 transition-all duration-300 rounded-xl"
                   >
-                    <Settings className="w-6 h-6" />
+                    <Settings className="w-5 h-5" />
                   </Button>
                 </div>
 
@@ -773,27 +773,27 @@ export default function SwapPage() {
                   </motion.div>
                 )}
 
-                <div className="space-y-3 mb-3">
-                  <div className="flex items-center justify-between text-base text-muted-foreground">
+                <div className="space-y-2 mb-2">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>Sell</span>
                     {fromToken && <span>Balance: {fromToken.balance.toFixed(6)}</span>}
                   </div>
-                  <div className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 hover:border-primary/30 transition-all duration-300 shadow-lg hover:shadow-primary/10">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 hover:border-primary/30 transition-all duration-300 shadow-lg hover:shadow-primary/10">
+                    <div className="flex items-center justify-between mb-2">
                       <Input
                         type="number"
                         placeholder="0.0"
                         value={fromAmount}
                         onChange={(e) => setFromAmount(e.target.value)}
-                        className="text-2xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
+                        className="text-xl font-bold border-0 bg-transparent p-0 h-auto focus-visible:ring-0"
                       />
                       <Button
                         variant="ghost"
                         className="flex items-center gap-2 hover:bg-white/5 transition-all duration-300"
                         onClick={() => setShowFromTokenSelector(true)}
                       >
-                        <span className="text-xl">{fromToken?.logo}</span>
-                        <span className="font-medium">{fromToken?.symbol}</span>
+                        <span className="text-lg">{fromToken?.logo}</span>
+                        <span className="font-medium text-sm">{fromToken?.symbol}</span>
                         <ChevronDown className="w-4 h-4" />
                       </Button>
                     </div>
@@ -805,14 +805,14 @@ export default function SwapPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => handlePercentage(percent)}
-                            className="text-xs hover:bg-primary/20 hover:text-primary transition-all duration-300"
+                            className="text-xs hover:bg-primary/20 hover:text-primary transition-all duration-300 h-7 px-2"
                           >
                             {percent === 100 ? "MAX" : `${percent}%`}
                           </Button>
                         ))}
                       </div>
                       {fromToken && fromAmount && (
-                        <span className="text-sm text-muted-foreground">
+                        <span className="text-xs text-muted-foreground">
                           ${(Number.parseFloat(fromAmount) * fromToken.price).toFixed(2)}
                         </span>
                       )}
@@ -820,38 +820,38 @@ export default function SwapPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-center -my-2 relative z-10">
+                <div className="flex justify-center -my-1 relative z-10">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="rounded-full bg-gradient-to-br from-background to-background/80 border-4 border-background hover:bg-white/10 shadow-lg hover:shadow-primary/20 transition-all duration-300"
+                    className="rounded-full bg-gradient-to-br from-background to-background/80 border-4 border-background hover:bg-white/10 shadow-lg hover:shadow-primary/20 transition-all duration-300 h-10 w-10"
                   >
-                    <ArrowDownUp className="w-5 h-5 text-primary" />
+                    <ArrowDownUp className="w-4 h-4 text-primary" />
                   </Button>
                 </div>
 
-                <div className="space-y-2 mt-2">
-                  <div className="flex items-center justify-between text-base text-muted-foreground">
+                <div className="space-y-2 mt-1">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>Buy</span>
                     {toToken && <span>Balance: {toToken.balance.toFixed(6)}</span>}
                   </div>
-                  <div className="p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 hover:border-primary/30 transition-all duration-300 shadow-lg hover:shadow-primary/10">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="text-2xl font-bold text-white">
-                        {isLoading ? <RefreshCw className="w-6 h-6 animate-spin text-primary" /> : toAmount || "0.0"}
+                  <div className="p-4 rounded-2xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 hover:border-primary/30 transition-all duration-300 shadow-lg hover:shadow-primary/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xl font-bold text-white">
+                        {isLoading ? <RefreshCw className="w-5 h-5 animate-spin text-primary" /> : toAmount || "0.0"}
                       </div>
                       <Button
                         variant="ghost"
                         className="flex items-center gap-2 hover:bg-white/5 transition-all duration-300"
                         onClick={() => setShowToTokenSelector(true)}
                       >
-                        <span className="text-xl">{toToken?.logo}</span>
-                        <span className="font-medium">{toToken?.symbol}</span>
+                        <span className="text-lg">{toToken?.logo}</span>
+                        <span className="font-medium text-sm">{toToken?.symbol}</span>
                         <ChevronDown className="w-4 h-4" />
                       </Button>
                     </div>
                     {toToken && toAmount && (
-                      <div className="text-sm text-muted-foreground text-right">
+                      <div className="text-xs text-muted-foreground text-right">
                         ${(Number.parseFloat(toAmount) * toToken.price).toFixed(2)}
                       </div>
                     )}
@@ -861,7 +861,7 @@ export default function SwapPage() {
                 <Button
                   onClick={handleSwap}
                   disabled={!fromAmount || !toAmount || isLoading || isSwapping || cooldownRemaining > 0}
-                  className="btn-premium w-full mt-8 py-6 text-lg font-medium relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="btn-premium w-full mt-4 py-4 text-base font-medium relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
                   size="lg"
                 >
                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -888,7 +888,7 @@ export default function SwapPage() {
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-4 p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm space-y-2 text-sm shadow-lg"
+                    className="mt-3 p-3 rounded-xl bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 backdrop-blur-sm space-y-1.5 text-sm shadow-lg"
                   >
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Rate</span>
