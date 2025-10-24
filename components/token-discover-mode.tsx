@@ -652,11 +652,11 @@ export function TokenDiscoverMode() {
   const currentToken = tokens[currentIndex]
 
   return (
-    <div className="relative w-full max-w-md mx-auto px-4 py-4">
-      <div className="relative h-[480px] md:h-[500px]">
+    <div className="relative w-full max-w-md mx-auto px-4 py-8">
+      <div className="relative h-[620px] md:h-[640px]">
         {currentIndex + 1 < tokens.length && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Card className="w-full h-[460px] md:h-[480px] bg-card/20 border-primary/20 scale-95 opacity-30 blur-md shadow-2xl shadow-primary/10" />
+            <Card className="w-full h-[600px] md:h-[620px] bg-card/20 border-primary/20 scale-95 opacity-30 blur-md shadow-2xl shadow-primary/10" />
           </div>
         )}
 
@@ -670,7 +670,7 @@ export function TokenDiscoverMode() {
           whileTap={{ cursor: "grabbing", scale: 0.98 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
-          <Card className="w-full h-[460px] md:h-[480px] relative overflow-hidden border-2 border-primary/30 shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-500">
+          <Card className="w-full h-[600px] md:h-[620px] relative overflow-hidden border-2 border-primary/30 shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-500">
             <div className="absolute inset-0 overflow-hidden">
               {currentToken.image ? (
                 <>
@@ -713,33 +713,33 @@ export function TokenDiscoverMode() {
             <div className="absolute bottom-0 right-0 w-20 h-20 border-b-2 border-r-2 border-primary/40 rounded-br-2xl shadow-[0_0_20px_rgba(235,90,60,0.3)]" />
 
             <div className="relative h-full flex flex-col">
-              <div className="p-4 md:p-5 border-b border-border/40 backdrop-blur-xl bg-gradient-to-b from-background/50 to-background/30 shadow-lg">
-                <div className="flex items-start justify-between mb-2">
+              <div className="p-5 md:p-6 border-b border-border/40 backdrop-blur-xl bg-gradient-to-b from-background/50 to-background/30 shadow-lg">
+                <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <h2 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
                         {currentToken.symbol}
                       </h2>
                       {currentToken.isDeusPool && (
-                        <Badge className="bg-primary/20 text-primary/30 border-primary/40 backdrop-blur-sm h-6 px-2">
+                        <Badge className="bg-primary/20 text-primary/30 border-primary/40 backdrop-blur-sm">
                           <Zap className="w-3 h-3 mr-1" />
                           DEUS
                         </Badge>
                       )}
                       {currentToken.isTrending && (
-                        <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/40 backdrop-blur-sm h-6 px-2">
+                        <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/40 backdrop-blur-sm">
                           <TrendingUp className="w-3 h-3 mr-1" />
                           Trending
                         </Badge>
                       )}
                       {currentToken.isCreatorCoin && (
-                        <Badge className="bg-primary/20 text-primary/30 border-primary/40 backdrop-blur-sm h-6 px-2">
+                        <Badge className="bg-primary/20 text-primary/30 border-primary/40 backdrop-blur-sm">
                           <Sparkles className="w-3 h-3 mr-1" />
                           Creator
                         </Badge>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground line-clamp-1">{currentToken.name}</p>
+                    <p className="text-sm text-muted-foreground line-clamp-1">{currentToken.name}</p>
                     {currentToken.isCreatorCoin && currentToken.creator && (
                       <div className="flex items-center gap-2 mt-2">
                         {currentToken.creator.avatar && (
@@ -760,35 +760,35 @@ export function TokenDiscoverMode() {
                     variant="ghost"
                     size="icon"
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className="hover:bg-white/10 backdrop-blur-sm shrink-0 h-8 w-8"
+                    className="hover:bg-white/10 backdrop-blur-sm shrink-0"
                   >
-                    {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                   </Button>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <div className="grid grid-cols-2 gap-3 md:gap-4">
                     <motion.div
                       whileHover={{ scale: 1.03, y: -2 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                      className="p-3 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
+                      className="p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
                     >
-                      <div className="flex items-center text-xs text-muted-foreground mb-1.5">
-                        <BarChart3 className="w-3 h-3 mr-1.5" />
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                        <BarChart3 className="w-4 h-4 mr-2" />
                         24h Volume
                       </div>
-                      <div className="text-lg md:text-xl font-bold">{formatNumber(currentToken.volume24h)}</div>
+                      <div className="text-xl md:text-2xl font-bold">{formatNumber(currentToken.volume24h)}</div>
                     </motion.div>
                     <motion.div
                       whileHover={{ scale: 1.03, y: -2 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                      className="p-3 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
+                      className="p-4 rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 hover:border-primary/30 transition-all duration-300"
                     >
-                      <div className="flex items-center text-xs text-muted-foreground mb-1.5">
-                        <Droplets className="w-3 h-3 mr-1.5" />
+                      <div className="flex items-center text-sm text-muted-foreground mb-2">
+                        <Droplets className="w-4 h-4 mr-2" />
                         Liquidity
                       </div>
-                      <div className="text-lg md:text-xl font-bold">{formatNumber(currentToken.liquidity)}</div>
+                      <div className="text-xl md:text-2xl font-bold">{formatNumber(currentToken.liquidity)}</div>
                     </motion.div>
                   </div>
 
@@ -796,13 +796,13 @@ export function TokenDiscoverMode() {
                     <motion.div
                       whileHover={{ scale: 1.02, y: -2 }}
                       transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                      className="p-3 rounded-xl bg-primary/10 border border-primary/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 transition-all duration-300"
+                      className="p-4 rounded-xl bg-primary/10 border border-primary/20 backdrop-blur-sm shadow-lg hover:shadow-primary/20 transition-all duration-300"
                     >
-                      <div className="flex items-center text-xs text-primary/30 mb-1.5 font-medium">
-                        <Users className="w-3 h-3 mr-1.5" />
+                      <div className="flex items-center text-sm text-primary/30 mb-2 font-medium">
+                        <Users className="w-4 h-4 mr-2" />
                         Holders
                       </div>
-                      <div className="text-xl md:text-2xl font-bold text-primary/20">
+                      <div className="text-2xl md:text-3xl font-bold text-primary/20">
                         {currentToken.holders.toLocaleString()}
                       </div>
                     </motion.div>
@@ -811,13 +811,13 @@ export function TokenDiscoverMode() {
                   <motion.div
                     whileHover={{ scale: 1.02, y: -2 }}
                     transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                    className="p-4 md:p-5 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/20 border-2 border-primary/40 backdrop-blur-sm shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-300"
+                    className="p-5 md:p-6 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/20 border-2 border-primary/40 backdrop-blur-sm shadow-2xl shadow-primary/20 hover:shadow-primary/30 transition-all duration-300"
                   >
-                    <div className="text-xs text-orange-100 mb-1.5 font-medium flex items-center gap-2">
-                      <Sparkles className="w-3 h-3" />
+                    <div className="text-sm text-orange-100 mb-2 font-medium flex items-center gap-2">
+                      <Sparkles className="w-4 h-4" />
                       {currentToken.isCreatorCoin ? "Estimated APY" : "Average APY"}
                     </div>
-                    <div className="text-3xl md:text-4xl font-bold text-orange-50 mb-1">
+                    <div className="text-4xl md:text-5xl font-bold text-orange-50 mb-1">
                       {currentToken.avgApy.toFixed(2)}%
                     </div>
                     <div className="text-xs text-orange-100/80">
@@ -832,26 +832,26 @@ export function TokenDiscoverMode() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: "auto" }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="space-y-2 pt-2"
+                      className="space-y-3 pt-2"
                     >
-                      <div className="text-xs font-medium text-muted-foreground">Trading Pairs</div>
-                      <div className="space-y-1.5 max-h-[120px] overflow-y-auto pr-2 custom-scrollbar">
+                      <div className="text-sm font-medium text-muted-foreground">Trading Pairs</div>
+                      <div className="space-y-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
                         {currentToken.pools.slice(0, 5).map((pool, idx) => (
                           <motion.div
                             key={idx}
                             initial={{ opacity: 0, x: -20 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.05 }}
-                            className="flex items-center justify-between p-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors"
+                            className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors"
                           >
-                            <div className="text-xs">
+                            <div className="text-sm">
                               <div className="font-medium">
                                 {currentToken.symbol}/{pool.quoteToken}
                               </div>
                               <div className="text-xs text-muted-foreground mt-0.5">{pool.dexId}</div>
                             </div>
                             <div className="text-right">
-                              <div className="text-xs font-bold text-primary">{pool.apy.toFixed(1)}%</div>
+                              <div className="text-sm font-bold text-primary">{pool.apy.toFixed(1)}%</div>
                               <div className="text-xs text-muted-foreground">{formatNumber(pool.liquidity)}</div>
                             </div>
                           </motion.div>
@@ -865,9 +865,9 @@ export function TokenDiscoverMode() {
                     target="_blank"
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.02 }}
-                    className="flex items-center justify-center gap-2 p-2.5 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors text-xs text-muted-foreground hover:text-foreground"
+                    className="flex items-center justify-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 transition-colors text-sm text-muted-foreground hover:text-foreground"
                   >
-                    <ExternalLink className="w-3 h-3" />
+                    <ExternalLink className="w-4 h-4" />
                     View on DexScreener
                   </motion.a>
                 </div>
@@ -877,7 +877,7 @@ export function TokenDiscoverMode() {
         </motion.div>
       </div>
 
-      <div className="flex items-center justify-center gap-6 mt-4">
+      <div className="flex items-center justify-center gap-8 mt-8">
         <motion.div
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
@@ -888,9 +888,9 @@ export function TokenDiscoverMode() {
             size="lg"
             onClick={handleSkip}
             disabled={isBuying}
-            className="w-16 h-16 rounded-full border-2 border-red-500/50 hover:bg-red-500/20 hover:border-red-500 bg-background/90 backdrop-blur-sm shadow-xl hover:shadow-red-500/30 transition-all duration-300"
+            className="w-20 h-20 rounded-full border-2 border-red-500/50 hover:bg-red-500/20 hover:border-red-500 bg-background/90 backdrop-blur-sm shadow-xl hover:shadow-red-500/30 transition-all duration-300"
           >
-            <X className="w-8 h-8 text-red-400" />
+            <X className="w-10 h-10 text-red-400" />
           </Button>
         </motion.div>
 
@@ -907,19 +907,19 @@ export function TokenDiscoverMode() {
             size="lg"
             onClick={handleBuy}
             disabled={isBuying || !address}
-            className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-2xl border-2 border-primary/50 backdrop-blur-sm transition-all duration-300 relative overflow-hidden group"
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-primary/80 hover:from-primary/90 hover:to-primary shadow-2xl border-2 border-primary/50 backdrop-blur-sm transition-all duration-300 relative overflow-hidden group"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             {isBuying ? (
-              <Loader2 className="w-10 h-10 animate-spin relative z-10" />
+              <Loader2 className="w-12 h-12 animate-spin relative z-10" />
             ) : (
-              <Heart className="w-10 h-10 fill-current relative z-10" />
+              <Heart className="w-12 h-12 fill-current relative z-10" />
             )}
           </Button>
         </motion.div>
       </div>
 
-      <div className="flex items-center justify-between mt-4 px-2 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between mt-6 px-2 text-sm text-muted-foreground">
         <motion.div
           className="flex items-center gap-2 px-3 py-2 rounded-full bg-red-500/10 border border-red-500/20 backdrop-blur-sm"
           animate={{ x: [-3, 0, -3] }}
