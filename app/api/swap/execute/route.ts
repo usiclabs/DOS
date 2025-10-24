@@ -9,17 +9,19 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Executing swap:", {
       userAddress,
-      hasUniswapV3Data: !!quote.uniswapV3Data,
-      hasUniswapV4Data: !!quote.uniswapV4Data,
-      hasZoraTradeData: !!quote.zoraTradeData,
+      hasUniswapV3Data: !!quote?.uniswapV3Data,
+      hasUniswapV4Data: !!quote?.uniswapV4Data,
+      hasZoraTradeData: !!quote?.zoraTradeData,
     })
 
     // Validate required parameters
     if (!quote || !userAddress) {
+      console.error("[v0] Missing required parameters:", { hasQuote: !!quote, hasUserAddress: !!userAddress })
       return NextResponse.json({ error: "Missing required parameters" }, { status: 400 })
     }
 
     if (!quote.uniswapV3Data && !quote.uniswapV4Data && !quote.zoraTradeData) {
+      console.error("[v0] No transaction data in quote:", Object.keys(quote))
       return NextResponse.json(
         {
           error: "No transaction data available. Please get a new quote.",
@@ -32,42 +34,54 @@ export async function POST(request: NextRequest) {
 
     let swapTx
 
-    if (quote.zoraTradeData) {
-      console.log("[v0] Building Zora trade transaction with pairing:", quote.zoraTradeData.poolPairing)
-      swapTx = prepareZoraTradeTransaction(quote.zoraTradeData.tradeParams, deadline, quote.zoraTradeData.poolPairing)
-    } else if (quote.uniswapV4Data) {
-      console.log("[v0] Building Uniswap V4 swap transaction...")
-      swapTx = buildV4SwapTransaction(
-        quote.uniswapV4Data.poolKey,
-        quote.uniswapV4Data.amountIn,
-        quote.uniswapV4Data.amountOutMinimum,
-        userAddress,
-        quote.uniswapV4Data.zeroForOne,
-        deadline,
-      )
-    } else if (quote.uniswapV3Data.isMultiHop) {
-      console.log("[v0] Building multi-hop swap transaction...")
-      swapTx = buildMultiHopSwapTransaction(
-        quote.uniswapV3Data.tokenIn,
-        quote.uniswapV3Data.intermediateToken,
-        quote.uniswapV3Data.tokenOut,
-        quote.uniswapV3Data.amountIn,
-        quote.uniswapV3Data.amountOutMinimum,
-        userAddress,
-        quote.uniswapV3Data.fee1,
-        quote.uniswapV3Data.fee2,
-        deadline,
-      )
-    } else {
-      console.log("[v0] Building single-hop swap transaction...")
-      swapTx = buildSwapTransaction(
-        quote.uniswapV3Data.tokenIn,
-        quote.uniswapV3Data.tokenOut,
-        quote.uniswapV3Data.amountIn,
-        quote.uniswapV3Data.amountOutMinimum,
-        userAddress,
-        quote.uniswapV3Data.fee,
-        deadline,
+    try {
+      if (quote.zoraTradeData) {
+        console.log("[v0] Building Zora trade transaction with pairing:", quote.zoraTradeData.poolPairing)
+        swapTx = prepareZoraTradeTransaction(quote.zoraTradeData.tradeParams, deadline, quote.zoraTradeData.poolPairing)
+      } else if (quote.uniswapV4Data) {
+        console.log("[v0] Building Uniswap V4 swap transaction...")
+        swapTx = buildV4SwapTransaction(
+          quote.uniswapV4Data.poolKey,
+          quote.uniswapV4Data.amountIn,
+          quote.uniswapV4Data.amountOutMinimum,
+          userAddress,
+          quote.uniswapV4Data.zeroForOne,
+          deadline,
+        )
+      } else if (quote.uniswapV3Data.isMultiHop) {
+        console.log("[v0] Building multi-hop swap transaction...")
+        swapTx = buildMultiHopSwapTransaction(
+          quote.uniswapV3Data.tokenIn,
+          quote.uniswapV3Data.intermediateToken,
+          quote.uniswapV3Data.tokenOut,
+          quote.uniswapV3Data.amountIn,
+          quote.uniswapV3Data.amountOutMinimum,
+          userAddress,
+          quote.uniswapV3Data.fee1,
+          quote.uniswapV3Data.fee2,
+          deadline,
+        )
+      } else {
+        console.log("[v0] Building single-hop swap transaction...")
+        swapTx = buildSwapTransaction(
+          quote.uniswapV3Data.tokenIn,
+          quote.uniswapV3Data.tokenOut,
+          quote.uniswapV3Data.amountIn,
+          quote.uniswapV3Data.amountOutMinimum,
+          userAddress,
+          quote.uniswapV3Data.fee,
+          deadline,
+        )
+      }
+    } catch (buildError) {
+      console.error("[v0] Error building swap transaction:", buildError)
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Failed to build swap transaction",
+          details: buildError instanceof Error ? buildError.message : "Unknown error",
+        },
+        { status: 500 },
       )
     }
 

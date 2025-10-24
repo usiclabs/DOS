@@ -41,20 +41,28 @@ const publicClient = createPublicClient({
 interface BotStatus {
   isRunning: boolean
   strategy: string
-  profitLoss: number | null
-  tradesExecuted: number
-  successRate: number | null
-  lastTradeTime?: string
+  totalTrades: number
+  successfulTrades: number
+  failedTrades: number
+  totalProfit: number
+  totalLoss: number
+  netPnL: number
+  lastTradeTime: number
+  currentStrategy: string
 }
 
 interface Trade {
   id: string
-  timestamp: string
+  timestamp: number
   type: "buy" | "sell"
-  amount: string
-  price: string
-  profitLoss: number | null
-  status: "success" | "failed"
+  amountIn: string
+  amountOut: string
+  tokenIn: string
+  tokenOut: string
+  price: number
+  txHash?: string
+  status: "pending" | "success" | "failed"
+  pnl?: number
 }
 
 export function AutoTradeContent() {
@@ -62,17 +70,22 @@ export function AutoTradeContent() {
   const { address, isConnected, connectWallet } = useWallet()
   const [botStatus, setBotStatus] = useState<BotStatus>({
     isRunning: false,
-    strategy: "conservative",
-    profitLoss: null,
-    tradesExecuted: 0,
-    successRate: null,
+    strategy: "moderate",
+    totalTrades: 0,
+    successfulTrades: 0,
+    failedTrades: 0,
+    totalProfit: 0,
+    totalLoss: 0,
+    netPnL: 0,
+    lastTradeTime: 0,
+    currentStrategy: "moderate",
   })
   const [tradeHistory, setTradeHistory] = useState<Trade[]>([])
   const [config, setConfig] = useState({
-    strategy: "conservative",
+    strategy: "moderate",
     tradeAmount: 50,
-    stopLoss: 5,
-    takeProfit: 10,
+    stopLoss: 10,
+    takeProfit: 20,
     autoRestart: false,
   })
   const [isEligible, setIsEligible] = useState(false)
@@ -121,7 +134,7 @@ export function AutoTradeContent() {
   }, [])
 
   useEffect(() => {
-    if (!isConnected || !isEligible) return
+    if (!isConnected || !isEligible || !address) return
 
     const fetchStatus = async () => {
       try {
@@ -129,6 +142,9 @@ export function AutoTradeContent() {
         if (response.ok) {
           const data = await response.json()
           setBotStatus(data)
+          if (data.tradeHistory) {
+            setTradeHistory(data.tradeHistory)
+          }
         }
       } catch (error) {
         console.error("[v0] Failed to fetch bot status:", error)
@@ -138,12 +154,6 @@ export function AutoTradeContent() {
     fetchStatus()
     const interval = setInterval(fetchStatus, 5000)
     return () => clearInterval(interval)
-  }, [isConnected, isEligible, address])
-
-  useEffect(() => {
-    if (!isConnected || !isEligible) return
-
-    fetchHistory()
   }, [isConnected, isEligible, address])
 
   const handleStartBot = async () => {
@@ -157,23 +167,33 @@ export function AutoTradeContent() {
         body: JSON.stringify({
           action: "start",
           address,
-          config,
+          config: {
+            enabled: true,
+            strategy: config.strategy as "conservative" | "moderate" | "aggressive",
+            maxTradeSize: config.tradeAmount,
+            stopLoss: config.stopLoss,
+            takeProfit: config.takeProfit,
+            minLiquidity: 5000,
+            slippageTolerance: 2,
+            tradingPairs: [],
+          },
         }),
       })
 
       if (response.ok) {
         const data = await response.json()
         setBotStatus(data)
+        if (data.tradeHistory) {
+          setTradeHistory(data.tradeHistory)
+        }
         toast.success("Bot started successfully! Initial buy executed.")
-        setTimeout(() => {
-          fetchHistory()
-        }, 1000)
       } else {
-        toast.error("Failed to start bot")
+        const error = await response.json()
+        toast.error(error.error || "Failed to start bot")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("[v0] Failed to start bot:", error)
-      toast.error("Error starting bot")
+      toast.error(error.message || "Error starting bot")
     } finally {
       setIsStarting(false)
     }
@@ -205,18 +225,6 @@ export function AutoTradeContent() {
       toast.error("Error stopping bot")
     } finally {
       setIsStopping(false)
-    }
-  }
-
-  const fetchHistory = async () => {
-    try {
-      const response = await fetch(`/api/auto-trade/history?address=${address}`)
-      if (response.ok) {
-        const data = await response.json()
-        setTradeHistory(data.trades || [])
-      }
-    } catch (error) {
-      console.error("[v0] Failed to fetch trade history:", error)
     }
   }
 
@@ -606,7 +614,7 @@ export function AutoTradeContent() {
                   </Badge>
                 </motion.div>
               </AnimatePresence>
-              {botStatus.lastTradeTime && (
+              {botStatus.lastTradeTime !== 0 && (
                 <motion.p
                   className="mt-2 text-xs text-muted-foreground flex items-center gap-1"
                   initial={{ opacity: 0 }}
@@ -614,7 +622,7 @@ export function AutoTradeContent() {
                   transition={{ delay: 0.2 }}
                 >
                   <Clock className="h-3 w-3" />
-                  Last trade: {new Date(botStatus.lastTradeTime).toLocaleTimeString()}
+                  Last trade: {new Date(botStatus.lastTradeTime * 1000).toLocaleTimeString()}
                 </motion.p>
               )}
             </CardContent>
@@ -627,21 +635,21 @@ export function AutoTradeContent() {
           transition={{ type: "spring", stiffness: 400 }}
         >
           <Card
-            className={`relative overflow-hidden border-${(botStatus.profitLoss ?? 0) >= 0 ? "green" : "red"}-500/20 hover:border-${(botStatus.profitLoss ?? 0) >= 0 ? "green" : "red"}-500/40 transition-colors`}
+            className={`relative overflow-hidden border-${botStatus.netPnL >= 0 ? "green" : "red"}-500/20 hover:border-${botStatus.netPnL >= 0 ? "green" : "red"}-500/40 transition-colors`}
           >
             <motion.div
-              className={`absolute inset-0 bg-gradient-to-br ${(botStatus.profitLoss ?? 0) >= 0 ? "from-green-500/5" : "from-red-500/5"} to-transparent`}
+              className={`absolute inset-0 bg-gradient-to-br ${botStatus.netPnL >= 0 ? "from-green-500/5" : "from-red-500/5"} to-transparent`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.5 }}
             />
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Profit/Loss</CardTitle>
+              <CardTitle className="text-sm font-medium">Net P&L</CardTitle>
               <motion.div
                 animate={{ y: [0, -4, 0] }}
                 transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
               >
-                {(botStatus.profitLoss ?? 0) >= 0 ? (
+                {botStatus.netPnL >= 0 ? (
                   <TrendingUp className="h-4 w-4 text-green-500" />
                 ) : (
                   <TrendingDown className="h-4 w-4 text-red-500" />
@@ -650,16 +658,16 @@ export function AutoTradeContent() {
             </CardHeader>
             <CardContent>
               <motion.div
-                className={`text-2xl font-bold ${(botStatus.profitLoss ?? 0) >= 0 ? "text-green-500" : "text-red-500"}`}
-                key={botStatus.profitLoss}
+                className={`text-2xl font-bold ${botStatus.netPnL >= 0 ? "text-green-500" : "text-red-500"}`}
+                key={botStatus.netPnL}
                 initial={{ scale: 1.2, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                {(botStatus.profitLoss ?? 0) >= 0 ? "+" : ""}${(botStatus.profitLoss ?? 0).toFixed(2)}
+                {botStatus.netPnL >= 0 ? "+" : ""}${botStatus.netPnL.toFixed(2)}
               </motion.div>
               <p className="text-xs text-muted-foreground mt-1">
-                {(botStatus.profitLoss ?? 0) >= 0 ? "In profit" : "In loss"}
+                {botStatus.netPnL >= 0 ? "Total profit" : "Total loss"}
               </p>
             </CardContent>
           </Card>
@@ -684,14 +692,16 @@ export function AutoTradeContent() {
             <CardContent>
               <motion.div
                 className="text-2xl font-bold"
-                key={botStatus.tradesExecuted}
+                key={botStatus.totalTrades}
                 initial={{ scale: 1.2, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                {botStatus.tradesExecuted}
+                {botStatus.totalTrades}
               </motion.div>
-              <p className="text-xs text-muted-foreground mt-1">Trades executed</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                {botStatus.successfulTrades} successful, {botStatus.failedTrades} failed
+              </p>
             </CardContent>
           </Card>
         </motion.div>
@@ -715,12 +725,15 @@ export function AutoTradeContent() {
             <CardContent>
               <motion.div
                 className="text-2xl font-bold"
-                key={botStatus.successRate}
+                key={botStatus.successfulTrades}
                 initial={{ scale: 1.2, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 300 }}
               >
-                {(botStatus.successRate ?? 0).toFixed(1)}%
+                {botStatus.totalTrades > 0
+                  ? ((botStatus.successfulTrades / botStatus.totalTrades) * 100).toFixed(1)
+                  : 0}
+                %
               </motion.div>
               <p className="text-xs text-muted-foreground mt-1">Win rate</p>
             </CardContent>
@@ -1022,24 +1035,42 @@ export function AutoTradeContent() {
                                   <Badge variant={trade.type === "buy" ? "default" : "secondary"} className="text-xs">
                                     {trade.type.toUpperCase()}
                                   </Badge>
-                                  <span className="text-sm font-medium">{trade.amount} $DEUS</span>
+                                  <span className="text-sm font-medium">
+                                    {Number.parseFloat(trade.amountOut).toFixed(4)} {trade.tokenOut}
+                                  </span>
+                                  <Badge
+                                    variant={trade.status === "success" ? "default" : "destructive"}
+                                    className="text-xs"
+                                  >
+                                    {trade.status}
+                                  </Badge>
                                 </div>
                                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   {new Date(trade.timestamp).toLocaleString()}
                                 </p>
+                                {trade.txHash && (
+                                  <a
+                                    href={`https://basescan.org/tx/${trade.txHash}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline"
+                                  >
+                                    View on Basescan
+                                  </a>
+                                )}
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-sm font-medium">${trade.price}</div>
-                              {trade.profitLoss !== null && (
+                              <div className="text-sm font-medium">${trade.price.toFixed(6)}</div>
+                              {trade.pnl !== undefined && trade.pnl !== null && (
                                 <motion.div
-                                  className={`text-xs font-medium ${(trade.profitLoss ?? 0) >= 0 ? "text-green-500" : "text-red-500"}`}
+                                  className={`text-xs font-medium ${trade.pnl >= 0 ? "text-green-500" : "text-red-500"}`}
                                   initial={{ scale: 0 }}
                                   animate={{ scale: 1 }}
                                   transition={{ type: "spring", stiffness: 500, delay: 0.1 }}
                                 >
-                                  {(trade.profitLoss ?? 0) >= 0 ? "+" : ""}${(trade.profitLoss ?? 0).toFixed(2)}
+                                  {trade.pnl >= 0 ? "+" : ""}${trade.pnl.toFixed(2)}
                                 </motion.div>
                               )}
                             </div>

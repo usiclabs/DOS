@@ -56,11 +56,11 @@ export async function GET() {
         id: `opportunity-${index}`,
         type: "opportunity",
         title: "High Yield Opportunity Detected",
-        description: `${pool.token0Symbol}/${pool.token1Symbol} pool showing ${pool.netApy.toFixed(0)}% APR with ${riskLevel.toLowerCase()} volatility. Strong liquidity depth detected.`,
+        description: `${pool.baseToken.symbol}/${pool.quoteToken.symbol} pool showing ${pool.netApy.toFixed(0)}% APR with ${riskLevel.toLowerCase()} volatility. Strong liquidity depth detected.`,
         confidence,
         action: {
           label: "Deploy Liquidity",
-          href: `/pools?search=${pool.token0Symbol}`,
+          href: `/pools?search=${pool.baseToken.symbol}`,
         },
         metrics: [
           { label: "APR", value: `${pool.netApy.toFixed(0)}%` },
@@ -84,7 +84,7 @@ export async function GET() {
         id: `warning-${index}`,
         type: "warning",
         title: "Impermanent Loss Risk Detected",
-        description: `${pool.token0Symbol}/${pool.token1Symbol} position showing high price divergence. Consider monitoring or rebalancing.`,
+        description: `${pool.baseToken.symbol}/${pool.quoteToken.symbol} position showing high price divergence. Consider monitoring or rebalancing.`,
         confidence,
         action: {
           label: "View Position",
@@ -138,11 +138,11 @@ export async function GET() {
         id: `opportunity-volume-${index}`,
         type: "opportunity",
         title: "High Trading Activity Detected",
-        description: `${pool.token0Symbol}/${pool.token1Symbol} experiencing ${volumeToTvlRatio}x volume-to-TVL ratio. Increased fee generation potential.`,
+        description: `${pool.baseToken.symbol}/${pool.quoteToken.symbol} experiencing ${volumeToTvlRatio}x volume-to-TVL ratio. Increased fee generation potential.`,
         confidence,
         action: {
           label: "Analyze Pool",
-          href: `/pools?search=${pool.token0Symbol}`,
+          href: `/pools?search=${pool.baseToken.symbol}`,
         },
         metrics: [
           { label: "24h Volume", value: `$${(pool.volume24h / 1000).toFixed(0)}K` },
@@ -165,11 +165,11 @@ export async function GET() {
         id: `recommendation-early-${index}`,
         type: "recommendation",
         title: "Early Entry Opportunity",
-        description: `${pool.token0Symbol}/${pool.token1Symbol} pool has strong APR with lower competition. Early liquidity providers may capture higher returns.`,
+        description: `${pool.baseToken.symbol}/${pool.quoteToken.symbol} pool has strong APR with lower competition. Early liquidity providers may capture higher returns.`,
         confidence,
         action: {
           label: "Deploy Early",
-          href: `/pools?search=${pool.token0Symbol}`,
+          href: `/pools?search=${pool.baseToken.symbol}`,
         },
         metrics: [
           { label: "APR", value: `${pool.netApy.toFixed(0)}%` },

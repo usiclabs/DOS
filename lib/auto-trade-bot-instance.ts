@@ -1,8 +1,15 @@
 import { AutoTradeBot, type BotConfig } from "@/lib/auto-trade-bot"
 
 let botInstance: AutoTradeBot | null = null
+let currentWalletAddress: string | null = null
 
-export function getBotInstance(): AutoTradeBot {
+export function getBotInstance(walletAddress?: string): AutoTradeBot {
+  if (walletAddress && walletAddress !== currentWalletAddress) {
+    console.log("[v0] Wallet address changed, creating new bot instance")
+    botInstance = null
+    currentWalletAddress = walletAddress
+  }
+
   if (!botInstance) {
     const defaultConfig: BotConfig = {
       enabled: false,
@@ -15,10 +22,16 @@ export function getBotInstance(): AutoTradeBot {
       tradingPairs: [],
     }
     botInstance = new AutoTradeBot(defaultConfig)
+
+    if (currentWalletAddress) {
+      botInstance.setWalletAddress(currentWalletAddress)
+    }
   }
+
   return botInstance
 }
 
 export function resetBotInstance() {
   botInstance = null
+  currentWalletAddress = null
 }

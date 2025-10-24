@@ -14,7 +14,7 @@ import { useWalletContext } from "@/contexts/wallet-context"
 import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 import { Wallet } from "lucide-react"
 
-const MINIMUM_DEUS_BALANCE = 10_000_000 // 10 million DEUS (1% of supply)
+const MINIMUM_DEUS_BALANCE = 50_000_000 // 50 million DEUS (5% of supply)
 
 export default function TokenFactoryPage() {
   const [deployModalOpen, setDeployModalOpen] = useState(false)
@@ -287,7 +287,7 @@ export default function TokenFactoryPage() {
               <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">Access Restricted</h2>
               <p className="text-gray-200 text-base md:text-lg mb-6 max-w-2xl mx-auto">
                 The Token Factory requires a minimum balance of{" "}
-                <span className="text-orange-400 font-bold">{MINIMUM_DEUS_BALANCE.toLocaleString()} $DEUS</span> (1% of
+                <span className="text-orange-400 font-bold">{MINIMUM_DEUS_BALANCE.toLocaleString()} $DEUS</span> (5% of
                 supply) to access.
               </p>
               <div className="bg-background/50 rounded-xl p-6 mb-6 max-w-md mx-auto border border-border">

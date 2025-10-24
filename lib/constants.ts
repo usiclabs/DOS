@@ -1,10 +1,11 @@
 // DEUS token address on Base
 export const DEUS_TOKEN_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e" // DEUS token on Base
 
-// DEUS total supply for 1% holder check
-// DEUS has 18 decimals, total supply is typically 166,670 tokens
-export const DEUS_TOTAL_SUPPLY = BigInt("100000000000000000000000000") // 100M tokens with 18 decimals
-export const DEUS_ONE_PERCENT_THRESHOLD = DEUS_TOTAL_SUPPLY / BigInt(100) // 1% = 1M tokens
+// DEUS total supply for percentage calculations
+// DEUS has 18 decimals, total supply is 1,000,000,000 tokens (1 billion)
+export const DEUS_TOTAL_SUPPLY = BigInt("1000000000000000000000000000") // 1B tokens with 18 decimals
+export const DEUS_ONE_PERCENT_THRESHOLD = DEUS_TOTAL_SUPPLY / BigInt(100) // 1% = 10M tokens
+export const DEUS_FIVE_PERCENT_THRESHOLD = DEUS_TOTAL_SUPPLY / BigInt(20) // 5% = 50M tokens
 
 // Voting configuration
 export const VOTING_EPOCH_DURATION = 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
