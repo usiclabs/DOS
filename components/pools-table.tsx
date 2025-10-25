@@ -158,6 +158,8 @@ export function PoolsTable() {
   const [selectedForComparison, setSelectedForComparison] = useState<PoolData[]>([])
   const [showComparison, setShowComparison] = useState(false)
 
+  const [selectedPairingTokens, setSelectedPairingTokens] = useState<Record<string, string>>({})
+
   const { data: zoraData } = useSWR(
     zoraCreators ? `/api/pools/zora-creators?timeFilter=${zoraTimeFilter}` : null,
     fetcher,
@@ -239,8 +241,24 @@ export function PoolsTable() {
     return sortOrder === "desc" ? <ArrowDown className="h-4 w-4" /> : <ArrowUp className="h-4 w-4" />
   }
 
-  const handleDeploy = (pool: any) => {
+  const handleDeploy = (pool: any, pairingToken?: string) => {
+    let detectedPairingToken: "DEUS" | "ETH" | "USDC" | "ZORA" | undefined = undefined
+
+    if (pairingToken) {
+      detectedPairingToken = pairingToken as "DEUS" | "ETH" | "USDC" | "ZORA"
+    } else if (pool.quoteToken?.symbol) {
+      const quoteSymbol = pool.quoteToken.symbol.toUpperCase()
+      if (quoteSymbol === "DEUS") detectedPairingToken = "DEUS"
+      else if (quoteSymbol === "USDC") detectedPairingToken = "USDC"
+      else if (quoteSymbol === "ZORA") detectedPairingToken = "ZORA"
+      else if (quoteSymbol === "WETH" || quoteSymbol === "ETH") detectedPairingToken = "ETH"
+    }
+
     setSelectedPool(pool)
+    // Store the detected pairing token in a way the modal can access it
+    if (detectedPairingToken) {
+      setSelectedPool({ ...pool, detectedPairingToken })
+    }
     setIsDeployModalOpen(true)
   }
 
@@ -267,6 +285,15 @@ export function PoolsTable() {
     const isPriority = isPriorityDex(pool.dexId)
     const profitScore = calculateProfitScore(pool)
 
+    const selectedPairing = selectedPairingTokens[pool.id] || "ETH"
+
+    const pairingOptions = [
+      { value: "ETH", label: "ETH", color: "from-blue-500 to-cyan-500" },
+      { value: "DEUS", label: "DEUS", color: "from-orange-500 to-red-500" },
+      { value: "USDC", label: "USDC", color: "from-green-500 to-emerald-500" },
+      { value: "ZORA", label: "ZORA", color: "from-purple-500 to-pink-500" },
+    ]
+
     return (
       <motion.div
         initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -288,7 +315,7 @@ export function PoolsTable() {
             ? "border-accent/40 shadow-xl shadow-accent/20 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent hover:shadow-2xl hover:shadow-accent/30"
             : "border-white/10 hover:border-accent/30 shadow-lg hover:shadow-2xl hover:shadow-white/10"
         }`}
-        onClick={() => handleDeploy(pool)}
+        onClick={() => handleDeploy(pool, selectedPairing)}
       >
         {/* Animated gradient overlay */}
         <motion.div
@@ -423,6 +450,30 @@ export function PoolsTable() {
             </div>
           </div>
 
+          <div className="mb-3">
+            <div className="text-xs text-gray-400 mb-2 text-center">Select Pairing Asset</div>
+            <div className="grid grid-cols-4 gap-2">
+              {pairingOptions.map((option) => (
+                <motion.button
+                  key={option.value}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setSelectedPairingTokens((prev) => ({ ...prev, [pool.id]: option.value }))
+                  }}
+                  className={`py-2 px-3 rounded-lg text-xs font-semibold transition-all duration-300 ${
+                    selectedPairing === option.value
+                      ? `bg-gradient-to-r ${option.color} text-white shadow-lg`
+                      : "bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10"
+                  }`}
+                >
+                  {option.label}
+                </motion.button>
+              ))}
+            </div>
+          </div>
+
           {/* Deploy Button */}
           <motion.button
             whileHover={{ scale: 1.03, y: -2 }}
@@ -431,11 +482,11 @@ export function PoolsTable() {
             className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent via-accent/90 to-accent text-accent-foreground font-semibold shadow-lg shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 transition-all duration-300 flex items-center justify-center gap-2 mb-4"
             onClick={(e) => {
               e.stopPropagation()
-              handleDeploy(pool)
+              handleDeploy(pool, selectedPairing)
             }}
           >
             <Zap className="h-5 w-5" />
-            Deploy Liquidity Now
+            Deploy with {selectedPairing}
           </motion.button>
 
           {/* Change indicators */}
@@ -464,6 +515,15 @@ export function PoolsTable() {
     const isPriority = isPriorityDex(pool.dexId)
     const profitScore = calculateProfitScore(pool)
     const [isSheetOpen, setIsSheetOpen] = useState(false)
+
+    const selectedPairing = selectedPairingTokens[pool.id] || "ETH"
+
+    const pairingOptions = [
+      { value: "ETH", label: "ETH", color: "from-blue-500 to-cyan-500" },
+      { value: "DEUS", label: "DEUS", color: "from-orange-500 to-red-500" },
+      { value: "USDC", label: "USDC", color: "from-green-500 to-emerald-500" },
+      { value: "ZORA", label: "ZORA", color: "from-purple-500 to-pink-500" },
+    ]
 
     return (
       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -735,16 +795,42 @@ export function PoolsTable() {
               </Card>
             </div>
 
+            <Card className="glass-card border-accent/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">Select Pairing Asset</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2">
+                  {pairingOptions.map((option) => (
+                    <motion.button
+                      key={option.value}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        setSelectedPairingTokens((prev) => ({ ...prev, [pool.id]: option.value }))
+                      }}
+                      className={`py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
+                        selectedPairing === option.value
+                          ? `bg-gradient-to-r ${option.color} text-white shadow-lg`
+                          : "bg-white/5 text-gray-400 border border-white/10"
+                      }`}
+                    >
+                      {option.label}
+                    </motion.button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             <Button
               size="lg"
               className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
               onClick={() => {
                 setIsSheetOpen(false)
-                handleDeploy(pool)
+                handleDeploy(pool, selectedPairing)
               }}
             >
               <Zap className="h-5 w-5 mr-2" />
-              Deploy Liquidity
+              Deploy with {selectedPairing}
             </Button>
           </div>
         </SheetContent>
@@ -1738,7 +1824,13 @@ export function PoolsTable() {
       )}
 
       {/* Deploy Modal */}
-      <DeployModal pool={selectedPool} isOpen={isDeployModalOpen} onClose={closeDeployModal} />
+      <DeployModal
+        pool={selectedPool}
+        isOpen={isDeployModalOpen}
+        onClose={closeDeployModal}
+        allowPairingToggle={true}
+        initialPairingToken={selectedPool?.detectedPairingToken}
+      />
 
       <PoolComparison
         pools={selectedForComparison}

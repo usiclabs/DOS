@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Slider } from "@/components/ui/slider"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   AlertTriangle,
   Zap,
@@ -61,6 +62,7 @@ interface DeployModalProps {
   onClose: () => void
   defaultPairingToken?: "DEUS" | "ETH" | "USDC" | "ZORA"
   allowPairingToggle?: boolean
+  initialPairingToken?: "DEUS" | "ETH" | "USDC" | "ZORA"
 }
 
 export function DeployModal({
@@ -69,6 +71,7 @@ export function DeployModal({
   onClose,
   defaultPairingToken = "ETH",
   allowPairingToggle = false,
+  initialPairingToken,
 }: DeployModalProps) {
   const { toast } = useToast()
   const { isConnected, connectWallet } = useWallet()
@@ -88,7 +91,29 @@ export function DeployModal({
   const [actualAmounts, setActualAmounts] = useState<{ base: string; quote: string } | null>(null)
   const [canResolveTokens, setCanResolveTokens] = useState(true)
   const [tokenResolutionError, setTokenResolutionError] = useState<string | null>(null)
-  const [pairingToken, setPairingToken] = useState<"DEUS" | "ETH" | "USDC" | "ZORA">(defaultPairingToken)
+
+  const [selectedFeeTier, setSelectedFeeTier] = useState<"100" | "500" | "3000" | "10000">("3000")
+
+  const getInitialPairingToken = (): "DEUS" | "ETH" | "USDC" | "ZORA" => {
+    // Priority 1: Use initialPairingToken prop if provided
+    if (initialPairingToken) {
+      return initialPairingToken
+    }
+
+    // Priority 2: Detect from pool's quote token
+    if (pool?.quoteToken?.symbol) {
+      const quoteSymbol = pool.quoteToken.symbol.toUpperCase()
+      if (quoteSymbol === "DEUS") return "DEUS"
+      if (quoteSymbol === "USDC") return "USDC"
+      if (quoteSymbol === "ZORA") return "ZORA"
+      if (quoteSymbol === "WETH" || quoteSymbol === "ETH") return "ETH"
+    }
+
+    // Priority 3: Use defaultPairingToken prop
+    return defaultPairingToken
+  }
+
+  const [pairingToken, setPairingToken] = useState<"DEUS" | "ETH" | "USDC" | "ZORA">(getInitialPairingToken())
   const [tokenPrices, setTokenPrices] = useState<{ base: number; quote: number } | null>(null)
   const [advancedMode, setAdvancedMode] = useState(false)
   const [customRatio, setCustomRatio] = useState(50) // 50% = 50/50 split
@@ -118,14 +143,24 @@ export function DeployModal({
       setActualAmounts(null)
       setCanResolveTokens(true)
       setTokenResolutionError(null)
-      setPairingToken(defaultPairingToken)
+      setPairingToken(getInitialPairingToken())
       // Reset price-related states
       setTokenPrices(null)
       setAdvancedMode(false)
       setCustomRatio(50)
       setIsLoadingPrices(false)
+      setSelectedFeeTier("3000")
     } else {
       console.log("[v0] Deploy modal opened for pool:", pool)
+      setPairingToken(getInitialPairingToken())
+
+      if (pool?.feeTier) {
+        const poolFeeTierNum = Math.round(Number.parseFloat(pool.feeTier.replace("%", "")) * 10000)
+        if ([100, 500, 3000, 10000].includes(poolFeeTierNum)) {
+          setSelectedFeeTier(poolFeeTierNum.toString() as "100" | "500" | "3000" | "10000")
+        }
+      }
+
       if (pool) {
         const baseTokenAddress =
           pool.baseToken.address === "0x0000000000000000000000000000000000000000"
@@ -154,7 +189,7 @@ export function DeployModal({
         }
       }
     }
-  }, [isOpen, pool, defaultPairingToken])
+  }, [isOpen, pool, defaultPairingToken, initialPairingToken])
 
   useEffect(() => {
     const fetchBalances = async () => {
@@ -655,7 +690,7 @@ export function DeployModal({
           quoteAddress: quoteTokenAddress,
         })
 
-        const feeTier = Number.parseFloat(pool.feeTier.replace("%", "")) * 10000
+        const feeTier = Number.parseInt(selectedFeeTier)
 
         const [token0, token1, amount0, amount1] =
           baseTokenAddress.toLowerCase() < quoteTokenAddress.toLowerCase()
@@ -879,16 +914,14 @@ export function DeployModal({
     setPositionId(null)
     setEstimatedValue(null)
     setActualAmounts(null)
-    // Reset token resolution state on reset
     setCanResolveTokens(true)
     setTokenResolutionError(null)
-    // Reset pairing token state on reset
-    setPairingToken(defaultPairingToken)
-    // Reset price-related states on reset
+    setPairingToken(getInitialPairingToken())
     setTokenPrices(null)
     setAdvancedMode(false)
     setCustomRatio(50)
     setIsLoadingPrices(false)
+    setSelectedFeeTier("3000")
     onClose()
   }
 
@@ -1046,6 +1079,104 @@ export function DeployModal({
                 </Card>
               )}
 
+              <Card className="glass-card border-blue-500/20">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Fee Tier</CardTitle>
+                  <CardDescription>Choose the trading fee for your liquidity pool</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <RadioGroup
+                    value={selectedFeeTier}
+                    onValueChange={(value) => setSelectedFeeTier(value as "100" | "500" | "3000" | "10000")}
+                    disabled={!canResolveTokens || !isConnected}
+                    className="grid grid-cols-2 gap-3"
+                  >
+                    <div>
+                      <RadioGroupItem value="100" id="fee-100" className="peer sr-only" />
+                      <Label
+                        htmlFor="fee-100"
+                        className={`flex flex-col items-start justify-between rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                          selectedFeeTier === "100"
+                            ? "border-blue-500 bg-blue-500/10 shadow-lg shadow-blue-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className="font-semibold text-lg">0.01%</span>
+                          {selectedFeeTier === "100" && <CheckCircle2 className="w-4 h-4 text-blue-400" />}
+                        </div>
+                        <span className="text-xs text-gray-400">Best for stable pairs</span>
+                        <span className="text-xs text-gray-500 mt-1">USDC/USDT, DAI/USDC</span>
+                      </Label>
+                    </div>
+
+                    <div>
+                      <RadioGroupItem value="500" id="fee-500" className="peer sr-only" />
+                      <Label
+                        htmlFor="fee-500"
+                        className={`flex flex-col items-start justify-between rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                          selectedFeeTier === "500"
+                            ? "border-green-500 bg-green-500/10 shadow-lg shadow-green-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className="font-semibold text-lg">0.05%</span>
+                          {selectedFeeTier === "500" && <CheckCircle2 className="w-4 h-4 text-green-400" />}
+                        </div>
+                        <span className="text-xs text-gray-400">For correlated pairs</span>
+                        <span className="text-xs text-gray-500 mt-1">ETH/WETH, stETH/ETH</span>
+                      </Label>
+                    </div>
+
+                    <div>
+                      <RadioGroupItem value="3000" id="fee-3000" className="peer sr-only" />
+                      <Label
+                        htmlFor="fee-3000"
+                        className={`flex flex-col items-start justify-between rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                          selectedFeeTier === "3000"
+                            ? "border-purple-500 bg-purple-500/10 shadow-lg shadow-purple-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className="font-semibold text-lg">0.3%</span>
+                          {selectedFeeTier === "3000" && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
+                          <Badge variant="secondary" className="text-xs">
+                            Most Common
+                          </Badge>
+                        </div>
+                        <span className="text-xs text-gray-400">Standard pairs</span>
+                        <span className="text-xs text-gray-500 mt-1">ETH/USDC, DEUS/ETH</span>
+                      </Label>
+                    </div>
+
+                    <div>
+                      <RadioGroupItem value="10000" id="fee-10000" className="peer sr-only" />
+                      <Label
+                        htmlFor="fee-10000"
+                        className={`flex flex-col items-start justify-between rounded-xl border-2 p-4 cursor-pointer transition-all ${
+                          selectedFeeTier === "10000"
+                            ? "border-orange-500 bg-orange-500/10 shadow-lg shadow-orange-500/20"
+                            : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
+                        } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-2">
+                          <span className="font-semibold text-lg">1%</span>
+                          {selectedFeeTier === "10000" && <CheckCircle2 className="w-4 h-4 text-orange-400" />}
+                        </div>
+                        <span className="text-xs text-gray-400">Exotic/volatile pairs</span>
+                        <span className="text-xs text-gray-500 mt-1">New tokens, memecoins</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                  <p className="text-xs text-muted-foreground mt-3">
+                    <Info className="h-3 w-3 inline mr-1" />
+                    Higher fees earn more per trade but may attract less volume
+                  </p>
+                </CardContent>
+              </Card>
+
               <Card className="glass-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="text-lg flex items-center justify-between">
@@ -1056,7 +1187,7 @@ export function DeployModal({
                       {pool.isDeusPool ? "DEUS" : pool.dexId}
                     </Badge>
                   </CardTitle>
-                  <CardDescription>Fee Tier: {pool.feeTier}</CardDescription>
+                  <CardDescription>Fee Tier: {(Number.parseInt(selectedFeeTier) / 10000).toFixed(2)}%</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4 text-sm">
@@ -1459,6 +1590,11 @@ export function DeployModal({
                   <div className="flex justify-between">
                     <span>Estimated APR:</span>
                     <span className="text-accent font-medium">{pool.feeApr.toFixed(2)}%</span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Fee Tier:</span>
+                    <span>{(Number.parseInt(selectedFeeTier) / 10000).toFixed(2)}%</span>
                   </div>
 
                   <div className="flex justify-between">

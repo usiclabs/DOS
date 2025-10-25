@@ -264,7 +264,12 @@ export default function PoolsPage() {
         </div>
       </div>
 
-      <DeployModal pool={selectedPool} isOpen={isDeployModalOpen} onClose={closeDeployModal} />
+      <DeployModal
+        pool={selectedPool}
+        isOpen={isDeployModalOpen}
+        onClose={closeDeployModal}
+        allowPairingToggle={true}
+      />
     </div>
   )
 }
