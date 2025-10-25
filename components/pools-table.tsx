@@ -305,164 +305,154 @@ export function PoolsTable() {
           transition={{ duration: 0.4 }}
         />
 
-        <div className="relative z-10 p-6">
+        <div className="relative z-10 p-6 flex flex-col h-full">
           {/* Header Section */}
-          <div className="flex items-start justify-between mb-6">
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
-                <motion.button
-                  whileHover={{ scale: 1.2, rotate: 18 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleFavorite(pool.id)
-                  }}
-                  className="p-1"
-                >
-                  <Star
-                    className={`h-5 w-5 transition-colors ${
-                      isFavorite(pool.id) ? "fill-yellow-400 text-yellow-400" : "text-gray-400 hover:text-yellow-400"
-                    }`}
-                  />
-                </motion.button>
-                <div>
-                  <h3 className="text-xl font-bold flex items-center gap-2">
-                    {pool.baseToken.symbol}/{pool.quoteToken.symbol}
-                    {isPriority && (
-                      <motion.div
-                        initial={{ scale: 0, rotate: -180 }}
-                        animate={{ scale: 1, rotate: 0 }}
-                        transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                      >
-                        <Star className="h-5 w-5 text-accent fill-accent drop-shadow-[0_0_12px_rgba(168,85,247,0.8)]" />
-                      </motion.div>
-                    )}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge
-                      variant={pool.isDeusPool ? "default" : isPriority ? "default" : "secondary"}
-                      className={`${
-                        isPriority
-                          ? "bg-gradient-to-r from-accent to-accent/80 text-accent-foreground shadow-lg shadow-accent/40"
-                          : pool.isDeusPool
-                            ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/40"
-                            : ""
-                      } transition-all duration-300`}
-                    >
-                      {pool.isDeusPool ? "DEUS Pool" : pool.dexId}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {pool.feeTier}
-                    </Badge>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Main APY Display */}
-            <div className="mb-6 text-center py-6 px-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 hover:border-green-500/40 transition-all duration-300">
-              <div className="text-sm text-green-400 mb-2 flex items-center justify-center gap-2">
-                <Sparkles className="h-4 w-4" />
-                Net APY
-              </div>
-              <motion.div
-                className="text-5xl font-black text-green-400 mb-1"
-                style={{
-                  textShadow: "0 0 30px rgba(74, 222, 128, 0.6), 0 0 60px rgba(74, 222, 128, 0.4)",
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.2, rotate: 18 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  toggleFavorite(pool.id)
                 }}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 300 }}
+                className="p-1"
               >
-                {safeToFixed(pool.netApy, 2)}%
-              </motion.div>
-              <p className="text-sm text-gray-300">Earn fees while providing liquidity</p>
-            </div>
-
-            {/* Metrics Grid */}
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-accent/30 transition-colors">
-                <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  Fee APR
-                </div>
-                <div className="text-lg font-bold text-white">{safeToFixed(pool.feeApr, 2)}%</div>
-              </div>
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-accent/30 transition-colors">
-                <div className="text-xs text-gray-400 mb-1">TVL</div>
-                <div className="text-lg font-bold">{formatNumber(pool.liquidity)}</div>
-              </div>
-              <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-accent/30 transition-colors">
-                <div className="text-xs text-gray-400 mb-1">24h Vol</div>
-                <div className="text-lg font-bold">{formatNumber(pool.volume24h)}</div>
-              </div>
-            </div>
-
-            {/* Stats Row */}
-            <div className="flex items-center justify-between mb-6 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Volatility:</span>
-                <Badge
-                  variant={pool.volatility > 10 ? "destructive" : pool.volatility > 5 ? "secondary" : "default"}
-                  className="text-xs"
-                >
-                  {safeToFixed(pool.volatility, 1)}%
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Profit Score:</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="h-2 w-20 bg-white/10 rounded-full overflow-hidden">
+                <Star
+                  className={`h-5 w-5 transition-colors ${
+                    isFavorite(pool.id) ? "fill-yellow-400 text-yellow-400" : "text-gray-400 hover:text-yellow-400"
+                  }`}
+                />
+              </motion.button>
+              <div>
+                <h3 className="text-xl font-bold flex items-center gap-2">
+                  {pool.baseToken.symbol}/{pool.quoteToken.symbol}
+                  {isPriority && (
                     <motion.div
-                      className="h-full bg-gradient-to-r from-green-500 via-emerald-400 to-green-300"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${Math.min((profitScore / 50) * 100, 100)}%` }}
-                      transition={{ duration: 1, delay: index * 0.05 + 0.3 }}
-                    />
-                  </div>
-                  <span className="font-bold text-green-400 text-sm">{profitScore.toFixed(1)}</span>
+                      initial={{ scale: 0, rotate: -180 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 15 }}
+                    >
+                      <Star className="h-5 w-5 text-accent fill-accent drop-shadow-[0_0_12px_rgba(168,85,247,0.8)]" />
+                    </motion.div>
+                  )}
+                </h3>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge
+                    variant={pool.isDeusPool ? "default" : isPriority ? "default" : "secondary"}
+                    className={`${
+                      isPriority
+                        ? "bg-gradient-to-r from-accent to-accent/80 text-accent-foreground shadow-lg shadow-accent/40"
+                        : pool.isDeusPool
+                          ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/40"
+                          : ""
+                    } transition-all duration-300`}
+                  >
+                    {pool.isDeusPool ? "DEUS Pool" : pool.dexId}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {pool.feeTier}
+                  </Badge>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Deploy Button */}
-            <motion.button
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent via-accent/90 to-accent text-accent-foreground font-semibold shadow-lg shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 transition-all duration-300 flex items-center justify-center gap-2"
-              onClick={(e) => {
-                e.stopPropagation()
-                handleDeploy(pool)
+          {/* Main APY Display */}
+          <div className="mb-4 text-center py-6 px-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 hover:border-green-500/40 transition-all duration-300">
+            <div className="text-sm text-green-400 mb-2 flex items-center justify-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Net APY
+            </div>
+            <motion.div
+              className="text-5xl font-black text-green-400 mb-1"
+              style={{
+                textShadow: "0 0 30px rgba(74, 222, 128, 0.6), 0 0 60px rgba(74, 222, 128, 0.4)",
               }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              <Zap className="h-5 w-5" />
-              Deploy Liquidity Now
-            </motion.button>
+              {safeToFixed(pool.netApy, 2)}%
+            </motion.div>
+            <p className="text-sm text-gray-300">Earn fees while providing liquidity</p>
+          </div>
 
-            {/* Change indicators */}
-            <div className="mt-4 pt-4 border-t border-white/5 flex items-center justify-between text-xs">
-              <div
-                className={`flex items-center gap-1 ${pool.volumeChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
-              >
-                {pool.volumeChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                <span>Vol {formatPercent(pool.volumeChange24h)}</span>
+          {/* Metrics Grid */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-accent/30 transition-colors">
+              <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Fee APR
               </div>
-              <div
-                className={`flex items-center gap-1 ${pool.liquidityChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
+              <div className="text-lg font-bold text-white">{safeToFixed(pool.feeApr, 2)}%</div>
+            </div>
+            <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-accent/30 transition-colors">
+              <div className="text-xs text-gray-400 mb-1">TVL</div>
+              <div className="text-lg font-bold">{formatNumber(pool.liquidity)}</div>
+            </div>
+            <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-accent/30 transition-colors">
+              <div className="text-xs text-gray-400 mb-1">24h Vol</div>
+              <div className="text-lg font-bold">{formatNumber(pool.volume24h)}</div>
+            </div>
+          </div>
+
+          {/* Stats Row */}
+          <div className="flex items-center justify-between mb-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">Volatility:</span>
+              <Badge
+                variant={pool.volatility > 10 ? "destructive" : pool.volatility > 5 ? "secondary" : "default"}
+                className="text-xs"
               >
-                {pool.liquidityChange24h >= 0 ? (
-                  <TrendingUp className="h-3 w-3" />
-                ) : (
-                  <TrendingDown className="h-3 w-3" />
-                )}
-                <span>Liq {formatPercent(pool.liquidityChange24h)}</span>
+                {safeToFixed(pool.volatility, 1)}%
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-gray-400">Profit Score:</span>
+              <div className="flex items-center gap-1.5">
+                <div className="h-2 w-20 bg-white/10 rounded-full overflow-hidden">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-green-500 via-emerald-400 to-green-300"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((profitScore / 50) * 100, 100)}%` }}
+                    transition={{ duration: 1, delay: index * 0.05 + 0.3 }}
+                  />
+                </div>
+                <span className="font-bold text-green-400 text-sm">{profitScore.toFixed(1)}</span>
               </div>
-              <div
-                className={`flex items-center gap-1 ${pool.priceChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
-              >
-                {pool.priceChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-                <span>Price {formatPercent(pool.priceChange24h)}</span>
-              </div>
+            </div>
+          </div>
+
+          {/* Deploy Button */}
+          <motion.button
+            whileHover={{ scale: 1.03, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent via-accent/90 to-accent text-accent-foreground font-semibold shadow-lg shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 transition-all duration-300 flex items-center justify-center gap-2 mb-4"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeploy(pool)
+            }}
+          >
+            <Zap className="h-5 w-5" />
+            Deploy Liquidity Now
+          </motion.button>
+
+          {/* Change indicators */}
+          <div className="pt-4 border-t border-white/5 flex items-center justify-between text-xs">
+            <div className={`flex items-center gap-1 ${pool.volumeChange24h >= 0 ? "text-green-400" : "text-red-400"}`}>
+              {pool.volumeChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              <span>Vol {formatPercent(pool.volumeChange24h)}</span>
+            </div>
+            <div
+              className={`flex items-center gap-1 ${pool.liquidityChange24h >= 0 ? "text-green-400" : "text-red-400"}`}
+            >
+              {pool.liquidityChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              <span>Liq {formatPercent(pool.liquidityChange24h)}</span>
+            </div>
+            <div className={`flex items-center gap-1 ${pool.priceChange24h >= 0 ? "text-green-400" : "text-red-400"}`}>
+              {pool.priceChange24h >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              <span>Price {formatPercent(pool.priceChange24h)}</span>
             </div>
           </div>
         </div>

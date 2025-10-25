@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Inter, JetBrains_Mono } from "next/font/google"
+import { Geist, Geist_Mono } from "next/font/google"
 import { Suspense } from "react"
 import { Providers } from "@/components/providers"
 import { ToastNotifications } from "@/components/notifications/toast-notifications"
@@ -11,14 +11,14 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import "./globals.css"
 
-const inter = Inter({
+const geistSans = Geist({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
   preload: true,
 })
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
@@ -80,8 +80,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: "#000000",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+  ],
+  colorScheme: "dark light",
 }
 
 export default function RootLayout({
@@ -90,7 +93,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="theme-color" content="#000000" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -99,8 +102,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased bg-black min-h-screen`}>
-        <div className="min-h-screen bg-black overflow-x-hidden max-w-screen pt-[168px] pb-20 md:pb-0">
+      <body className={`font-sans ${geistSans.variable} ${geistMono.variable} antialiased bg-background min-h-screen`}>
+        <div className="min-h-screen bg-background overflow-x-hidden max-w-screen pt-[168px] pb-20 md:pb-0">
           <ErrorBoundary>
             <Providers>
               <KeyboardShortcuts />
