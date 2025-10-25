@@ -260,7 +260,9 @@ export function DeusTicker() {
                             {pair.dexId && <span className="capitalize">{pair.dexId}</span>}
                             {pair.apy24h && <span className="ml-2">APY: {pair.apy24h.toFixed(1)}%</span>}
                           </div>
-                          <div className="text-xs text-primary mt-1">Tap to deploy liquidity →</div>
+                          <div className="text-xs text-green-400 mt-1 animate-pulse drop-shadow-[0_0_8px_rgba(34,197,94,0.8)]">
+                            Tap to deploy liquidity →
+                          </div>
                         </button>
                       ))}
                     </div>
