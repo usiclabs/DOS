@@ -1,6 +1,6 @@
 import type React from "react"
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Inter, JetBrains_Mono } from "next/font/google"
 import { Suspense } from "react"
 import { Providers } from "@/components/providers"
 import { ToastNotifications } from "@/components/notifications/toast-notifications"
@@ -11,14 +11,14 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
 import "./globals.css"
 
-const geistSans = Geist({
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
   display: "swap",
   preload: true,
 })
 
-const geistMono = Geist_Mono({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   display: "swap",
@@ -102,7 +102,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={`font-sans ${geistSans.variable} ${geistMono.variable} antialiased bg-background min-h-screen`}>
+      <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased bg-background min-h-screen`}>
         <div className="min-h-screen bg-background overflow-x-hidden max-w-screen pt-[168px] pb-20 md:pb-0">
           <ErrorBoundary>
             <Providers>
