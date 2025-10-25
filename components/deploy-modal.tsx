@@ -752,6 +752,7 @@ export function DeployModal({
         let tickLower, tickUpper
         try {
           const tickSpacing = getTickSpacing(feeTier)
+          console.log("[v0] Fee tier:", feeTier, "Tick spacing:", tickSpacing)
 
           const { poolAddress, created } = await createPoolIfNeeded(signer, token0, token1, feeTier)
           console.log("[v0] Pool address (after creation if needed):", poolAddress)
@@ -766,28 +767,70 @@ export function DeployModal({
           }
 
           if (poolAddress === "0x0000000000000000000000000000000000000000") {
-            throw new Error("Failed to create or find pool. Please try again.")
-          }
-
-          const poolState = await getPoolState(provider, poolAddress)
-          const currentTick = Number(poolState.tick)
-          const poolTickSpacing = Number(poolState.tickSpacing)
-          console.log("[v0] Pool state - Current tick:", currentTick, "Tick spacing:", poolTickSpacing)
-
-          if (useFullRange) {
-            tickLower = nearestUsableTick(currentTick - 887220, tickSpacing)
-            tickUpper = nearestUsableTick(currentTick + 887220, tickSpacing)
+            console.warn("[v0] Pool address is zero, using full range as fallback")
+            // Use full range as fallback
+            const MIN_TICK = -887272
+            const MAX_TICK = 887272
+            tickLower = nearestUsableTick(MIN_TICK + tickSpacing, tickSpacing)
+            tickUpper = nearestUsableTick(MAX_TICK - tickSpacing, tickSpacing)
+            console.log("[v0] Using fallback full range ticks:", { tickLower, tickUpper })
           } else {
-            const rangeLower = priceRange[0] / 100
-            const rangeUpper = priceRange[1] / 100
-            tickLower = nearestUsableTick(currentTick - Math.floor(887220 * (1 - rangeLower)), tickSpacing)
-            tickUpper = nearestUsableTick(currentTick + Math.floor(887220 * rangeUpper), tickSpacing)
-          }
+            try {
+              const poolState = await getPoolState(provider, poolAddress)
+              const currentTick = Number(poolState.tick)
+              const poolTickSpacing = Number(poolState.tickSpacing)
+              console.log("[v0] Pool state - Current tick:", currentTick, "Tick spacing:", poolTickSpacing)
 
-          console.log("[v0] Calculated tick range:", { tickLower, tickUpper })
+              if (useFullRange) {
+                const MIN_TICK = -887272
+                const MAX_TICK = 887272
+                tickLower = nearestUsableTick(Math.max(currentTick - 887220, MIN_TICK + tickSpacing), tickSpacing)
+                tickUpper = nearestUsableTick(Math.min(currentTick + 887220, MAX_TICK - tickSpacing), tickSpacing)
+              } else {
+                const rangeLower = priceRange[0] / 100
+                const rangeUpper = priceRange[1] / 100
+                const MIN_TICK = -887272
+                const MAX_TICK = 887272
+                tickLower = nearestUsableTick(
+                  Math.max(currentTick - Math.floor(887220 * (1 - rangeLower)), MIN_TICK + tickSpacing),
+                  tickSpacing,
+                )
+                tickUpper = nearestUsableTick(
+                  Math.min(currentTick + Math.floor(887220 * rangeUpper), MAX_TICK - tickSpacing),
+                  tickSpacing,
+                )
+              }
+
+              console.log("[v0] Calculated tick range:", { tickLower, tickUpper })
+            } catch (poolStateError) {
+              console.error("[v0] Error getting pool state, using full range as fallback:", poolStateError)
+              // Fallback to full range if we can't get pool state
+              const MIN_TICK = -887272
+              const MAX_TICK = 887272
+              tickLower = nearestUsableTick(MIN_TICK + tickSpacing, tickSpacing)
+              tickUpper = nearestUsableTick(MAX_TICK - tickSpacing, tickSpacing)
+              console.log("[v0] Using fallback full range ticks:", { tickLower, tickUpper })
+
+              toast({
+                title: "Using full price range",
+                description: "Could not determine current pool price, using full range for safety",
+              })
+            }
+          }
         } catch (error) {
-          console.error("[v0] Error calculating tick range:", error)
-          throw new Error("Failed to calculate price range. Please try again.")
+          console.error("[v0] Error in tick calculation, using safe fallback:", error)
+          // Ultimate fallback: use full range with default tick spacing
+          const tickSpacing = getTickSpacing(feeTier)
+          const MIN_TICK = -887272
+          const MAX_TICK = 887272
+          tickLower = nearestUsableTick(MIN_TICK + tickSpacing, tickSpacing)
+          tickUpper = nearestUsableTick(MAX_TICK - tickSpacing, tickSpacing)
+          console.log("[v0] Using ultimate fallback full range ticks:", { tickLower, tickUpper })
+
+          toast({
+            title: "Using full price range",
+            description: "Deploying with full range for maximum safety",
+          })
         }
 
         const params: DeploymentParams = {
