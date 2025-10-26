@@ -62,10 +62,17 @@ export function DeusTicker() {
       return
     }
 
-    // Convert ticker pair data to pool data format expected by DeployModal
+    // Detect the pairing token from the quote symbol
+    let detectedPairingToken: "DEUS" | "ETH" | "USDC" | "ZORA" = "ETH"
+    const quoteSymbol = pair.quote.toUpperCase()
+    if (quoteSymbol === "DEUS") detectedPairingToken = "DEUS"
+    else if (quoteSymbol === "USDC") detectedPairingToken = "USDC"
+    else if (quoteSymbol === "ZORA") detectedPairingToken = "ZORA"
+    else if (quoteSymbol === "WETH" || quoteSymbol === "ETH") detectedPairingToken = "ETH"
+
     const poolData = {
       id: `${pair.base}-${pair.quote}`,
-      pairAddress: "0x0000000000000000000000000000000000000000", // Placeholder
+      pairAddress: pair.pairAddress || "0x0000000000000000000000000000000000000000",
       baseToken: {
         address: baseAddress,
         symbol: pair.base,
@@ -79,14 +86,24 @@ export function DeusTicker() {
       dexId: pair.dexId || "uniswap",
       priceUsd: tickerData?.priceUsd || 0,
       volume24h: tickerData?.volume24hUsd || 0,
-      liquidity: tickerData?.liquidityUsd || 0,
+      liquidity: pair.liquidity?.usd || tickerData?.liquidityUsd || 0,
       feeApr: pair.apy24h || 0,
       netApy: pair.apy24h || 0,
       feeTier: pair.feeTier || "0.3%",
       poolType: "v3" as const,
       isDeusPool: pair.base === "DEUS" || pair.quote === "DEUS",
-      volatility: 10, // Default medium volatility
+      volatility: 10,
+      detectedPairingToken, // Pass the detected pairing token
     }
+
+    console.log(
+      "[v0] Opening deploy modal for pair:",
+      pair.base,
+      "/",
+      pair.quote,
+      "with detected pairing:",
+      detectedPairingToken,
+    )
     setSelectedPool(poolData)
     setIsDeployModalOpen(true)
   }

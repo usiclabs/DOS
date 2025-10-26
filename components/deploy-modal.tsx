@@ -53,6 +53,7 @@ interface PoolData {
   poolType: "v3" | "xlp" | "v2"
   isDeusPool: boolean
   volatility: number
+  detectedPairingToken?: "DEUS" | "ETH" | "USDC" | "ZORA" // Added for improved detection
 }
 
 // Add defaultPairingToken prop and allowPairingToggle prop
@@ -97,19 +98,28 @@ export function DeployModal({
   const getInitialPairingToken = (): "DEUS" | "ETH" | "USDC" | "ZORA" => {
     // Priority 1: Use initialPairingToken prop if provided
     if (initialPairingToken) {
+      console.log("[v0] Using initialPairingToken prop:", initialPairingToken)
       return initialPairingToken
     }
 
-    // Priority 2: Detect from pool's quote token
+    // Priority 2: Use detectedPairingToken from pool object (set by caller)
+    if (pool && (pool as any).detectedPairingToken) {
+      console.log("[v0] Using detectedPairingToken from pool:", (pool as any).detectedPairingToken)
+      return (pool as any).detectedPairingToken
+    }
+
+    // Priority 3: Detect from pool's quote token symbol
     if (pool?.quoteToken?.symbol) {
       const quoteSymbol = pool.quoteToken.symbol.toUpperCase()
+      console.log("[v0] Detecting pairing token from quote symbol:", quoteSymbol)
       if (quoteSymbol === "DEUS") return "DEUS"
       if (quoteSymbol === "USDC") return "USDC"
       if (quoteSymbol === "ZORA") return "ZORA"
       if (quoteSymbol === "WETH" || quoteSymbol === "ETH") return "ETH"
     }
 
-    // Priority 3: Use defaultPairingToken prop
+    // Priority 4: Use defaultPairingToken prop
+    console.log("[v0] Using defaultPairingToken prop:", defaultPairingToken)
     return defaultPairingToken
   }
 
@@ -124,6 +134,36 @@ export function DeployModal({
   const WETH_ADDRESS = "0x4200000000000000000000000000000000000006" // WETH on Base
   const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" // USDC on Base
   const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69" // ZORA on Base
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Enter key to preview/deploy
+      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+        if (step === "input" && baseAmount && quoteAmount && canResolveTokens && isConnected) {
+          e.preventDefault()
+          handlePreview()
+        } else if (step === "preview" && !isDeploying) {
+          e.preventDefault()
+          handleDeploy()
+        }
+      }
+      // Escape key to go back or close
+      if (e.key === "Escape") {
+        if (step === "preview") {
+          e.preventDefault()
+          setStep("input")
+        } else if (step === "input") {
+          e.preventDefault()
+          resetModal()
+        }
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyPress)
+    return () => window.removeEventListener("keydown", handleKeyPress)
+  }, [isOpen, step, baseAmount, quoteAmount, canResolveTokens, isConnected, isDeploying])
 
   useEffect(() => {
     if (!isOpen) {
@@ -151,8 +191,10 @@ export function DeployModal({
       setIsLoadingPrices(false)
       setSelectedFeeTier("3000")
     } else {
+      const detectedToken = getInitialPairingToken()
       console.log("[v0] Deploy modal opened for pool:", pool)
-      setPairingToken(getInitialPairingToken())
+      console.log("[v0] Detected pairing token:", detectedToken)
+      setPairingToken(detectedToken)
 
       if (pool?.feeTier) {
         const poolFeeTierNum = Math.round(Number.parseFloat(pool.feeTier.replace("%", "")) * 10000)
@@ -203,23 +245,37 @@ export function DeployModal({
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress =
-          pairingToken === "DEUS"
+        // When pairing toggle is disabled, use the pool's actual quote token
+        // When pairing toggle is enabled, use the selected pairing token
+        const quoteTokenAddress = allowPairingToggle
+          ? pairingToken === "DEUS"
             ? DEUS_TOKEN_ADDRESS
             : pairingToken === "USDC"
               ? USDC_ADDRESS
               : pairingToken === "ZORA"
                 ? ZORA_ADDRESS
                 : WETH_ADDRESS
+          : pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.quoteToken.symbol)
+            : pool.quoteToken.address
 
         if (!baseTokenAddress || !quoteTokenAddress) {
+          console.warn("[v0] Cannot resolve token addresses")
+          return
+        }
+
+        if (
+          quoteTokenAddress === "0x0000000000000000000000000000000000000000" ||
+          baseTokenAddress === "0x0000000000000000000000000000000000000000"
+        ) {
+          console.warn("[v0] Invalid token address detected, skipping balance fetch")
           return
         }
 
         console.log("[v0] Resolved token addresses:", {
           baseToken: pool.baseToken.symbol,
           baseAddress: baseTokenAddress,
-          quoteToken: pairingToken,
+          quoteToken: allowPairingToggle ? pairingToken : pool.quoteToken.symbol,
           quoteAddress: quoteTokenAddress,
         })
 
@@ -230,13 +286,29 @@ export function DeployModal({
 
           console.log("[v0] User address:", address)
 
-          const baseToken = new ethers.Contract(baseTokenAddress, ERC20_ABI, provider)
-          const quoteToken = new ethers.Contract(quoteTokenAddress, ERC20_ABI, provider)
+          let baseBalance = 0n
+          let quoteBalance = 0n
 
-          const [baseBalance, quoteBalance] = await Promise.all([
-            baseToken.balanceOf(address),
-            quoteToken.balanceOf(address),
-          ])
+          try {
+            const baseToken = new ethers.Contract(baseTokenAddress, ERC20_ABI, provider)
+            baseBalance = await baseToken.balanceOf(address)
+          } catch (error) {
+            console.error(`[v0] Error fetching ${pool.baseToken.symbol} balance:`, error)
+            // Set balance to 0 if token doesn't exist
+            baseBalance = 0n
+          }
+
+          try {
+            const quoteToken = new ethers.Contract(quoteTokenAddress, ERC20_ABI, provider)
+            quoteBalance = await quoteToken.balanceOf(address)
+          } catch (error) {
+            console.error(
+              `[v0] Error fetching ${allowPairingToggle ? pairingToken : pool.quoteToken.symbol} balance:`,
+              error,
+            )
+            // Set balance to 0 if token doesn't exist
+            quoteBalance = 0n
+          }
 
           const formattedBalances = {
             base: ethers.formatUnits(baseBalance, 18),
@@ -245,7 +317,7 @@ export function DeployModal({
 
           console.log("[v0] Token balances fetched:", {
             [pool.baseToken.symbol]: formattedBalances.base,
-            [pairingToken]: formattedBalances.quote,
+            [allowPairingToggle ? pairingToken : pool.quoteToken.symbol]: formattedBalances.quote,
           })
 
           setTokenBalances(formattedBalances)
@@ -254,16 +326,13 @@ export function DeployModal({
         }
       } catch (error) {
         console.error("[v0] Error fetching token balances:", error)
-        toast({
-          title: "Failed to fetch token balances",
-          description: "Please make sure your wallet is connected and try again.",
-          variant: "destructive",
-        })
+        // Users can still proceed with manual input
+        console.warn("[v0] Failed to fetch balances, users can still input amounts manually")
       }
     }
 
     fetchBalances()
-  }, [pool, isOpen, toast, canResolveTokens, pairingToken])
+  }, [pool, isOpen, toast, canResolveTokens, pairingToken, allowPairingToggle])
 
   useEffect(() => {
     const estimateGas = async () => {
@@ -981,9 +1050,13 @@ export function DeployModal({
             <Zap className="h-5 w-5 text-accent" />
             <span>Deploy Liquidity</span>
           </DialogTitle>
-          {/* Update DialogDescription to use pairingToken */}
           <DialogDescription>
-            Add liquidity to {pool.baseToken.symbol}/{pairingToken} pool on Uniswap V3
+            Add liquidity to {pool.baseToken.symbol}/{pool.quoteToken.symbol} pool on Uniswap V3
+            {step === "input" && (
+              <span className="text-xs text-gray-500 ml-2">
+                (Press <kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">Enter</kbd> to preview)
+              </span>
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -1185,8 +1258,11 @@ export function DeployModal({
                         <div className="flex items-center justify-between w-full mb-2">
                           <span className="font-semibold text-lg">0.3%</span>
                           {selectedFeeTier === "3000" && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
-                          <Badge variant="secondary" className="text-xs">
-                            Most Common
+                          <Badge
+                            variant="secondary"
+                            className="text-xs bg-green-500/20 text-green-400 border-green-500/30"
+                          >
+                            ⭐ Recommended
                           </Badge>
                         </div>
                         <span className="text-xs text-gray-400">Standard pairs</span>
@@ -1362,14 +1438,7 @@ export function DeployModal({
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="quoteAmount">{pairingToken} Amount</Label>
-                    {tokenBalances && (
-                      <span className="text-xs text-gray-400">
-                        Balance: {Number.parseFloat(tokenBalances.quote).toFixed(4)}
-                      </span>
-                    )}
-                  </div>
+                  <Label htmlFor="quoteAmount">{pairingToken} Amount</Label>
                   <Input
                     id="quoteAmount"
                     type="number"
@@ -1510,7 +1579,10 @@ export function DeployModal({
                   <CardContent className="pt-4">
                     <div className="flex items-center gap-2 text-sm text-blue-400">
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Loading token prices for auto-balancing...</span>
+                      <span>Fetching live token prices for optimal balancing...</span>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-400">
+                      This ensures your pool is perfectly balanced by USD value
                     </div>
                   </CardContent>
                 </Card>
@@ -1597,7 +1669,7 @@ export function DeployModal({
                   className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                   disabled={!canResolveTokens || !isConnected || isLoadingPrices}
                 >
-                  Preview
+                  Preview <kbd className="ml-2 px-1.5 py-0.5 bg-white/10 rounded text-xs">↵</kbd>
                 </Button>
               </div>
             </div>
@@ -1608,7 +1680,13 @@ export function DeployModal({
               <Card className="glass-card">
                 <CardHeader>
                   <CardTitle>Transaction Preview</CardTitle>
-                  <CardDescription>Review your liquidity deployment</CardDescription>
+                  <CardDescription>
+                    Review your liquidity deployment
+                    <span className="text-xs text-gray-500 ml-2">
+                      (Press <kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">Enter</kbd> to deploy,{" "}
+                      <kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">Esc</kbd> to go back)
+                    </span>
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex justify-between">
@@ -1670,14 +1748,23 @@ export function DeployModal({
 
               <div className="flex space-x-3">
                 <Button variant="outline" onClick={() => setStep("input")} className="flex-1">
-                  Back
+                  Back <kbd className="ml-2 px-1.5 py-0.5 bg-white/10 rounded text-xs">Esc</kbd>
                 </Button>
                 <Button
                   onClick={handleDeploy}
                   disabled={isDeploying || !isConnected}
                   className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90"
                 >
-                  Deploy Liquidity
+                  {isDeploying ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Deploying...
+                    </>
+                  ) : (
+                    <>
+                      Deploy Liquidity <kbd className="ml-2 px-1.5 py-0.5 bg-white/10 rounded text-xs">↵</kbd>
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

@@ -11,31 +11,25 @@ import { Slider } from "@/components/ui/slider"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
-import { Settings, User, Shield, Bell, Palette, TrendingUp, AlertTriangle, Save, RotateCcw } from "lucide-react"
+import { Settings, User, Shield, Bell, TrendingUp, AlertTriangle, Save, RotateCcw } from "lucide-react"
 import { useSettings } from "@/hooks/use-settings"
-import { useTheme } from "next-themes"
 
 export function SettingsModal() {
   const { settings, updateSettings, resetSettings } = useSettings()
-  const { theme, setTheme } = useTheme()
   const [hasChanges, setHasChanges] = useState(false)
 
   useEffect(() => {
-    if (theme && theme !== settings.theme) {
-      updateSettings({ theme })
+    if (settings.theme) {
+      updateSettings({ theme: settings.theme })
     }
-  }, [theme])
+  }, [settings.theme])
 
   const handleSettingChange = (key: string, value: any) => {
-    if (key === "theme") {
-      setTheme(value)
-    }
     updateSettings({ [key]: value })
     setHasChanges(true)
   }
 
   const handleSave = () => {
-    // Settings are automatically saved via the hook
     setHasChanges(false)
   }
 
@@ -77,7 +71,7 @@ export function SettingsModal() {
         <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           <Tabs defaultValue="general" className="w-full">
             <div className="overflow-x-auto">
-              <TabsList className="grid w-full grid-cols-5 min-w-[500px] sm:min-w-0">
+              <TabsList className="grid w-full grid-cols-4 min-w-[400px] sm:min-w-0">
                 <TabsTrigger value="general" className="text-xs sm:text-sm">
                   General
                 </TabsTrigger>
@@ -86,9 +80,6 @@ export function SettingsModal() {
                 </TabsTrigger>
                 <TabsTrigger value="notifications" className="text-xs sm:text-sm">
                   Notifications
-                </TabsTrigger>
-                <TabsTrigger value="appearance" className="text-xs sm:text-sm">
-                  Appearance
                 </TabsTrigger>
                 <TabsTrigger value="privacy" className="text-xs sm:text-sm">
                   Privacy
@@ -305,68 +296,6 @@ export function SettingsModal() {
                     <Switch
                       checked={settings.emailNotifications}
                       onCheckedChange={(checked) => handleSettingChange("emailNotifications", checked)}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="appearance" className="space-y-6 mt-4">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-sm sm:text-base">
-                    <Palette className="h-4 w-4" />
-                    <span>Appearance Settings</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                    <div className="space-y-1 flex-1">
-                      <Label className="text-sm">Theme</Label>
-                      <p className="text-xs text-muted-foreground">Choose your preferred theme</p>
-                    </div>
-                    <Select value={settings.theme} onValueChange={(value) => handleSettingChange("theme", value)}>
-                      <SelectTrigger className="w-full sm:w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dark">Dark</SelectItem>
-                        <SelectItem value="light">Light</SelectItem>
-                        <SelectItem value="system">System</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                    <div className="space-y-1 flex-1">
-                      <Label className="text-sm">Compact Mode</Label>
-                      <p className="text-xs text-muted-foreground">Reduce spacing for more information density</p>
-                    </div>
-                    <Switch
-                      checked={settings.compactMode}
-                      onCheckedChange={(checked) => handleSettingChange("compactMode", checked)}
-                    />
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                    <div className="space-y-1 flex-1">
-                      <Label className="text-sm">Animations</Label>
-                      <p className="text-xs text-muted-foreground">Enable interface animations</p>
-                    </div>
-                    <Switch
-                      checked={settings.animations}
-                      onCheckedChange={(checked) => handleSettingChange("animations", checked)}
-                    />
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                    <div className="space-y-1 flex-1">
-                      <Label className="text-sm">Show Advanced Features</Label>
-                      <p className="text-xs text-muted-foreground">Display advanced trading options</p>
-                    </div>
-                    <Switch
-                      checked={settings.advancedMode}
-                      onCheckedChange={(checked) => handleSettingChange("advancedMode", checked)}
                     />
                   </div>
                 </CardContent>

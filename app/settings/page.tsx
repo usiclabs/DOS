@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useTheme } from "next-themes"
 import { motion } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -14,51 +13,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  User,
-  Shield,
-  Bell,
-  Palette,
-  TrendingUp,
-  AlertTriangle,
-  Save,
-  RotateCcw,
-  Moon,
-  Sun,
-  Monitor,
-} from "lucide-react"
+import { User, Shield, Bell, TrendingUp, AlertTriangle, Save, RotateCcw } from "lucide-react"
 import { useSettings } from "@/hooks/use-settings"
 
 export default function SettingsPage() {
   const { settings, updateSettings, resetSettings } = useSettings()
-  const { theme, setTheme } = useTheme()
   const [hasChanges, setHasChanges] = useState(false)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    console.log("[v0] Settings page mounted, current theme:", theme)
-  }, [theme])
+  }, [])
 
   const handleSettingChange = (key: string, value: any) => {
-    console.log("[v0] Setting change:", key, value)
-    if (key === "theme") {
-      console.log("[v0] Changing theme to:", value)
-      setTheme(value)
-    }
     updateSettings({ [key]: value })
     setHasChanges(true)
   }
 
   const handleSave = () => {
-    console.log("[v0] Saving settings")
     setHasChanges(false)
   }
 
   const handleReset = () => {
-    console.log("[v0] Resetting settings")
     resetSettings()
-    setTheme("dark")
     setHasChanges(false)
   }
 
@@ -116,11 +93,10 @@ export default function SettingsPage() {
           </div>
 
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 glass-card">
+            <TabsList className="grid w-full grid-cols-4 glass-card">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="trading">Trading</TabsTrigger>
               <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="appearance">Appearance</TabsTrigger>
               <TabsTrigger value="privacy">Privacy</TabsTrigger>
             </TabsList>
 
@@ -363,131 +339,6 @@ export default function SettingsPage() {
                       <Switch
                         checked={settings.emailNotifications}
                         onCheckedChange={(checked) => handleSettingChange("emailNotifications", checked)}
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </TabsContent>
-
-            {/* Appearance Tab */}
-            <TabsContent value="appearance" className="space-y-6 mt-6">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-                <Card className="glass-card border-accent/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center space-x-2">
-                      <Palette className="h-5 w-5" />
-                      <span>Appearance Settings</span>
-                    </CardTitle>
-                    <CardDescription>Customize the look and feel of your interface</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                      <Label>Theme</Label>
-                      <div className="grid grid-cols-3 gap-4">
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            console.log("[v0] Light theme button clicked")
-                            handleSettingChange("theme", "light")
-                          }}
-                          className={`p-4 rounded-xl border-2 transition-all ${
-                            theme === "light" ? "border-accent bg-accent/10" : "border-accent/20 hover:border-accent/40"
-                          }`}
-                        >
-                          <Sun className="h-8 w-8 mx-auto mb-2" />
-                          <p className="text-sm font-medium">Light</p>
-                          {theme === "light" && (
-                            <Badge className="mt-2 w-full" variant="default">
-                              Active
-                            </Badge>
-                          )}
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            console.log("[v0] Dark theme button clicked")
-                            handleSettingChange("theme", "dark")
-                          }}
-                          className={`p-4 rounded-xl border-2 transition-all ${
-                            theme === "dark" ? "border-accent bg-accent/10" : "border-accent/20 hover:border-accent/40"
-                          }`}
-                        >
-                          <Moon className="h-8 w-8 mx-auto mb-2" />
-                          <p className="text-sm font-medium">Dark</p>
-                          {theme === "dark" && (
-                            <Badge className="mt-2 w-full" variant="default">
-                              Active
-                            </Badge>
-                          )}
-                        </motion.button>
-
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          onClick={() => {
-                            console.log("[v0] System theme button clicked")
-                            handleSettingChange("theme", "system")
-                          }}
-                          className={`p-4 rounded-xl border-2 transition-all ${
-                            theme === "system"
-                              ? "border-accent bg-accent/10"
-                              : "border-accent/20 hover:border-accent/40"
-                          }`}
-                        >
-                          <Monitor className="h-8 w-8 mx-auto mb-2" />
-                          <p className="text-sm font-medium">System</p>
-                          {theme === "system" && (
-                            <Badge className="mt-2 w-full" variant="default">
-                              Active
-                            </Badge>
-                          )}
-                        </motion.button>
-                      </div>
-                      <p className="text-sm text-muted-foreground text-center">
-                        Current theme: <span className="font-medium text-accent">{theme || "loading..."}</span>
-                      </p>
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1 flex-1">
-                        <Label>Compact Mode</Label>
-                        <p className="text-sm text-muted-foreground">Reduce spacing for more information density</p>
-                      </div>
-                      <Switch
-                        checked={settings.compactMode}
-                        onCheckedChange={(checked) => handleSettingChange("compactMode", checked)}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1 flex-1">
-                        <Label>Animations</Label>
-                        <p className="text-sm text-muted-foreground">Enable interface animations</p>
-                      </div>
-                      <Switch
-                        checked={settings.animations}
-                        onCheckedChange={(checked) => handleSettingChange("animations", checked)}
-                      />
-                    </div>
-
-                    <Separator />
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1 flex-1">
-                        <Label>Show Advanced Features</Label>
-                        <p className="text-sm text-muted-foreground">Display advanced trading options</p>
-                      </div>
-                      <Switch
-                        checked={settings.advancedMode}
-                        onCheckedChange={(checked) => handleSettingChange("advancedMode", checked)}
                       />
                     </div>
                   </CardContent>
