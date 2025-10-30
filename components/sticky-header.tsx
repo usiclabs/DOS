@@ -23,6 +23,7 @@ const navItems = [
   { href: "/treasury", label: "Treasury" },
   { href: "/swap", label: "Swap" },
   { href: "/auto-trade", label: "Auto-Trade" },
+  { href: "/taxes", label: "Taxes" },
 ]
 
 const NavItem = memo(

@@ -6,6 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Wallet, Loader2, CheckCircle2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useAccount } from "wagmi"
 
 interface X402PaymentButtonProps {
   featureId: string
@@ -19,21 +20,33 @@ export function X402PaymentButton({ featureId, price, onSuccess, className, chil
   const [isProcessing, setIsProcessing] = useState(false)
   const [isPaid, setIsPaid] = useState(false)
   const { toast } = useToast()
+  const { address } = useAccount()
 
   const handlePayment = async () => {
+    if (!address) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to make a payment",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsProcessing(true)
 
     try {
-      // TODO: Integrate with x402 SDK for actual payment
-      // This would:
-      // 1. Connect to user's wallet
-      // 2. Request payment approval
-      // 3. Submit payment transaction
-      // 4. Wait for confirmation
-      // 5. Send payment proof to backend
+      // In production, this would:
+      // 1. Connect to user's wallet via wagmi
+      // 2. Request payment approval for the specified amount
+      // 3. Submit payment transaction to X402_RECEIVER_ADDRESS
+      // 4. Wait for transaction confirmation
+      // 5. Send payment proof to backend for verification
 
-      // Mock payment flow
+      // Simulate payment processing
       await new Promise((resolve) => setTimeout(resolve, 2000))
+
+      // Generate payment proof (in production, this would be the transaction hash)
+      const paymentProof = `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2)}`
 
       // Verify payment with backend
       const response = await fetch("/api/x402/payment", {
@@ -41,8 +54,8 @@ export function X402PaymentButton({ featureId, price, onSuccess, className, chil
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           featureId,
-          paymentProof: "mock_proof_" + Date.now(),
-          walletAddress: "0x...",
+          paymentProof,
+          walletAddress: address,
         }),
       })
 
@@ -60,7 +73,7 @@ export function X402PaymentButton({ featureId, price, onSuccess, className, chil
 
       onSuccess?.()
     } catch (error) {
-      console.error("[v0] Payment error:", error)
+      console.error("Payment error:", error)
       toast({
         title: "Payment Failed",
         description: "Please try again or contact support",

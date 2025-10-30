@@ -1,4 +1,6 @@
 // x402 Protocol Configuration
+import { BASE_RPC_URL } from "./rpc-config"
+
 export const X402_CONFIG = {
   // Facilitator server endpoint (Coinbase's or self-hosted)
   facilitatorUrl: process.env.NEXT_PUBLIC_X402_FACILITATOR_URL || "https://facilitator.x402.org",
@@ -25,9 +27,7 @@ export const X402_CONFIG = {
     {
       id: 8453, // Base
       name: "Base",
-      rpcUrl: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY
-        ? `https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
-        : "https://mainnet.base.org",
+      rpcUrl: BASE_RPC_URL,
     },
   ],
 

@@ -6,6 +6,7 @@ import { DeusTicker } from "@/components/deus-ticker"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { FileText } from "lucide-react"
 import {
   Zap,
   TrendingUp,
@@ -54,6 +55,23 @@ export default function X402Page() {
         "Risk assessment reports",
         "Portfolio optimization suggestions",
       ],
+    },
+    {
+      id: "tax-reports",
+      icon: FileText,
+      title: "Tax Report Generator",
+      description: "Comprehensive crypto tax reports for Base chain transactions",
+      price: "10M",
+      priceUnit: "$DEUS required",
+      color: "from-orange-500 to-red-500",
+      features: [
+        "Full fiscal year analysis",
+        "IRS Form 8949 compatible",
+        "Gains/losses calculation",
+        "PDF export for filing",
+      ],
+      isTokenGated: true,
+      link: "/taxes",
     },
     {
       id: "auto-trading",
@@ -184,14 +202,24 @@ export default function X402Page() {
                   </ul>
 
                   {/* CTA Button */}
-                  <Button
-                    className="w-full bg-gradient-to-r from-primary to-purple-500 hover:opacity-90"
-                    onClick={() => setSelectedPlan(feature.id)}
-                  >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    Pay with x402
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
+                  {feature.isTokenGated ? (
+                    <Button asChild className="w-full bg-gradient-to-r from-primary to-purple-500 hover:opacity-90">
+                      <a href={feature.link}>
+                        <Lock className="w-4 h-4 mr-2" />
+                        Access with $DEUS
+                        <ArrowRight className="w-4 h-4 ml-2" />
+                      </a>
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full bg-gradient-to-r from-primary to-purple-500 hover:opacity-90"
+                      onClick={() => setSelectedPlan(feature.id)}
+                    >
+                      <Wallet className="w-4 h-4 mr-2" />
+                      Pay with x402
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Button>
+                  )}
                 </div>
               </Card>
             ))}

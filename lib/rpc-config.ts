@@ -13,6 +13,11 @@ interface RpcEndpoint {
 class RpcManager {
   private endpoints: RpcEndpoint[] = [
     {
+      url: "https://mainnet.base.org",
+      priority: 0, // Highest priority - free public endpoint
+      consecutiveFailures: 0,
+    },
+    {
       url: "https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c",
       priority: 1,
       consecutiveFailures: 0,

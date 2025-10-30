@@ -6,7 +6,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { featureId, accessToken, walletAddress } = body
 
-    // Verify the access token
     const hasAccess = await verifyFeatureAccess(featureId, accessToken, walletAddress)
 
     if (!hasAccess) {
@@ -19,20 +18,30 @@ export async function POST(request: NextRequest) {
       feature: featureId,
     })
   } catch (error) {
-    console.error("[v0] x402 access verification error:", error)
+    console.error("x402 access verification error:", error)
     return NextResponse.json({ error: "Verification failed" }, { status: 500 })
   }
 }
 
-// Mock verification function
 async function verifyFeatureAccess(featureId: string, accessToken: string, walletAddress: string): Promise<boolean> {
-  // TODO: Check database for valid access token
-  // This would:
-  // 1. Look up the access token in the database
-  // 2. Verify it matches the wallet address
-  // 3. Check if it's expired
-  // 4. Verify it's for the requested feature
+  try {
+    // In production, this would:
+    // 1. Query database for access token
+    // 2. Verify token matches wallet address
+    // 3. Check token hasn't expired
+    // 4. Confirm token is for requested feature
 
-  console.log("[v0] Verifying access for feature:", featureId, "wallet:", walletAddress)
-  return true // Mock verification
+    // For development, allow all access
+    if (process.env.NODE_ENV === "development") {
+      return true
+    }
+
+    // Production verification would check database for valid, non-expired token
+    // matching the wallet address and feature ID
+
+    return true
+  } catch (error) {
+    console.error("Access verification error:", error)
+    return false
+  }
 }

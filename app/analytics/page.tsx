@@ -89,7 +89,6 @@ export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [debugInfo, setDebugInfo] = useState<string>("")
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -114,7 +113,7 @@ export default function AnalyticsPage() {
           throw new Error("Invalid data structure received")
         }
       } catch (err) {
-        console.error("[v0] Analytics fetch error:", err)
+        console.error("Analytics fetch error:", err)
         setError(err instanceof Error ? err.message : "An error occurred")
       } finally {
         setLoading(false)
@@ -123,7 +122,7 @@ export default function AnalyticsPage() {
 
     fetchAnalytics()
 
-    const interval = setInterval(fetchAnalytics, 60000) // Update every minute
+    const interval = setInterval(fetchAnalytics, 60000)
     return () => clearInterval(interval)
   }, [])
 

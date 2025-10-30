@@ -1,21 +1,37 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { TrendingUp, TrendingDown, Users, DollarSign, BarChart3, AlertCircle, Wifi, WifiOff } from "lucide-react"
+import {
+  TrendingUp,
+  TrendingDown,
+  Users,
+  DollarSign,
+  BarChart3,
+  AlertCircle,
+  Wifi,
+  WifiOff,
+  Copy,
+  Check,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useTickerStore } from "@/lib/ticker-store"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { AnimatePresence, motion } from "framer-motion"
 import { getTokenAddress } from "@/lib/constants"
-import { DeployModal } from "@/components/deploy-modal" // Import DeployModal component
+import { DeployModal } from "@/components/deploy-modal"
+import { useToast } from "@/hooks/use-toast"
+
+const DEUS_CONTRACT_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
 
 export function DeusTicker() {
   const [isPaused, setIsPaused] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [selectedPool, setSelectedPool] = useState<any>(null)
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
+  const [isCopied, setIsCopied] = useState(false)
   const { data: tickerData, isLoading, error, fetchTicker } = useTickerStore()
   const isMobile = useIsMobile()
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchTicker()
@@ -96,6 +112,24 @@ export function DeusTicker() {
 
     setSelectedPool(poolData)
     setIsDeployModalOpen(true)
+  }
+
+  const handleCopyAddress = async () => {
+    try {
+      await navigator.clipboard.writeText(DEUS_CONTRACT_ADDRESS)
+      setIsCopied(true)
+      toast({
+        title: "Contract Address Copied",
+        description: `${DEUS_CONTRACT_ADDRESS} copied to clipboard`,
+      })
+      setTimeout(() => setIsCopied(false), 2000)
+    } catch (err) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy contract address",
+        variant: "destructive",
+      })
+    }
   }
 
   if (!tickerData || tickerData.priceUsd === 0) {
@@ -221,7 +255,28 @@ export function DeusTicker() {
           >
             <div className="p-4">
               <div className="container mx-auto">
-                <h3 className="text-lg font-bold mb-4 text-white">$DEUS Token Details</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-white">$DEUS Token Details</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyAddress}
+                    className="flex items-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white transition-all duration-200"
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check className="h-4 w-4 text-green-400" />
+                        <span className="text-xs">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" />
+                        <span className="text-xs">Copy Contract</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
                     <div className="text-sm text-gray-400">Price</div>
