@@ -243,10 +243,8 @@ export function DeusTicker() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-sm text-gray-400">Fully Diluted Value</div>
-                    <div className="text-lg font-bold text-white">
-                      {tickerData.fdvUsd ? `$${formatNumber(tickerData.fdvUsd)}` : "N/A"}
-                    </div>
+                    <div className="text-sm text-gray-400">24h Volume</div>
+                    <div className="text-lg font-bold text-white">${formatNumber(tickerData.volume24hUsd)}</div>
                   </div>
                 </div>
 
