@@ -4,7 +4,6 @@ import React from "react"
 import { AlertCircle, RefreshCw, Home } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { motion } from "framer-motion"
 
 interface ErrorBoundaryState {
   hasError: boolean
@@ -66,12 +65,7 @@ function DefaultErrorFallback({
   const [showDetails, setShowDetails] = React.useState(false)
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className="flex items-center justify-center min-h-[400px] p-4"
-    >
+    <div className="flex items-center justify-center min-h-[400px] p-4 animate-in fade-in slide-in-from-bottom-4 duration-400">
       <Card className="glass-card max-w-md w-full">
         <CardHeader>
           <CardTitle className="flex items-center space-x-2 text-destructive">
@@ -113,22 +107,19 @@ function DefaultErrorFallback({
               </Button>
 
               {showDetails && (
-                <motion.div
+                <div
                   id="error-details"
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-3 p-3 bg-black/50 rounded-lg overflow-auto max-h-48"
+                  className="mt-3 p-3 bg-black/50 rounded-lg overflow-auto max-h-48 animate-in fade-in slide-in-from-top-2 duration-200"
                 >
                   <pre className="text-xs text-gray-400 whitespace-pre-wrap break-words">
                     {error?.stack || errorInfo?.componentStack}
                   </pre>
-                </motion.div>
+                </div>
               )}
             </div>
           )}
         </CardContent>
       </Card>
-    </motion.div>
+    </div>
   )
 }

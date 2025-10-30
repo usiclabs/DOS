@@ -58,11 +58,9 @@ export function DeusTicker() {
     const quoteAddress = pair.quoteAddress || getTokenAddress(pair.quote)
 
     if (!baseAddress || !quoteAddress) {
-      console.warn(`[v0] Cannot open deploy modal for ${pair.base}/${pair.quote}: Token addresses cannot be resolved`)
       return
     }
 
-    // Detect the pairing token from the quote symbol
     let detectedPairingToken: "DEUS" | "ETH" | "USDC" | "ZORA" = "ETH"
     const quoteSymbol = pair.quote.toUpperCase()
     if (quoteSymbol === "DEUS") detectedPairingToken = "DEUS"
@@ -93,17 +91,9 @@ export function DeusTicker() {
       poolType: "v3" as const,
       isDeusPool: pair.base === "DEUS" || pair.quote === "DEUS",
       volatility: 10,
-      detectedPairingToken, // Pass the detected pairing token
+      detectedPairingToken,
     }
 
-    console.log(
-      "[v0] Opening deploy modal for pair:",
-      pair.base,
-      "/",
-      pair.quote,
-      "with detected pairing:",
-      detectedPairingToken,
-    )
     setSelectedPool(poolData)
     setIsDeployModalOpen(true)
   }

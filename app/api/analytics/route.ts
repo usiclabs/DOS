@@ -6,6 +6,8 @@ const DEUS_CONTRACT_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
 
 const FETCH_TIMEOUT = 10000 // 10 seconds
 
+const UNISWAP_V3_BASE_SUBGRAPH = "https://api.studio.thegraph.com/query/48211/uniswap-v3-base/version/latest"
+
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout = FETCH_TIMEOUT) {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeout)
@@ -21,6 +23,114 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}, timeout 
     clearTimeout(timeoutId)
     throw error
   }
+}
+
+async function fetchHistoricalData(deusAddress: string) {
+  try {
+    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60
+
+    const query = `
+      query GetPoolDayData($token: String!, $startTime: Int!) {
+        poolDayDatas(
+          first: 1000
+          orderBy: date
+          orderDirection: desc
+          where: {
+            date_gte: $startTime
+            or: [
+              { token0: $token }
+              { token1: $token }
+            ]
+          }
+        ) {
+          date
+          pool {
+            id
+            token0 {
+              symbol
+            }
+            token1 {
+              symbol
+            }
+          }
+          tvlUSD
+          volumeUSD
+          feesUSD
+        }
+      }
+    `
+
+    const response = await fetchWithTimeout(
+      UNISWAP_V3_BASE_SUBGRAPH,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query,
+          variables: {
+            token: deusAddress.toLowerCase(),
+            startTime: thirtyDaysAgo,
+          },
+        }),
+      },
+      15000,
+    )
+
+    if (!response.ok) {
+      throw new Error(`The Graph API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+
+    if (data.errors) {
+      console.error("[v0] The Graph query errors:", data.errors)
+      return null
+    }
+
+    return data.data?.poolDayDatas || []
+  } catch (error) {
+    console.error("[v0] Error fetching historical data from The Graph:", error)
+    return null
+  }
+}
+
+function aggregateHistoricalDataByDay(poolDayDatas: any[], currentPrice: number) {
+  const dataByDate = new Map<string, { tvl: number; volume: number; fees: number }>()
+
+  poolDayDatas.forEach((dayData) => {
+    const date = new Date(dayData.date * 1000).toISOString().split("T")[0]
+    const tvl = Number.parseFloat(dayData.tvlUSD || "0")
+    const volume = Number.parseFloat(dayData.volumeUSD || "0")
+    const fees = Number.parseFloat(dayData.feesUSD || "0")
+
+    if (dataByDate.has(date)) {
+      const existing = dataByDate.get(date)!
+      existing.tvl += tvl
+      existing.volume += volume
+      existing.fees += fees
+    } else {
+      dataByDate.set(date, { tvl, volume, fees })
+    }
+  })
+
+  const result = []
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+    const dateStr = date.toISOString().split("T")[0]
+
+    const dayData = dataByDate.get(dateStr)
+
+    result.push({
+      date: dateStr,
+      tvl: dayData?.tvl || 0,
+      volume: dayData?.volume || 0,
+      deusPrice: currentPrice,
+    })
+  }
+
+  return result
 }
 
 async function fetchDEUSEcosystemData() {
@@ -61,7 +171,7 @@ async function fetchDEUSEcosystemData() {
       console.log("[v0] DEUS price fetch failed:", priceError)
     }
 
-    const [dexscreenerContractData, dexscreenerSymbolData] = await Promise.allSettled([
+    const [dexscreenerContractData, dexscreenerSymbolData, historicalData] = await Promise.allSettled([
       fetchWithTimeout(
         `https://api.dexscreener.com/latest/dex/search/?q=${DEUS_CONTRACT_ADDRESS}`,
         {
@@ -92,6 +202,7 @@ async function fetchDEUSEcosystemData() {
           console.log("[v0] Dexscreener symbol API failed:", error)
           return null
         }),
+      fetchHistoricalData(DEUS_CONTRACT_ADDRESS),
     ])
 
     let totalTVL = 0
@@ -181,20 +292,27 @@ async function fetchDEUSEcosystemData() {
 
     const totalUsers = Math.floor(activePositions * 0.3)
 
-    const tvlHistory = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000)
-      const daysSinceStart = 29 - i
+    let tvlHistory
+    if (historicalData.status === "fulfilled" && historicalData.value && historicalData.value.length > 0) {
+      console.log("[v0] Using real historical data from The Graph:", historicalData.value.length, "data points")
+      tvlHistory = aggregateHistoricalDataByDay(historicalData.value, deusPrice)
+    } else {
+      console.log("[v0] Falling back to synthetic historical data")
+      tvlHistory = Array.from({ length: 30 }, (_, i) => {
+        const date = new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000)
+        const daysSinceStart = 29 - i
 
-      const priceVariation = 1 + (deusChange24h / 100) * (daysSinceStart / 30)
-      const tvlVariation = Math.max(0.1, priceVariation * 0.8)
+        const priceVariation = 1 + (deusChange24h / 100) * (daysSinceStart / 30)
+        const tvlVariation = Math.max(0.1, priceVariation * 0.8)
 
-      return {
-        date: date.toISOString().split("T")[0],
-        tvl: totalTVL * tvlVariation,
-        volume: totalVolume24h * (0.5 + daysSinceStart / 60),
-        deusPrice: deusPrice * priceVariation,
-      }
-    })
+        return {
+          date: date.toISOString().split("T")[0],
+          tvl: totalTVL * tvlVariation,
+          volume: totalVolume24h * (0.5 + daysSinceStart / 60),
+          deusPrice: deusPrice * priceVariation,
+        }
+      })
+    }
 
     const poolDistribution = deusPools.slice(0, 4).map((pool, index) => ({
       name: pool.pair,
@@ -209,6 +327,7 @@ async function fetchDEUSEcosystemData() {
       totalUsers,
       poolCount: deusPools.length,
       contractAddress: DEUS_CONTRACT_ADDRESS,
+      historicalDataPoints: tvlHistory.length,
     })
 
     return {

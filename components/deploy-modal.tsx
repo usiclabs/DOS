@@ -96,30 +96,22 @@ export function DeployModal({
   const [selectedFeeTier, setSelectedFeeTier] = useState<"100" | "500" | "3000" | "10000">("3000")
 
   const getInitialPairingToken = (): "DEUS" | "ETH" | "USDC" | "ZORA" => {
-    // Priority 1: Use initialPairingToken prop if provided
     if (initialPairingToken) {
-      console.log("[v0] Using initialPairingToken prop:", initialPairingToken)
       return initialPairingToken
     }
 
-    // Priority 2: Use detectedPairingToken from pool object (set by caller)
     if (pool && (pool as any).detectedPairingToken) {
-      console.log("[v0] Using detectedPairingToken from pool:", (pool as any).detectedPairingToken)
       return (pool as any).detectedPairingToken
     }
 
-    // Priority 3: Detect from pool's quote token symbol
     if (pool?.quoteToken?.symbol) {
       const quoteSymbol = pool.quoteToken.symbol.toUpperCase()
-      console.log("[v0] Detecting pairing token from quote symbol:", quoteSymbol)
       if (quoteSymbol === "DEUS") return "DEUS"
       if (quoteSymbol === "USDC") return "USDC"
       if (quoteSymbol === "ZORA") return "ZORA"
       if (quoteSymbol === "WETH" || quoteSymbol === "ETH") return "ETH"
     }
 
-    // Priority 4: Use defaultPairingToken prop
-    console.log("[v0] Using defaultPairingToken prop:", defaultPairingToken)
     return defaultPairingToken
   }
 
@@ -192,8 +184,6 @@ export function DeployModal({
       setSelectedFeeTier("3000")
     } else {
       const detectedToken = getInitialPairingToken()
-      console.log("[v0] Deploy modal opened for pool:", pool)
-      console.log("[v0] Detected pairing token:", detectedToken)
       setPairingToken(detectedToken)
 
       if (pool?.feeTier) {
@@ -215,15 +205,30 @@ export function DeployModal({
             : pool.quoteToken.address
 
         if (!baseTokenAddress || !quoteTokenAddress) {
-          const missingTokens = []
-          if (!baseTokenAddress) missingTokens.push(pool.baseToken.symbol)
-          if (!quoteTokenAddress) missingTokens.push(pool.quoteToken.symbol)
-
-          console.warn("[v0] Cannot resolve token addresses for:", missingTokens.join(", "))
-
           setCanResolveTokens(false)
           setTokenResolutionError(
-            `Cannot find token address${missingTokens.length > 1 ? "es" : ""} for: ${missingTokens.join(", ")}. This pool may not exist on Base chain or the token${missingTokens.length > 1 ? "s are" : " is"} not supported.`,
+            `Cannot find token address${
+              (!baseTokenAddress && !quoteTokenAddress) ||
+              (
+                baseTokenAddress === "0x0000000000000000000000000000000000000000" &&
+                  quoteTokenAddress === "0x0000000000000000000000000000000000000000"
+              )
+                ? "es"
+                : ""
+            } for: ${[
+              baseTokenAddress === "0x0000000000000000000000000000000000000000" ? pool.baseToken.symbol : "",
+              quoteTokenAddress === "0x0000000000000000000000000000000000000000" ? pool.quoteToken.symbol : "",
+            ]
+              .filter(Boolean)
+              .join(", ")}. This pool may not exist on Base chain or the token${
+              (!baseTokenAddress && !quoteTokenAddress) ||
+              (
+                baseTokenAddress === "0x0000000000000000000000000000000000000000" &&
+                  quoteTokenAddress === "0x0000000000000000000000000000000000000000"
+              )
+                ? "s are"
+                : " is"
+            } not supported.`,
           )
         } else {
           setCanResolveTokens(true)
@@ -236,8 +241,6 @@ export function DeployModal({
   useEffect(() => {
     const fetchBalances = async () => {
       if (!pool || !isOpen || !canResolveTokens) return
-
-      console.log("[v0] Fetching token balances for pool:", pool.baseToken.symbol, "/", pairingToken)
 
       try {
         const baseTokenAddress =
@@ -260,7 +263,6 @@ export function DeployModal({
             : pool.quoteToken.address
 
         if (!baseTokenAddress || !quoteTokenAddress) {
-          console.warn("[v0] Cannot resolve token addresses")
           return
         }
 
@@ -268,23 +270,13 @@ export function DeployModal({
           quoteTokenAddress === "0x0000000000000000000000000000000000000000" ||
           baseTokenAddress === "0x0000000000000000000000000000000000000000"
         ) {
-          console.warn("[v0] Invalid token address detected, skipping balance fetch")
           return
         }
-
-        console.log("[v0] Resolved token addresses:", {
-          baseToken: pool.baseToken.symbol,
-          baseAddress: baseTokenAddress,
-          quoteToken: allowPairingToggle ? pairingToken : pool.quoteToken.symbol,
-          quoteAddress: quoteTokenAddress,
-        })
 
         if (typeof window !== "undefined" && (window as any).ethereum) {
           const provider = new ethers.BrowserProvider((window as any).ethereum)
           const signer = await provider.getSigner()
           const address = await signer.getAddress()
-
-          console.log("[v0] User address:", address)
 
           let baseBalance = 0n
           let quoteBalance = 0n
@@ -293,8 +285,6 @@ export function DeployModal({
             const baseToken = new ethers.Contract(baseTokenAddress, ERC20_ABI, provider)
             baseBalance = await baseToken.balanceOf(address)
           } catch (error) {
-            console.error(`[v0] Error fetching ${pool.baseToken.symbol} balance:`, error)
-            // Set balance to 0 if token doesn't exist
             baseBalance = 0n
           }
 
@@ -302,11 +292,6 @@ export function DeployModal({
             const quoteToken = new ethers.Contract(quoteTokenAddress, ERC20_ABI, provider)
             quoteBalance = await quoteToken.balanceOf(address)
           } catch (error) {
-            console.error(
-              `[v0] Error fetching ${allowPairingToggle ? pairingToken : pool.quoteToken.symbol} balance:`,
-              error,
-            )
-            // Set balance to 0 if token doesn't exist
             quoteBalance = 0n
           }
 
@@ -315,19 +300,10 @@ export function DeployModal({
             quote: ethers.formatUnits(quoteBalance, 18),
           }
 
-          console.log("[v0] Token balances fetched:", {
-            [pool.baseToken.symbol]: formattedBalances.base,
-            [allowPairingToggle ? pairingToken : pool.quoteToken.symbol]: formattedBalances.quote,
-          })
-
           setTokenBalances(formattedBalances)
-        } else {
-          console.log("[v0] No ethereum provider found")
         }
       } catch (error) {
-        console.error("[v0] Error fetching token balances:", error)
         // Users can still proceed with manual input
-        console.warn("[v0] Failed to fetch balances, users can still input amounts manually")
       }
     }
 
@@ -365,7 +341,6 @@ export function DeployModal({
       if (!pool || !isOpen || !canResolveTokens) return
 
       setIsLoadingPrices(true)
-      console.log("[v0] Fetching token prices for USD-based balancing")
 
       try {
         const baseTokenAddress =
@@ -402,22 +377,15 @@ export function DeployModal({
             quote: data.prices[quoteTokenAddress.toLowerCase()]?.price || 1,
           }
 
-          console.log("[v0] Token prices fetched:", {
-            [pool.baseToken.symbol]: prices.base,
-            [pairingToken]: prices.quote,
-          })
-
           setTokenPrices(prices)
         } else {
           // Fallback to pool price data
-          console.log("[v0] Using fallback prices from pool data")
           setTokenPrices({
             base: pool.priceUsd || 0,
             quote: 1, // Assume quote token is $1 (USDC/ETH approximation)
           })
         }
       } catch (error) {
-        console.error("[v0] Error fetching token prices:", error)
         // Fallback to pool price data
         setTokenPrices({
           base: pool.priceUsd || 0,
@@ -499,9 +467,6 @@ export function DeployModal({
     } else {
       // Fallback: Use pool price ratio when USD prices are unavailable
       // For creator coins, assume a reasonable ratio based on pool data
-      console.log("[v0] USD prices unavailable, using fallback ratio calculation")
-
-      // Use pool's price data as fallback
       const poolPriceRatio = pool?.priceUsd || 0.00001 // Fallback to small value if no price
 
       if (advancedMode) {
@@ -579,14 +544,7 @@ export function DeployModal({
   }
 
   const handlePreview = () => {
-    console.log("[v0] Preview clicked - validating inputs:", {
-      baseAmount,
-      quoteAmount,
-      tokenBalances,
-    })
-
     if (!baseAmount || !quoteAmount) {
-      console.log("[v0] Validation failed: Missing amounts")
       toast({
         title: "Missing amounts",
         description: "Please enter amounts for both tokens",
@@ -600,7 +558,6 @@ export function DeployModal({
     const quoteAmountNum = Number.parseFloat(quoteAmount)
 
     if (baseAmountNum < 0 || quoteAmountNum < 0) {
-      console.log("[v0] Validation failed: Negative amounts")
       toast({
         title: "Invalid amounts",
         description: "Token amounts cannot be negative",
@@ -611,7 +568,6 @@ export function DeployModal({
 
     // At least one amount must be greater than zero
     if (baseAmountNum === 0 && quoteAmountNum === 0) {
-      console.log("[v0] Validation failed: Both amounts are zero")
       toast({
         title: "Invalid amounts",
         description: "At least one token amount must be greater than zero",
@@ -622,7 +578,6 @@ export function DeployModal({
 
     if (tokenBalances) {
       if (baseAmountNum > Number.parseFloat(tokenBalances.base)) {
-        console.log("[v0] Validation failed: Insufficient base token balance")
         toast({
           title: "Insufficient balance",
           description: `You don't have enough ${pool.baseToken.symbol}. You have ${tokenBalances.base} but need ${baseAmount}`,
@@ -631,7 +586,6 @@ export function DeployModal({
         return
       }
       if (quoteAmountNum > Number.parseFloat(tokenBalances.quote)) {
-        console.log("[v0] Validation failed: Insufficient quote token balance")
         toast({
           title: "Insufficient balance",
           description: `You don't have enough ${pairingToken}. You have ${tokenBalances.quote} but need ${quoteAmount}`,
@@ -643,7 +597,6 @@ export function DeployModal({
       console.log("[v0] Warning: Token balances not loaded, skipping balance check")
     }
 
-    console.log("[v0] Validation passed, moving to preview step")
     setStep("preview")
   }
 
@@ -664,7 +617,6 @@ export function DeployModal({
 
         if (isRateLimit && i < maxRetries - 1) {
           const delay = initialDelay * Math.pow(2, i)
-          console.log(`[v0] Rate limited, retrying in ${delay}ms (attempt ${i + 1}/${maxRetries})`)
           toast({
             title: "Rate limited",
             description: `Retrying in ${delay / 1000} seconds...`,
@@ -700,7 +652,6 @@ export function DeployModal({
   }
 
   const handleDeploy = async () => {
-    // Add check for token resolution before proceeding
     if (!pool || !canResolveTokens) return
 
     setIsDeploying(true)
@@ -752,13 +703,6 @@ export function DeployModal({
           return
         }
 
-        console.log("[v0] Using token addresses:", {
-          baseToken: pool.baseToken.symbol,
-          baseAddress: baseTokenAddress,
-          quoteToken: pairingToken,
-          quoteAddress: quoteTokenAddress,
-        })
-
         const feeTier = Number.parseInt(selectedFeeTier)
 
         const [token0, token1, amount0, amount1] =
@@ -770,9 +714,7 @@ export function DeployModal({
         const amount1Wei = ethers.parseUnits(amount1, 18)
 
         setApprovalStep("token0")
-        console.log("[v0] Checking allowance for token0:", token0)
         const allowance0 = await checkAllowance(provider, token0, address, NONFUNGIBLE_POSITION_MANAGER_ADDRESS)
-        console.log("[v0] Token0 allowance:", allowance0.toString(), "Required:", amount0Wei.toString())
 
         if (allowance0 < amount0Wei) {
           toast({
@@ -782,20 +724,14 @@ export function DeployModal({
 
           await retryWithBackoff(async () => {
             const receipt = await approveToken(signer, token0, NONFUNGIBLE_POSITION_MANAGER_ADDRESS, amount0Wei)
-            console.log("[v0] Token0 approval confirmed:", receipt?.hash)
             return receipt
           })
 
-          console.log("[v0] Waiting 3 seconds before next approval to avoid rate limits...")
           await new Promise((resolve) => setTimeout(resolve, 3000))
-        } else {
-          console.log("[v0] Token0 already approved, skipping")
         }
 
         setApprovalStep("token1")
-        console.log("[v0] Checking allowance for token1:", token1)
         const allowance1 = await checkAllowance(provider, token1, address, NONFUNGIBLE_POSITION_MANAGER_ADDRESS)
-        console.log("[v0] Token1 allowance:", allowance1.toString(), "Required:", amount1Wei.toString())
 
         if (allowance1 < amount1Wei) {
           toast({
@@ -805,14 +741,10 @@ export function DeployModal({
 
           await retryWithBackoff(async () => {
             const receipt = await approveToken(signer, token1, NONFUNGIBLE_POSITION_MANAGER_ADDRESS, amount1Wei)
-            console.log("[v0] Token1 approval confirmed:", receipt?.hash)
             return receipt
           })
 
-          console.log("[v0] Waiting 2 seconds before deployment to avoid rate limits...")
           await new Promise((resolve) => setTimeout(resolve, 2000))
-        } else {
-          console.log("[v0] Token1 already approved, skipping")
         }
 
         setApprovalStep("complete")
@@ -821,13 +753,10 @@ export function DeployModal({
         let tickLower, tickUpper
         try {
           const tickSpacing = getTickSpacing(feeTier)
-          console.log("[v0] Fee tier:", feeTier, "Tick spacing:", tickSpacing)
 
           const { poolAddress, created } = await createPoolIfNeeded(signer, token0, token1, feeTier)
-          console.log("[v0] Pool address (after creation if needed):", poolAddress)
 
           if (created) {
-            console.log("[v0] New pool created, waiting 5 seconds for initialization...")
             await new Promise((resolve) => setTimeout(resolve, 5000))
             toast({
               title: "Pool created successfully",
@@ -836,19 +765,14 @@ export function DeployModal({
           }
 
           if (poolAddress === "0x0000000000000000000000000000000000000000") {
-            console.warn("[v0] Pool address is zero, using full range as fallback")
-            // Use full range as fallback
             const MIN_TICK = -887272
             const MAX_TICK = 887272
             tickLower = nearestUsableTick(MIN_TICK + tickSpacing, tickSpacing)
             tickUpper = nearestUsableTick(MAX_TICK - tickSpacing, tickSpacing)
-            console.log("[v0] Using fallback full range ticks:", { tickLower, tickUpper })
           } else {
             try {
               const poolState = await getPoolState(provider, poolAddress)
               const currentTick = Number(poolState.tick)
-              const poolTickSpacing = Number(poolState.tickSpacing)
-              console.log("[v0] Pool state - Current tick:", currentTick, "Tick spacing:", poolTickSpacing)
 
               if (useFullRange) {
                 const MIN_TICK = -887272
@@ -869,16 +793,11 @@ export function DeployModal({
                   tickSpacing,
                 )
               }
-
-              console.log("[v0] Calculated tick range:", { tickLower, tickUpper })
             } catch (poolStateError) {
-              console.error("[v0] Error getting pool state, using full range as fallback:", poolStateError)
-              // Fallback to full range if we can't get pool state
               const MIN_TICK = -887272
               const MAX_TICK = 887272
               tickLower = nearestUsableTick(MIN_TICK + tickSpacing, tickSpacing)
               tickUpper = nearestUsableTick(MAX_TICK - tickSpacing, tickSpacing)
-              console.log("[v0] Using fallback full range ticks:", { tickLower, tickUpper })
 
               toast({
                 title: "Using full price range",
@@ -887,14 +806,11 @@ export function DeployModal({
             }
           }
         } catch (error) {
-          console.error("[v0] Error in tick calculation, using safe fallback:", error)
-          // Ultimate fallback: use full range with default tick spacing
           const tickSpacing = getTickSpacing(feeTier)
           const MIN_TICK = -887272
           const MAX_TICK = 887272
           tickLower = nearestUsableTick(MIN_TICK + tickSpacing, tickSpacing)
           tickUpper = nearestUsableTick(MAX_TICK - tickSpacing, tickSpacing)
-          console.log("[v0] Using ultimate fallback full range ticks:", { tickLower, tickUpper })
 
           toast({
             title: "Using full price range",
@@ -917,13 +833,9 @@ export function DeployModal({
           description: "Please confirm the transaction in your wallet",
         })
 
-        console.log("[v0] Deploying liquidity with params:", params)
-
         const result = await retryWithBackoff(async () => {
           return await deployLiquidity(signer, params)
         })
-
-        console.log("[v0] Deployment result:", result)
 
         if (result.success) {
           setTxHash(result.txHash || null)
@@ -937,7 +849,6 @@ export function DeployModal({
                 : [result.amount1, result.amount0]
 
             setActualAmounts({ base: actualBase, quote: actualQuote })
-            console.log("[v0] Actual deposited amounts:", { base: actualBase, quote: actualQuote })
           }
 
           setStep("success")
@@ -958,8 +869,6 @@ export function DeployModal({
         setStep("input")
       }
     } catch (error: any) {
-      console.error("[v0] Deployment error:", error)
-
       const isRateLimit =
         error?.code === -32603 ||
         error?.code === 429 ||
@@ -1222,7 +1131,7 @@ export function DeployModal({
                           {selectedFeeTier === "100" && <CheckCircle2 className="w-4 h-4 text-blue-400" />}
                         </div>
                         <span className="text-xs text-gray-400">Best for stable pairs</span>
-                        <span className="text-xs text-gray-500 mt-1">USDC/USDT, DAI/USDC</span>
+                        <span className="text-xs text-gray-500 mt-1">USDC/USDC, DAI/USDC</span>
                       </Label>
                     </div>
 
@@ -1596,8 +1505,8 @@ export function DeployModal({
                       <div>
                         <p className="text-yellow-400 font-medium">Price data unavailable</p>
                         <p className="text-gray-400 text-xs mt-1">
-                          USD prices couldn't be fetched for one or both tokens. Using estimated ratios. Switch to
-                          Advanced mode to set custom amounts.
+                          USD prices couldn't be fetched for one or both tokens. Switch to Advanced mode to set custom
+                          amounts.
                         </p>
                       </div>
                     </div>

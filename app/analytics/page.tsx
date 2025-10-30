@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { motion, useSpring, useTransform } from "framer-motion"
+import { motion, useSpring } from "framer-motion"
 import { AnalyticsCharts } from "@/components/analytics-charts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -12,6 +12,8 @@ import { ErrorBoundary } from "@/components/error-boundary"
 import { LoadingSkeleton } from "@/components/loading-skeleton"
 import { ErrorState } from "@/components/error-state"
 import { LiveDataIndicator } from "@/components/live-data-indicator"
+import { formatSmallPrice } from "@/utils/formatSmallPrice" // Import formatSmallPrice
+import type { ReactNode } from "react" // Import ReactNode
 
 interface AnalyticsData {
   overview: {
@@ -66,18 +68,21 @@ const staggerContainer = {
   },
 }
 
-function AnimatedNumber({ value, format }: { value: number; format: (n: number) => string }) {
+function AnimatedNumber({ value, format }: { value: number; format: (n: number) => string | ReactNode }) {
   const spring = useSpring(0, { stiffness: 75, damping: 25 })
-  const display = useTransform(spring, (current) => format(current))
-  const [displayValue, setDisplayValue] = useState(format(0))
+  const [displayValue, setDisplayValue] = useState<string | ReactNode>(
+    typeof format(0) === "string" ? format(0) : format(0),
+  )
 
   useEffect(() => {
     spring.set(value)
-    const unsubscribe = display.on("change", (latest) => setDisplayValue(latest))
+    const unsubscribe = spring.on("change", (latest) => {
+      setDisplayValue(format(latest))
+    })
     return () => unsubscribe()
-  }, [value, spring, display])
+  }, [value, spring, format])
 
-  return <span>{displayValue}</span>
+  return <>{displayValue}</>
 }
 
 export default function AnalyticsPage() {
@@ -323,7 +328,7 @@ export default function AnalyticsPage() {
                 label: "DEUS Price",
                 value: safeData.overview.deusPrice,
                 change: safeData.overview.deusChange24h,
-                formatter: formatCurrency,
+                formatter: formatSmallPrice, // Use formatSmallPrice for DEUS price
                 gradient: "from-orange-500/20 to-red-500/20",
                 iconColor: "text-orange-400",
                 glowColor: "shadow-orange-500/20",
@@ -448,7 +453,7 @@ export default function AnalyticsPage() {
                   </div>
                   <div className="flex items-center space-x-3 text-gray-300">
                     <Activity className="h-5 w-5 text-orange-400" />
-                    <span className="font-mono">{formatCurrency(safeData.overview.deusPrice)}</span>
+                    <span className="font-mono">{formatSmallPrice(safeData.overview.deusPrice)}</span>{" "}
                   </div>
                   <div className="flex items-center space-x-3 text-gray-300">
                     <Target className="h-5 w-5 text-orange-400" />

@@ -244,25 +244,17 @@ export function PoolsTable() {
   const handleDeploy = (pool: any, pairingToken?: string) => {
     let detectedPairingToken: "DEUS" | "ETH" | "USDC" | "ZORA" | undefined = undefined
 
-    // Priority 1: Use the explicitly selected pairing token from the card selector
     if (pairingToken) {
       detectedPairingToken = pairingToken as "DEUS" | "ETH" | "USDC" | "ZORA"
-      console.log("[v0] Using explicitly selected pairing token:", detectedPairingToken)
-    }
-    // Priority 2: Detect from pool's quote token
-    else if (pool.quoteToken?.symbol) {
+    } else if (pool.quoteToken?.symbol) {
       const quoteSymbol = pool.quoteToken.symbol.toUpperCase()
-      console.log("[v0] Detecting pairing token from pool quote symbol:", quoteSymbol)
       if (quoteSymbol === "DEUS") detectedPairingToken = "DEUS"
       else if (quoteSymbol === "USDC") detectedPairingToken = "USDC"
       else if (quoteSymbol === "ZORA") detectedPairingToken = "ZORA"
       else if (quoteSymbol === "WETH" || quoteSymbol === "ETH") detectedPairingToken = "ETH"
     }
 
-    console.log("[v0] Opening deploy modal with detected pairing token:", detectedPairingToken)
-
     setSelectedPool(pool)
-    // Pass the detected pairing token to the modal via the pool object
     if (detectedPairingToken) {
       setSelectedPool({ ...pool, detectedPairingToken })
     }
