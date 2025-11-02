@@ -140,15 +140,32 @@ export async function withdrawLiquidity(
 ): Promise<TransactionResult> {
   try {
     console.log("[v0] Withdrawing liquidity from position:", tokenId)
-    console.log("[v0] Liquidity to remove:", liquidityToRemove)
+    console.log("[v0] Liquidity to remove (input):", liquidityToRemove)
 
     if (!liquidityToRemove || liquidityToRemove === "0" || liquidityToRemove === "0x0") {
       throw new Error("Invalid liquidity amount: cannot withdraw 0 liquidity")
     }
 
+    // Ensure liquidityToRemove is a valid hex string
+    let liquidityHex = liquidityToRemove
+    if (!liquidityToRemove.startsWith("0x")) {
+      // If it's a decimal string, convert to BigInt then to hex
+      try {
+        const liquidityBigInt = BigInt(liquidityToRemove)
+        liquidityHex = liquidityBigInt.toString(16)
+      } catch (e) {
+        throw new Error(`Invalid liquidity format: ${liquidityToRemove}`)
+      }
+    } else {
+      liquidityHex = liquidityToRemove.slice(2) // Remove 0x prefix
+    }
+
+    console.log("[v0] Liquidity hex (processed):", liquidityHex)
+    // </CHANGE>
+
     const functionSelector = POSITION_MANAGER_ABI.decreaseLiquidity
     const tokenIdHex = tokenId.toString(16).padStart(64, "0")
-    const liquidityHex = liquidityToRemove.replace("0x", "").padStart(64, "0")
+    const liquidityHexPadded = liquidityHex.padStart(64, "0")
     const amount0MinHex = amount0Min.padStart(64, "0")
     const amount1MinHex = amount1Min.padStart(64, "0")
     const deadline = Math.floor(Date.now() / 1000 + 1800)
@@ -158,13 +175,13 @@ export async function withdrawLiquidity(
     console.log("[v0] Transaction parameters:", {
       tokenId,
       tokenIdHex,
-      liquidityHex,
+      liquidityHexPadded,
       amount0MinHex,
       amount1MinHex,
       deadline,
     })
 
-    const data = functionSelector + tokenIdHex + liquidityHex + amount0MinHex + amount1MinHex + deadline
+    const data = functionSelector + tokenIdHex + liquidityHexPadded + amount0MinHex + amount1MinHex + deadline
 
     console.log("[v0] Step 1: Calling decreaseLiquidity...")
     const decreaseResult = await sendTransaction({

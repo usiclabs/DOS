@@ -95,14 +95,35 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
 
     try {
       console.log("[v0] Starting withdrawal for position:", position.tokenId)
+      console.log("[v0] Position liquidity tokens:", position.liquidityTokens)
+      console.log("[v0] Withdrawal percentage:", withdrawPercentage)
 
-      const liquidityToRemove = Math.floor(
-        position.liquidityTokens * (Number.parseInt(withdrawPercentage) / 100),
-      ).toString(16)
+      const percentageDecimal = Number.parseInt(withdrawPercentage) / 100
+
+      // Convert liquidityTokens to BigInt (assuming it's the actual uint128 value)
+      const totalLiquidity = BigInt(Math.floor(position.liquidityTokens))
+      const liquidityToRemove = BigInt(Math.floor(Number(totalLiquidity) * percentageDecimal))
+
+      console.log("[v0] Total liquidity (BigInt):", totalLiquidity.toString())
+      console.log("[v0] Liquidity to remove (BigInt):", liquidityToRemove.toString())
+
+      if (liquidityToRemove === BigInt(0)) {
+        toast({
+          title: "Error",
+          description: "Calculated liquidity amount is 0. The position may have insufficient liquidity.",
+          variant: "destructive",
+        })
+        setIsWithdrawing(false)
+        return
+      }
+
+      // Convert to decimal string (not hex) for the transaction function
+      const liquidityAmount = liquidityToRemove.toString()
+      console.log("[v0] Liquidity amount (decimal string):", liquidityAmount)
 
       const result = await managePosition(position.tokenId, "withdraw", {
         liquidityPercentage: Number.parseInt(withdrawPercentage),
-        liquidityAmount: liquidityToRemove,
+        liquidityAmount: liquidityAmount,
       })
 
       if (result.success) {
