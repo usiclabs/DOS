@@ -35,6 +35,7 @@ interface LPPosition {
   poolType: "v3" | "xlp" | "v2"
   isDeusPool: boolean
   feeTier: string
+  liquidity?: string // Added actual uint128 liquidity value
   liquidityTokens: number
   totalValue: number
   initialValue: number
@@ -90,19 +91,27 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
       return
     }
 
+    if (!position.liquidity || position.liquidity === "0") {
+      toast({
+        title: "Error",
+        description: "Position has no liquidity to withdraw",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsWithdrawing(true)
     setTransactionHash("")
 
     try {
       console.log("[v0] Starting withdrawal for position:", position.tokenId)
-      console.log("[v0] Position liquidity tokens:", position.liquidityTokens)
+      console.log("[v0] Position actual liquidity:", position.liquidity)
       console.log("[v0] Withdrawal percentage:", withdrawPercentage)
 
       const percentageDecimal = Number.parseInt(withdrawPercentage) / 100
 
-      // Convert liquidityTokens to BigInt (assuming it's the actual uint128 value)
-      const totalLiquidity = BigInt(Math.floor(position.liquidityTokens))
-      const liquidityToRemove = BigInt(Math.floor(Number(totalLiquidity) * percentageDecimal))
+      const totalLiquidity = BigInt(position.liquidity)
+      const liquidityToRemove = (totalLiquidity * BigInt(Math.floor(percentageDecimal * 10000))) / BigInt(10000)
 
       console.log("[v0] Total liquidity (BigInt):", totalLiquidity.toString())
       console.log("[v0] Liquidity to remove (BigInt):", liquidityToRemove.toString())
@@ -117,7 +126,6 @@ export function PositionCard({ position, onUpdate }: PositionCardProps) {
         return
       }
 
-      // Convert to decimal string (not hex) for the transaction function
       const liquidityAmount = liquidityToRemove.toString()
       console.log("[v0] Liquidity amount (decimal string):", liquidityAmount)
 

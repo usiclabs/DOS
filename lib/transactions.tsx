@@ -140,28 +140,24 @@ export async function withdrawLiquidity(
 ): Promise<TransactionResult> {
   try {
     console.log("[v0] Withdrawing liquidity from position:", tokenId)
-    console.log("[v0] Liquidity to remove (input):", liquidityToRemove)
+    console.log("[v0] Liquidity to remove (decimal string):", liquidityToRemove)
 
-    if (!liquidityToRemove || liquidityToRemove === "0" || liquidityToRemove === "0x0") {
+    if (!liquidityToRemove || liquidityToRemove === "0") {
       throw new Error("Invalid liquidity amount: cannot withdraw 0 liquidity")
     }
 
-    // Ensure liquidityToRemove is a valid hex string
-    let liquidityHex = liquidityToRemove
-    if (!liquidityToRemove.startsWith("0x")) {
-      // If it's a decimal string, convert to BigInt then to hex
-      try {
-        const liquidityBigInt = BigInt(liquidityToRemove)
-        liquidityHex = liquidityBigInt.toString(16)
-      } catch (e) {
-        throw new Error(`Invalid liquidity format: ${liquidityToRemove}`)
+    let liquidityHex: string
+    try {
+      const liquidityBigInt = BigInt(liquidityToRemove)
+      if (liquidityBigInt <= 0n) {
+        throw new Error("Liquidity amount must be greater than 0")
       }
-    } else {
-      liquidityHex = liquidityToRemove.slice(2) // Remove 0x prefix
+      liquidityHex = liquidityBigInt.toString(16)
+      console.log("[v0] Liquidity as BigInt:", liquidityBigInt.toString())
+      console.log("[v0] Liquidity as hex:", liquidityHex)
+    } catch (e) {
+      throw new Error(`Invalid liquidity format: ${liquidityToRemove}`)
     }
-
-    console.log("[v0] Liquidity hex (processed):", liquidityHex)
-    // </CHANGE>
 
     const functionSelector = POSITION_MANAGER_ABI.decreaseLiquidity
     const tokenIdHex = tokenId.toString(16).padStart(64, "0")
@@ -183,7 +179,9 @@ export async function withdrawLiquidity(
 
     const data = functionSelector + tokenIdHex + liquidityHexPadded + amount0MinHex + amount1MinHex + deadline
 
+    console.log("[v0] Encoded transaction data:", `0x${data}`)
     console.log("[v0] Step 1: Calling decreaseLiquidity...")
+
     const decreaseResult = await sendTransaction({
       to: UNISWAP_V3_POSITION_MANAGER,
       data: `0x${data}`,
