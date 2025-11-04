@@ -340,7 +340,7 @@ export default function SwapPage() {
     setIsSwapping(true)
 
     try {
-      console.log("[v0] Configuring MetaMask to use BlastAPI RPC...")
+      console.log("[v0] Configuring MetaMask to use Alchemy RPC...")
       try {
         await window.ethereum.request({
           method: "wallet_addEthereumChain",
@@ -353,12 +353,12 @@ export default function SwapPage() {
                 symbol: "ETH",
                 decimals: 18,
               },
-              rpcUrls: ["https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"],
+              rpcUrls: [`https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`],
               blockExplorerUrls: ["https://basescan.org"],
             },
           ],
         })
-        console.log("[v0] MetaMask configured to use BlastAPI RPC")
+        console.log("[v0] MetaMask configured to use Alchemy RPC")
       } catch (addError: any) {
         // Chain might already exist, try switching
         if (addError.code === 4902) {
@@ -431,10 +431,10 @@ export default function SwapPage() {
         ),
       })
 
-      console.log("[v0] Waiting for transaction confirmation via BlastAPI...")
+      console.log("[v0] Waiting for transaction confirmation via Alchemy...")
       const publicClient = createPublicClient({
         chain: base,
-        transport: http("https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"),
+        transport: http(`https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
       })
 
       const receipt = await publicClient.waitForTransactionReceipt({

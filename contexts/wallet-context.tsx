@@ -1,9 +1,9 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from "react"
-import { createPublicClient, http, formatEther, type Address } from "viem"
-import { base } from "viem/chains"
+import { formatEther, type Address } from "viem"
 import { toast } from "sonner"
+import { getPublicClient } from "@/lib/rpc-client"
 
 interface WalletContextType {
   address: Address | null
@@ -16,11 +16,8 @@ interface WalletContextType {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
 
-// BlastAPI public client for balance checks (avoid MetaMask rate limiting)
-const publicClient = createPublicClient({
-  chain: base,
-  transport: http("https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"),
-})
+// Alchemy public client for balance checks (avoid MetaMask rate limiting)
+const publicClient = getPublicClient()
 
 export function WalletProvider({ children }: { children: ReactNode }) {
   const [address, setAddress] = useState<Address | null>(null)
@@ -28,14 +25,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [isConnecting, setIsConnecting] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
 
-  // Fetch balance using BlastAPI (not MetaMask)
+  // Fetch balance using Alchemy (not MetaMask)
   const fetchBalance = useCallback(async (addr: Address) => {
     try {
-      console.log("[v0] Fetching balance via BlastAPI for:", addr)
+      console.log("[v0] Fetching balance via Alchemy for:", addr)
       const balanceWei = await publicClient.getBalance({ address: addr })
       const balanceEth = formatEther(balanceWei)
       setBalance(balanceEth)
-      console.log("[v0] Balance fetched via BlastAPI:", balanceEth, "ETH")
+      console.log("[v0] Balance fetched via Alchemy:", balanceEth, "ETH")
     } catch (error) {
       console.error("[v0] Error fetching balance:", error)
     }

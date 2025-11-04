@@ -1,6 +1,6 @@
 /**
  * Uniswap V3 Swap Integration for Base Chain
- * Uses BlastAPI RPC endpoint for all blockchain interactions
+ * Uses Alchemy RPC endpoint for all blockchain interactions
  */
 
 import { encodeAbiParameters } from "viem"

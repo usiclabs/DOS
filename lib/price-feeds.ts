@@ -236,13 +236,14 @@ async function fetchDeusFromUniswapV3(): Promise<Record<string, TokenPrice>> {
   const startTime = Date.now()
 
   try {
-    // Create public client with BlastAPI endpoint
     const client = createPublicClient({
       chain: base,
-      transport: http("https://base-mainnet.blastapi.io/b8e6c5f3-fc0e-4b3e-8b5e-3c5e8b5e3c5e"),
+      transport: http(
+        `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+      ),
     })
 
-    console.log("[v0] Fetching DEUS price from Uniswap V3 pool via BlastAPI...")
+    console.log("[v0] Fetching DEUS price from Uniswap V3 pool via Alchemy...")
 
     // Get pool data
     const [slot0Data, token0, token1] = await Promise.all([
@@ -294,7 +295,7 @@ async function fetchDeusFromUniswapV3(): Promise<Record<string, TokenPrice>> {
       DEUS: {
         symbol: "DEUS",
         price: deusPriceUsd,
-        source: "Uniswap V3 (BlastAPI)",
+        source: "Uniswap V3 (Alchemy)",
         timestamp: Date.now(),
         confidence: calculateConfidence("dexscreener", responseTime),
       },

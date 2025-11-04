@@ -9,6 +9,7 @@ import { MobileNavigation } from "@/components/mobile-navigation"
 import { BuyNotifications } from "@/components/buy-notifications"
 import { ErrorBoundary } from "@/components/error-boundary"
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts"
+import { MaintenanceModal } from "@/components/maintenance-modal"
 import "./globals.css"
 
 const inter = Inter({
@@ -120,6 +121,7 @@ export default function RootLayout({
               <Toaster />
               <BuyNotifications />
               <MobileNavigation />
+              <MaintenanceModal />
               {/* <BackgroundMusicPlayer /> */}
             </Providers>
           </ErrorBoundary>

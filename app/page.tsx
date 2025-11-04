@@ -68,7 +68,9 @@ export default function HomePage() {
     fetcher,
     {
       revalidateOnFocus: false,
-      dedupingInterval: 60000, // Cache for 1 minute
+      revalidateOnReconnect: false,
+      dedupingInterval: 300000, // Dedupe for 5 minutes instead of 1 minute
+      refreshInterval: 600000, // Refresh every 10 minutes
     },
   )
 

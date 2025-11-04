@@ -35,7 +35,7 @@ import { toast } from "sonner"
 
 const publicClient = createPublicClient({
   chain: base,
-  transport: http("https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c"),
+  transport: http(`https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
 })
 
 interface BotStatus {

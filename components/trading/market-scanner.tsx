@@ -35,8 +35,10 @@ export function MarketScanner() {
   const [watchlist, setWatchlist] = useState<Set<string>>(new Set(["DEUS/WETH", "DEUS/USDC", "UNI/USDC"]))
 
   const { data: poolsResponse, error } = useSWR<{ pools: PoolData[] }>("/api/pools?limit=50", fetcher, {
-    refreshInterval: 30000, // Refresh every 30 seconds
-    revalidateOnFocus: true,
+    refreshInterval: 600000, // 10 minutes instead of 30 seconds
+    revalidateOnFocus: false, // Don't refetch on window focus
+    dedupingInterval: 300000, // Dedupe requests within 5 minutes
+    revalidateOnReconnect: false, // Don't refetch on reconnect
   })
 
   const markets: MarketData[] = (poolsResponse?.pools || []).map((pool) => {

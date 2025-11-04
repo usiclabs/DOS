@@ -1,6 +1,6 @@
 /**
  * Centralized RPC configuration for all blockchain interactions
- * Uses multiple BlastAPI endpoints with automatic failover
+ * Uses Alchemy API with automatic failover to public endpoints
  */
 
 interface RpcEndpoint {
@@ -13,48 +13,18 @@ interface RpcEndpoint {
 class RpcManager {
   private endpoints: RpcEndpoint[] = [
     {
+      url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+      priority: 0, // Highest priority - Alchemy with API key
+      consecutiveFailures: 0,
+    },
+    {
       url: "https://mainnet.base.org",
-      priority: 0, // Highest priority - free public endpoint
+      priority: 1, // Public Base RPC
       consecutiveFailures: 0,
     },
     {
-      url: "https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c",
-      priority: 1,
-      consecutiveFailures: 0,
-    },
-    {
-      url: "https://base-mainnet.blastapi.io/dfa72e0c-8da4-4ff8-81c9-7b841eb616bb",
-      priority: 2,
-      consecutiveFailures: 0,
-    },
-    {
-      url: "https://base-mainnet.blastapi.io/eb546001-af94-4a0f-ae06-7f24c1cd7023",
-      priority: 3,
-      consecutiveFailures: 0,
-    },
-    {
-      url: "https://base-mainnet.blastapi.io/fe9c30fc-3bc5-4064-91e2-6ab5887f8f4d",
-      priority: 4,
-      consecutiveFailures: 0,
-    },
-    {
-      url: "https://base-mainnet.blastapi.io/35f59b2b-8068-46e5-b0c8-9625a9606bd9",
-      priority: 5,
-      consecutiveFailures: 0,
-    },
-    {
-      url: "https://base-mainnet.blastapi.io/b5a802d8-151d-4443-90a7-699108dc4e01",
-      priority: 6,
-      consecutiveFailures: 0,
-    },
-    {
-      url: "https://base-mainnet.blastapi.io/b2ba991b-e915-4fd6-8f73-2d60d2350ce5",
-      priority: 7,
-      consecutiveFailures: 0,
-    },
-    {
-      url: "https://base-mainnet.blastapi.io/6108795a-137e-4af8-a28e-8c4bbd6336c2",
-      priority: 8,
+      url: "https://base.llamarpc.com",
+      priority: 2, // LlamaRPC fallback
       consecutiveFailures: 0,
     },
   ]
@@ -217,7 +187,7 @@ export { rpcManager, RpcManager }
 
 export const RPC_CONFIG = {
   BASE_MAINNET: {
-    url: "https://base-mainnet.blastapi.io/d6d4ab7c-d1de-4412-9a48-ae9c7965285c",
+    url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
     chainId: 8453,
     name: "Base Mainnet",
   },

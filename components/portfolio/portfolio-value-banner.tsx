@@ -34,8 +34,10 @@ export function PortfolioValueBanner({ address }: PortfolioValueBannerProps) {
     address ? `/api/portfolio/${address}` : null,
     fetcher,
     {
-      refreshInterval: 30000,
-      revalidateOnFocus: true,
+      refreshInterval: 300000, // 5 minutes instead of 30 seconds
+      revalidateOnFocus: false, // Don't refetch on window focus
+      dedupingInterval: 120000, // Dedupe requests within 2 minutes
+      revalidateOnReconnect: false, // Don't refetch on reconnect
     },
   )
 

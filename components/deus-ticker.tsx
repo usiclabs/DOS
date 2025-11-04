@@ -38,7 +38,7 @@ export function DeusTicker() {
 
     const interval = setInterval(() => {
       fetchTicker()
-    }, 60000) // Increased frequency to 60 seconds
+    }, 300000) // Increased interval from 60s to 5 minutes to reduce API calls
 
     return () => clearInterval(interval)
   }, [fetchTicker])

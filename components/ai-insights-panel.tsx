@@ -39,9 +39,10 @@ export function AIInsightsPanel() {
   const previousInsightsRef = useRef<string[]>([])
 
   const { data, error, isLoading } = useSWR<AIInsightsResponse>("/api/ai-insights", fetcher, {
-    refreshInterval: 30000, // Refresh every 30 seconds
-    revalidateOnFocus: true,
-    dedupingInterval: 10000,
+    refreshInterval: 600000, // 10 minutes instead of 30 seconds
+    revalidateOnFocus: false, // Don't refetch on window focus
+    dedupingInterval: 300000, // Dedupe requests within 5 minutes
+    revalidateOnReconnect: false, // Don't refetch on reconnect
   })
 
   const insights = data?.insights || []

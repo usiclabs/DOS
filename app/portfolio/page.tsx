@@ -372,18 +372,16 @@ export default function PortfolioPage() {
     isConnected && address ? `/api/portfolio/${address}` : null,
     fetcher,
     {
-      refreshInterval: 60000, // Increased from 30000 to 60000 (60 seconds)
+      refreshInterval: 60000, // Refresh every 60 seconds
       revalidateOnFocus: false, // Disabled to prevent unnecessary refreshes
+      revalidateOnReconnect: false, // Disabled to prevent refresh on network reconnect
+      dedupingInterval: 30000, // Dedupe requests within 30 seconds
       onSuccess: (data) => {
         setLastUpdateTime(new Date())
         console.log("[v0] Portfolio data loaded successfully:", {
           positionCount: data.positions.length,
           tokenCount: data.tokens.length,
           totalValue: data.summary.totalValue,
-        })
-        toast({
-          title: "Live Data Updated",
-          description: `Loaded ${data.positions.length} positions and ${data.tokens.length} tokens from blockchain`,
         })
       },
       onError: (error) => {

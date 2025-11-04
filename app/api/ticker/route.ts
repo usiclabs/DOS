@@ -57,7 +57,7 @@ export async function GET() {
       headers: {
         "User-Agent": "DEUS-OS/1.0",
       },
-      next: { revalidate: 30 }, // Cache for 30 seconds
+      next: { revalidate: 300 }, // Cache for 5 minutes instead of 30 seconds
     })
 
     if (!dexscreenerResponse.ok) {
@@ -119,7 +119,11 @@ export async function GET() {
 
     console.log("[v0] Final ticker status:", tickerData.status)
 
-    return NextResponse.json(tickerData)
+    return NextResponse.json(tickerData, {
+      headers: {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    })
   } catch (error) {
     console.error("[v0] Error fetching ticker data:", error)
 

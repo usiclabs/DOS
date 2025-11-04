@@ -184,11 +184,18 @@ export async function GET() {
 
     console.log(`[v0] Generated ${sortedInsights.length} AI insights from live data`)
 
-    return NextResponse.json({
-      insights: sortedInsights,
-      timestamp: new Date().toISOString(),
-      poolsAnalyzed: pools.length,
-    })
+    return NextResponse.json(
+      {
+        insights: sortedInsights,
+        timestamp: new Date().toISOString(),
+        poolsAnalyzed: pools.length,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=600, stale-while-revalidate=1200",
+        },
+      },
+    )
   } catch (error) {
     console.error("[v0] Error generating AI insights:", error)
     return NextResponse.json(

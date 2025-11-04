@@ -17,19 +17,7 @@ import { Separator } from "@/components/ui/separator"
 import { useWallet } from "@/hooks/use-wallet"
 import { useToast } from "@/hooks/use-toast"
 import { managePosition, collectFees } from "@/lib/transactions"
-import {
-  RefreshCw,
-  Search,
-  Filter,
-  ExternalLink,
-  Plus,
-  Minus,
-  AlertCircle,
-  ChevronRight,
-  Zap,
-  Loader2,
-  Wallet,
-} from "lucide-react"
+import { RefreshCw, ExternalLink, Plus, Minus, AlertCircle, ChevronRight, Zap, Loader2, Wallet } from "lucide-react"
 
 import { LPPositionChart } from "@/components/lp-position-chart"
 import { ImpermanentLossCalculator } from "@/components/impermanent-loss-calculator"
@@ -815,18 +803,65 @@ function MobilePositionCard({
 }
 
 export default function LPManagerPage() {
-  const { wallet, connectWallet } = useWallet()
+  const { wallet, connectWallet, address } = useWallet()
   const { toast } = useToast()
-  const { data, error } = useSWR("/api/lp-positions", fetcher)
+
+  const { data, error, mutate } = useSWR(address ? `/api/lp-manager/${address}` : null, fetcher, {
+    refreshInterval: 60000, // Refresh every 60 seconds instead of 30
+    revalidateOnFocus: false, // Disabled to prevent unnecessary refreshes on tab focus
+    dedupingInterval: 30000, // Dedupe requests within 30 seconds
+  })
+
+  if (!address) {
+    return (
+      <div className="bg-background min-h-screen">
+        <StickyHeader>
+          <div className="flex justify-between items-center px-6 py-4">
+            <div className="flex items-center space-x-3">
+              <Wallet className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold text-white">LP Manager</h1>
+            </div>
+          </div>
+        </StickyHeader>
+
+        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
+          <div className="max-w-md w-full space-y-6 text-center">
+            <div className="w-20 h-20 mx-auto bg-accent/10 rounded-full flex items-center justify-center">
+              <Wallet className="h-10 w-10 text-accent" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
+              <p className="text-muted-foreground">Connect your wallet to view and manage your liquidity positions</p>
+            </div>
+            <EnhancedWalletConnect onConnect={connectWallet} />
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (error) {
     return (
       <ErrorBoundary>
-        <div className="flex justify-center items-center h-screen">
-          <div className="text-center">
-            <AlertCircle className="h-12 w-12 text-destructive mb-4" />
-            <h2 className="text-2xl font-bold text-destructive">Failed to Load LP Positions</h2>
-            <p className="text-sm text-muted-foreground">Please try again later.</p>
+        <div className="bg-background min-h-screen">
+          <StickyHeader>
+            <div className="flex justify-between items-center px-6 py-4">
+              <div className="flex items-center space-x-3">
+                <Wallet className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold text-white">LP Manager</h1>
+              </div>
+            </div>
+          </StickyHeader>
+          <div className="flex justify-center items-center h-[60vh]">
+            <div className="text-center space-y-4">
+              <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
+              <h2 className="text-2xl font-bold text-destructive">Failed to Load LP Positions</h2>
+              <p className="text-sm text-muted-foreground">Please try again later.</p>
+              <Button onClick={() => mutate()} variant="outline">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Retry
+              </Button>
+            </div>
           </div>
         </div>
       </ErrorBoundary>
@@ -835,8 +870,19 @@ export default function LPManagerPage() {
 
   if (!data) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="bg-background min-h-screen">
+        <StickyHeader>
+          <div className="flex justify-between items-center px-6 py-4">
+            <div className="flex items-center space-x-3">
+              <Wallet className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold text-white">LP Manager</h1>
+            </div>
+          </div>
+        </StickyHeader>
+        <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading your positions...</p>
+        </div>
       </div>
     )
   }
@@ -849,11 +895,11 @@ export default function LPManagerPage() {
             <Wallet className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold text-white">LP Manager</h1>
           </div>
-          {wallet ? (
-            <div className="text-sm text-muted-foreground">Connected with {wallet.name}</div>
-          ) : (
-            <EnhancedWalletConnect onConnect={connectWallet} />
-          )}
+          <div className="flex items-center space-x-2">
+            <div className="text-sm text-muted-foreground hidden sm:block">
+              {address.slice(0, 6)}...{address.slice(-4)}
+            </div>
+          </div>
         </div>
       </StickyHeader>
 
@@ -861,17 +907,9 @@ export default function LPManagerPage() {
         <div className="flex justify-between items-center">
           <DeusTicker />
           <div className="flex items-center space-x-2">
-            <Button variant="outline">
+            <Button variant="outline" onClick={() => mutate()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
-            </Button>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filter
-            </Button>
-            <Button variant="outline">
-              <Search className="h-4 w-4 mr-2" />
-              Search
             </Button>
           </div>
         </div>
@@ -881,13 +919,12 @@ export default function LPManagerPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">Total Value</div>
-                <div className="text-2xl font-bold text-white">{data.totalValue.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-white">${data.totalValue.toFixed(2)}</div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">Total P&L</div>
                 <div className={`text-2xl font-bold ${data.totalPnl >= 0 ? "text-green-400" : "text-red-400"}`}>
-                  {data.totalPnl >= 0 ? "+" : ""}
-                  {data.totalPnl.toFixed(2)}
+                  {data.totalPnl >= 0 ? "+" : ""}${data.totalPnl.toFixed(2)}
                 </div>
               </div>
             </div>
@@ -895,7 +932,7 @@ export default function LPManagerPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">Total Fees Earned</div>
-                <div className="text-2xl font-bold text-green-400">{data.totalFeesEarned.toFixed(2)}</div>
+                <div className="text-2xl font-bold text-green-400">${data.totalFeesEarned.toFixed(2)}</div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">Positions</div>
@@ -905,19 +942,35 @@ export default function LPManagerPage() {
           </div>
         </div>
 
-        <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6">
-          {data.positions.map((position) => (
-            <MobilePositionCard
-              key={position.id}
-              position={position}
-              formatNumber={(n) => n.toFixed(2)}
-              formatPercent={(n) => `${n.toFixed(2)}%`}
-              onUpdate={() => {
-                // Refresh data here
-              }}
-            />
-          ))}
-        </motion.div>
+        {data.positions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12 space-y-4">
+            <div className="w-16 h-16 bg-muted/10 rounded-full flex items-center justify-center">
+              <Wallet className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-white mb-2">No Positions Found</h3>
+              <p className="text-sm text-muted-foreground max-w-md">
+                You don't have any active liquidity positions yet. Start by adding liquidity to a pool.
+              </p>
+            </div>
+            <Button className="mt-4" onClick={() => (window.location.href = "/pools")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Browse Pools
+            </Button>
+          </div>
+        ) : (
+          <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6">
+            {data.positions.map((position) => (
+              <MobilePositionCard
+                key={position.id}
+                position={position}
+                formatNumber={(n) => `$${n.toFixed(2)}`}
+                formatPercent={(n) => `${n.toFixed(2)}%`}
+                onUpdate={() => mutate()}
+              />
+            ))}
+          </motion.div>
+        )}
       </div>
     </div>
   )

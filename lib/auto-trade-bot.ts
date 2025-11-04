@@ -259,9 +259,9 @@ export class AutoTradeBot {
   private async fetchAndCachePrice(retries = 3): Promise<number | null> {
     for (let i = 0; i < retries; i++) {
       try {
-        console.log(`[v0] Fetching DEUS price via BlastAPI (attempt ${i + 1}/${retries})`)
+        console.log(`[v0] Fetching DEUS price via Alchemy (attempt ${i + 1}/${retries})`)
 
-        // Use the existing price feed system which uses BlastAPI under the hood
+        // Use the existing price feed system which uses Alchemy under the hood
         const result = await fetchTokenPrices(["DEUS"])
 
         if (result.prices.DEUS && result.prices.DEUS.price > 0) {

@@ -13,21 +13,34 @@ export function useGovernance() {
   const [votes, setVotes] = useState<Record<string, number>>({})
   const [hasVoted, setHasVoted] = useState(false)
 
-  // Fetch voting power
   const { data: votingPowerData, error: votingPowerError } = useSWR(
     isConnected && address ? `/api/governance/voting-power?address=${address}` : null,
     fetcher,
-    { refreshInterval: 30000 },
+    {
+      refreshInterval: 300000, // 5 minutes instead of 30 seconds
+      dedupingInterval: 120000, // Dedupe requests within 2 minutes
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+    },
   )
 
-  // Fetch proposals
   const {
     data: proposalsData,
     error: proposalsError,
     mutate: mutateProposals,
-  } = useSWR("/api/governance/proposals", fetcher, { refreshInterval: 60000 })
+  } = useSWR("/api/governance/proposals", fetcher, {
+    refreshInterval: 300000, // 5 minutes instead of 60 seconds
+    dedupingInterval: 120000,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  })
 
-  const { data: statsData } = useSWR("/api/governance/stats", fetcher, { refreshInterval: 60000 })
+  const { data: statsData } = useSWR("/api/governance/stats", fetcher, {
+    refreshInterval: 300000, // 5 minutes instead of 60 seconds
+    dedupingInterval: 120000,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  })
 
   // Calculate voting stats
   const [votingStats, setVotingStats] = useState<VotingStats>({

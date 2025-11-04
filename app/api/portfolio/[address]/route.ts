@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { rpcCall } from "@/lib/rpc-config"
 import { fetchV3Positions, type LPPosition } from "@/lib/lp-positions"
 
+export const revalidate = 60 // Cache for 60 seconds
 export const dynamic = "force-dynamic"
 
 interface TokenMetadata {
@@ -50,7 +51,7 @@ const KNOWN_TOKENS: Record<string, TokenMetadata> = {
     symbol: "USDC",
     name: "USD Coin",
     decimals: 6,
-    logoURI: "https://tokens.1inch.io/0xa0b86a33e6441b8c0b8b8c0b8b8c0b8b8c0b8b8c.png",
+    logoURI: "https://tokens.1inch.io/0xa0b86a33e6441b8c0b8b8c0b8b8b8c0b8b8b8c.png",
   },
   "0x73582df1cad3187cd0746b7a473d65c06386837e": {
     address: "0x73582df1cad3187cd0746b7a473d65c06386837e",
@@ -393,7 +394,13 @@ export async function GET(request: Request, context: { params: Promise<{ address
     const startTime = Date.now()
     console.log("[v0] Starting portfolio data fetch...")
 
-    const [balanceData, lpPositions] = await Promise.all([fetchAllTokenBalances(address), fetchLPPositions(address)])
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout")), 25000),
+    )
+
+    const fetchPromise = Promise.all([fetchAllTokenBalances(address), fetchLPPositions(address)])
+
+    const [balanceData, lpPositions] = await Promise.race([fetchPromise, timeoutPromise])
 
     const prices = await getTokenPrices()
 
@@ -454,15 +461,22 @@ export async function GET(request: Request, context: { params: Promise<{ address
     const duration = Date.now() - startTime
     console.log(`[v0] Portfolio API completed successfully in ${duration}ms`)
 
-    return NextResponse.json(response)
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
+      },
+    })
   } catch (error) {
     console.error("[v0] Portfolio API critical error:", error)
     console.error("[v0] Error stack:", error instanceof Error ? error.stack : "No stack trace")
 
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    const status = errorMessage === "Request timeout" ? 504 : 500
+
     return NextResponse.json(
       {
         error: "Failed to fetch portfolio data",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: errorMessage,
         summary: {
           totalValue: 0,
           totalPnl: 0,
@@ -477,7 +491,7 @@ export async function GET(request: Request, context: { params: Promise<{ address
         positions: [],
         tokens: [],
       },
-      { status: 500 },
+      { status },
     )
   }
 }
