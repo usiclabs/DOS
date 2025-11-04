@@ -1827,7 +1827,11 @@ export function PoolsTable() {
         pool={selectedPool}
         isOpen={isDeployModalOpen}
         onClose={closeDeployModal}
-        allowPairingToggle={true}
+        // This prevents the modal from showing pairing options for pools like DEUS/USI
+        allowPairingToggle={
+          selectedPool &&
+          ["ETH", "WETH", "DEUS", "USDC", "ZORA"].includes(selectedPool.quoteToken?.symbol?.toUpperCase())
+        }
         initialPairingToken={selectedPool?.detectedPairingToken}
       />
 

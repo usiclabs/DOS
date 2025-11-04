@@ -77,14 +77,35 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
 
     // Filter for Base chain and convert to our format
     const basePairs = uniquePairs
-      .filter((pair: any) => pair.chainId === "base")
+      .filter((pair: any) => {
+        if (pair.chainId !== "base") return false
+
+        const baseIsDeus = pair.baseToken.symbol.toLowerCase() === "deus"
+        const quoteIsDeus = pair.quoteToken.symbol.toLowerCase() === "deus"
+        const baseIsCorrectDeus = pair.baseToken.address.toLowerCase() === DEUS_CONTRACT.toLowerCase()
+        const quoteIsCorrectDeus = pair.quoteToken.address.toLowerCase() === DEUS_CONTRACT.toLowerCase()
+
+        // If either token is labeled as DEUS, verify it has the correct contract address
+        if (baseIsDeus && !baseIsCorrectDeus) {
+          console.log(
+            `[v0] Excluding pool with incorrect DEUS address: ${pair.baseToken.address} (${pair.baseToken.symbol}/${pair.quoteToken.symbol})`,
+          )
+          return false
+        }
+        if (quoteIsDeus && !quoteIsCorrectDeus) {
+          console.log(
+            `[v0] Excluding pool with incorrect DEUS address: ${pair.quoteToken.address} (${pair.baseToken.symbol}/${pair.quoteToken.symbol})`,
+          )
+          return false
+        }
+
+        return true
+      })
       .slice(0, 100) // Increased limit to 100 pools for better coverage
       .map((pair: any): PoolData => {
         const isDeusPool =
           pair.baseToken.address.toLowerCase() === DEUS_CONTRACT.toLowerCase() ||
-          pair.quoteToken.address.toLowerCase() === DEUS_CONTRACT.toLowerCase() ||
-          pair.baseToken.symbol.toLowerCase() === "deus" ||
-          pair.quoteToken.symbol.toLowerCase() === "deus"
+          pair.quoteToken.address.toLowerCase() === DEUS_CONTRACT.toLowerCase()
 
         // Calculate APR based on volume and liquidity
         const feeRate = pair.feeTier ? Number.parseFloat(pair.feeTier) / 100 : 0.3 // Default 0.3%

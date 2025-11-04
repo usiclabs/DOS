@@ -8,8 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
 export function MaintenanceModal() {
-  // Set to true to enable maintenance mode
-  const isMaintenanceMode = true
+  const isMaintenanceMode = false
 
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [password, setPassword] = useState("")

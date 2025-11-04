@@ -64,6 +64,7 @@ interface DeployModalProps {
   defaultPairingToken?: "DEUS" | "ETH" | "USDC" | "ZORA"
   allowPairingToggle?: boolean
   initialPairingToken?: "DEUS" | "ETH" | "USDC" | "ZORA"
+  lockTokenPair?: boolean
 }
 
 export function DeployModal({
@@ -73,6 +74,7 @@ export function DeployModal({
   defaultPairingToken = "ETH",
   allowPairingToggle = false,
   initialPairingToken,
+  lockTokenPair = false,
 }: DeployModalProps) {
   const { toast } = useToast()
   const { isConnected, connectWallet } = useWallet()
@@ -128,8 +130,6 @@ export function DeployModal({
   const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69" // ZORA on Base
 
   useEffect(() => {
-    if (!isOpen) return
-
     const handleKeyPress = (e: KeyboardEvent) => {
       // Enter key to preview/deploy
       if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
@@ -248,19 +248,21 @@ export function DeployModal({
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        // When pairing toggle is disabled, use the pool's actual quote token
-        // When pairing toggle is enabled, use the selected pairing token
-        const quoteTokenAddress = allowPairingToggle
-          ? pairingToken === "DEUS"
-            ? DEUS_TOKEN_ADDRESS
-            : pairingToken === "USDC"
-              ? USDC_ADDRESS
-              : pairingToken === "ZORA"
-                ? ZORA_ADDRESS
-                : WETH_ADDRESS
-          : pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+        const quoteTokenAddress = lockTokenPair
+          ? pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
             ? getTokenAddress(pool.quoteToken.symbol)
             : pool.quoteToken.address
+          : allowPairingToggle
+            ? pairingToken === "DEUS"
+              ? DEUS_TOKEN_ADDRESS
+              : pairingToken === "USDC"
+                ? USDC_ADDRESS
+                : pairingToken === "ZORA"
+                  ? ZORA_ADDRESS
+                  : WETH_ADDRESS
+            : pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+              ? getTokenAddress(pool.quoteToken.symbol)
+              : pool.quoteToken.address
 
         if (!baseTokenAddress || !quoteTokenAddress) {
           return
@@ -308,7 +310,7 @@ export function DeployModal({
     }
 
     fetchBalances()
-  }, [pool, isOpen, toast, canResolveTokens, pairingToken, allowPairingToggle])
+  }, [pool, isOpen, toast, canResolveTokens, pairingToken, allowPairingToggle, lockTokenPair])
 
   useEffect(() => {
     const estimateGas = async () => {
@@ -348,8 +350,11 @@ export function DeployModal({
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress =
-          pairingToken === "DEUS"
+        const quoteTokenAddress = lockTokenPair
+          ? pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.quoteToken.symbol)
+            : pool.quoteToken.address
+          : pairingToken === "DEUS"
             ? DEUS_TOKEN_ADDRESS
             : pairingToken === "USDC"
               ? USDC_ADDRESS
@@ -361,7 +366,6 @@ export function DeployModal({
           return
         }
 
-        // Fetch prices from the price feeds API
         const response = await fetch("/api/token-prices", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -372,24 +376,70 @@ export function DeployModal({
 
         if (response.ok) {
           const data = await response.json()
-          const prices = {
-            base: data.prices[baseTokenAddress.toLowerCase()]?.price || pool.priceUsd || 0,
-            quote: data.prices[quoteTokenAddress.toLowerCase()]?.price || 1,
+
+          const basePrice = data.prices[baseTokenAddress.toLowerCase()]?.price || pool.priceUsd || 0
+          const quotePrice = data.prices[quoteTokenAddress.toLowerCase()]?.price || 0
+
+          let finalQuotePrice = quotePrice
+          if (quotePrice === 0 && (pairingToken === "ETH" || quoteTokenAddress === WETH_ADDRESS)) {
+            try {
+              const ethPriceResponse = await fetch(
+                "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
+              )
+              if (ethPriceResponse.ok) {
+                const ethPriceData = await ethPriceResponse.json()
+                finalQuotePrice = ethPriceData.ethereum?.usd || 3000 // Fallback to $3000 if API fails
+              }
+            } catch (error) {
+              console.error("[v0] Error fetching ETH price from CoinGecko:", error)
+              finalQuotePrice = 3000 // Fallback to $3000
+            }
           }
+
+          if (quotePrice === 0 && pairingToken === "USDC") {
+            finalQuotePrice = 1
+          }
+
+          const prices = {
+            base: basePrice,
+            quote: finalQuotePrice,
+          }
+
+          console.log("[v0] Token prices fetched:", {
+            baseToken: pool.baseToken.symbol,
+            baseAddress: baseTokenAddress,
+            basePrice: prices.base,
+            quoteToken: pairingToken,
+            quoteAddress: quoteTokenAddress,
+            quotePrice: prices.quote,
+          })
 
           setTokenPrices(prices)
         } else {
-          // Fallback to pool price data
+          const fallbackQuotePrice = pairingToken === "ETH" ? 3000 : pairingToken === "USDC" ? 1 : 1
+
           setTokenPrices({
             base: pool.priceUsd || 0,
-            quote: 1, // Assume quote token is $1 (USDC/ETH approximation)
+            quote: fallbackQuotePrice,
+          })
+
+          console.log("[v0] Using fallback prices:", {
+            base: pool.priceUsd || 0,
+            quote: fallbackQuotePrice,
           })
         }
       } catch (error) {
-        // Fallback to pool price data
+        const fallbackQuotePrice = pairingToken === "ETH" ? 3000 : pairingToken === "USDC" ? 1 : 1
+
         setTokenPrices({
           base: pool.priceUsd || 0,
-          quote: 1,
+          quote: fallbackQuotePrice,
+        })
+
+        console.error("[v0] Error fetching prices:", error)
+        console.log("[v0] Using fallback prices:", {
+          base: pool.priceUsd || 0,
+          quote: fallbackQuotePrice,
         })
       } finally {
         setIsLoadingPrices(false)
@@ -397,7 +447,7 @@ export function DeployModal({
     }
 
     fetchPrices()
-  }, [pool, isOpen, canResolveTokens, pairingToken])
+  }, [pool, isOpen, canResolveTokens, pairingToken, lockTokenPair])
 
   useEffect(() => {
     if (!pool || !baseAmount || !quoteAmount || !tokenPrices) {
@@ -434,13 +484,21 @@ export function DeployModal({
 
     const amount = Number.parseFloat(inputAmount)
 
-    // If we have valid USD prices, use them for 50/50 USD value split
     if (tokenPrices && tokenPrices.base > 0 && tokenPrices.quote > 0) {
       const inputPrice = inputToken === "base" ? tokenPrices.base : tokenPrices.quote
       const outputPrice = inputToken === "base" ? tokenPrices.quote : tokenPrices.base
 
-      // Calculate USD value of input
       const inputUsdValue = amount * inputPrice
+
+      console.log("[v0] Calculating balanced amount:", {
+        inputToken,
+        inputAmount: amount,
+        inputPrice,
+        inputUsdValue,
+        outputPrice,
+        advancedMode,
+        customRatio: advancedMode ? customRatio : 50,
+      })
 
       // In advanced mode, use custom ratio
       if (advancedMode) {
@@ -449,14 +507,27 @@ export function DeployModal({
         const outputUsdValue = inputUsdValue * outputRatio
         const outputAmount = outputUsdValue / outputPrice
 
+        console.log("[v0] Advanced mode calculation:", {
+          outputRatio,
+          outputUsdValue,
+          outputAmount,
+        })
+
         if (inputToken === "base") {
           setQuoteAmount(outputAmount.toFixed(6))
         } else {
           setBaseAmount(outputAmount.toFixed(6))
         }
       } else {
-        // Standard mode: 50/50 split by USD value
+        // For $0.18 of BASE, we want $0.18 of ETH
+        // If ETH is $3000, then we need $0.18 / $3000 = 0.00006 ETH
         const outputAmount = inputUsdValue / outputPrice
+
+        console.log("[v0] Standard mode calculation (50/50 USD split):", {
+          inputUsdValue,
+          outputPrice,
+          outputAmount,
+        })
 
         if (inputToken === "base") {
           setQuoteAmount(outputAmount.toFixed(6))
@@ -683,8 +754,11 @@ export function DeployModal({
             ? getTokenAddress(pool.baseToken.symbol)
             : pool.baseToken.address
 
-        const quoteTokenAddress =
-          pairingToken === "DEUS"
+        const quoteTokenAddress = lockTokenPair
+          ? pool.quoteToken.address === "0x0000000000000000000000000000000000000000"
+            ? getTokenAddress(pool.quoteToken.symbol)
+            : pool.quoteToken.address
+          : pairingToken === "DEUS"
             ? DEUS_TOKEN_ADDRESS
             : pairingToken === "USDC"
               ? USDC_ADDRESS
@@ -960,7 +1034,8 @@ export function DeployModal({
             <span>Deploy Liquidity</span>
           </DialogTitle>
           <DialogDescription>
-            Add liquidity to {pool.baseToken.symbol}/{pool.quoteToken.symbol} pool on Uniswap V3
+            Add liquidity to {pool.baseToken.symbol}/{lockTokenPair ? pool.quoteToken.symbol : pairingToken} pool on
+            Uniswap V3
             {step === "input" && (
               <span className="text-xs text-gray-500 ml-2">
                 (Press <kbd className="px-1 py-0.5 bg-white/10 rounded text-xs">Enter</kbd> to preview)
@@ -1006,7 +1081,7 @@ export function DeployModal({
                 </Card>
               )}
 
-              {allowPairingToggle && (
+              {allowPairingToggle && !lockTokenPair && (
                 <Card className="glass-card border-orange-500/20">
                   <CardHeader className="pb-3">
                     <CardTitle className="text-sm">Pairing Currency</CardTitle>
@@ -1100,6 +1175,22 @@ export function DeployModal({
                         Pairing with DEUS helps strengthen the DEUS ecosystem and provides liquidity for creator tokens
                       </p>
                     )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {lockTokenPair && (
+                <Card className="glass-card border-blue-500/20 bg-blue-500/5">
+                  <CardContent className="pt-4">
+                    <div className="flex items-center gap-2 text-sm text-blue-400">
+                      <Info className="h-4 w-4" />
+                      <span>
+                        Adding liquidity to existing {pool.baseToken.symbol}/{pool.quoteToken.symbol} pool
+                      </span>
+                    </div>
+                    <div className="mt-2 text-xs text-gray-400">
+                      Token pair is locked to match the pool's configuration
+                    </div>
                   </CardContent>
                 </Card>
               )}
@@ -1347,7 +1438,7 @@ export function DeployModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="quoteAmount">{pairingToken} Amount</Label>
+                  <Label htmlFor="quoteAmount">{lockTokenPair ? pool.quoteToken.symbol : pairingToken} Amount</Label>
                   <Input
                     id="quoteAmount"
                     type="number"

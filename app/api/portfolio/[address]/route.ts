@@ -176,20 +176,32 @@ async function discoverTokensFromTransfers(address: string): Promise<string[]> {
 
     const currentBlock = await rpcCall<string>("eth_blockNumber", [])
     const currentBlockNum = Number.parseInt(currentBlock, 16)
-    const BLOCK_CHUNK_SIZE = 2000
-    const TOTAL_BLOCKS_TO_SCAN = 10000
+    const BLOCK_CHUNK_SIZE = 10 // Alchemy free tier limit
+    const TOTAL_BLOCKS_TO_SCAN = 1000 // Reduced from 10000 to avoid too many requests
     const fromBlock = Math.max(0, currentBlockNum - TOTAL_BLOCKS_TO_SCAN)
 
     console.log("[v0] Scanning blocks from", fromBlock, "to", currentBlockNum, "in chunks of", BLOCK_CHUNK_SIZE)
 
     const tokenAddresses = new Set<string>()
+    let requestCount = 0
+    const MAX_REQUESTS = 50 // Limit total requests to avoid rate limiting
 
     for (let startBlock = fromBlock; startBlock < currentBlockNum; startBlock += BLOCK_CHUNK_SIZE) {
+      if (requestCount >= MAX_REQUESTS) {
+        console.log("[v0] Reached maximum request limit, stopping scan")
+        break
+      }
+
       const endBlock = Math.min(startBlock + BLOCK_CHUNK_SIZE - 1, currentBlockNum)
 
       console.log(`[v0] Fetching transfers from block 0x${startBlock.toString(16)} to 0x${endBlock.toString(16)}`)
 
       try {
+        if (requestCount > 0 && requestCount % 10 === 0) {
+          console.log("[v0] Pausing to avoid rate limits...")
+          await new Promise((resolve) => setTimeout(resolve, 1000))
+        }
+
         const [transferToLogs, transferFromLogs] = await Promise.all([
           rpcCall<any[]>("eth_getLogs", [
             {
@@ -215,6 +227,8 @@ async function discoverTokensFromTransfers(address: string): Promise<string[]> {
           ]).catch(() => []),
         ])
 
+        requestCount += 2 // We made 2 requests
+
         const allLogs = [...(transferToLogs || []), ...(transferFromLogs || [])]
 
         for (const log of allLogs) {
@@ -223,17 +237,16 @@ async function discoverTokensFromTransfers(address: string): Promise<string[]> {
           }
         }
 
-        console.log(`[v0] Found ${tokenAddresses.size} unique tokens so far`)
-
         if (endBlock < currentBlockNum) {
-          await new Promise((resolve) => setTimeout(resolve, 100))
+          await new Promise((resolve) => setTimeout(resolve, 50))
         }
       } catch (error) {
         console.error(`[v0] Error fetching logs for blocks ${startBlock}-${endBlock}:`, error)
+        continue
       }
     }
 
-    console.log("[v0] Discovered", tokenAddresses.size, "unique tokens from transfers")
+    console.log("[v0] Discovered", tokenAddresses.size, "unique tokens from", requestCount, "requests")
 
     return Array.from(tokenAddresses)
   } catch (error) {

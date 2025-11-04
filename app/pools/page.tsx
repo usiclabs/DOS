@@ -268,7 +268,8 @@ export default function PoolsPage() {
         pool={selectedPool}
         isOpen={isDeployModalOpen}
         onClose={closeDeployModal}
-        allowPairingToggle={true}
+        lockTokenPair={true}
+        allowPairingToggle={false}
       />
     </div>
   )

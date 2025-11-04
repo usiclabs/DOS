@@ -46,7 +46,7 @@ export function useClankerDeploy() {
 
     try {
       setDeployStep("preparing")
-      console.log("[v0] Preparing Clanker deployment with params:", params)
+      console.log("[v0] Preparing Clanker v4.0.0 deployment with params:", params)
 
       setDeployStep("deploying")
       const response = await fetch("/api/clanker/deploy", {
@@ -66,10 +66,9 @@ export function useClankerDeploy() {
       }
 
       const result = await response.json()
-      console.log("[v0] Clanker deployment result:", result.message)
+      console.log("[v0] Clanker v4.0.0 deployment result:", result.message)
 
       setDeployStep("creating-pool")
-      // Clanker handles pool creation automatically
       await new Promise((resolve) => setTimeout(resolve, 2000))
 
       setDeployStep("finalizing")
@@ -80,14 +79,15 @@ export function useClankerDeploy() {
         success: true,
         tokenAddress: result.tokenAddress,
         requestKey: result.requestKey,
+        txHash: result.txHash,
       })
 
       toast({
-        title: "Token Deployment Enqueued!",
-        description: `${params.symbol} deployment has been submitted to Clanker`,
+        title: "Token Deployed on Uniswap V4!",
+        description: `${params.symbol} has been deployed with a V4 liquidity pool`,
       })
     } catch (error: any) {
-      console.error("[v0] Clanker deployment error:", error)
+      console.error("[v0] Clanker v4.0.0 deployment error:", error)
       setDeployStep("error")
       setDeployResult({
         success: false,
