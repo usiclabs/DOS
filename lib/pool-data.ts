@@ -71,6 +71,10 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
 
     console.log(`[v0] Found ${uniquePairs.length} unique pairs from all sources`)
 
+    if (uniquePairs.length > 0) {
+      console.log("[v0] Sample pair data structure:", JSON.stringify(uniquePairs[0], null, 2))
+    }
+
     // Filter for Base chain and convert to our format
     const basePairs = uniquePairs
       .filter((pair: any) => pair.chainId === "base")
@@ -98,6 +102,25 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
           pair.info?.imageUrl ||
           `https://dd.dexscreener.com/ds-data/tokens/base/${pair.baseToken.address}.png`
 
+        // DexScreener provides: volume.h6, volume.h24, liquidity.usd
+        // We can estimate 24h change by comparing h24 to h6 * 4 (rough approximation)
+        const volumeH24 = pair.volume?.h24 || 0
+        const volumeH6 = pair.volume?.h6 || 0
+        const estimatedPreviousVolume = volumeH6 * 4 // Rough estimate of 24h volume from 6h
+        const volumeChange24h =
+          estimatedPreviousVolume > 0 ? ((volumeH24 - estimatedPreviousVolume) / estimatedPreviousVolume) * 100 : 0
+
+        // For liquidity, we'll use the txns data as a proxy for activity change
+        const txnsH24 = (pair.txns?.h24?.buys || 0) + (pair.txns?.h24?.sells || 0)
+        const txnsH6 = (pair.txns?.h6?.buys || 0) + (pair.txns?.h6?.sells || 0)
+        const estimatedPreviousTxns = txnsH6 * 4
+        const liquidityChange24h =
+          estimatedPreviousTxns > 0 ? ((txnsH24 - estimatedPreviousTxns) / estimatedPreviousTxns) * 100 : 0
+
+        console.log(
+          `[v0] Pool ${pair.baseToken.symbol}/${pair.quoteToken.symbol}: volChange=${volumeChange24h.toFixed(2)}%, liqChange=${liquidityChange24h.toFixed(2)}%`,
+        )
+
         return {
           id: pair.pairAddress,
           pairAddress: pair.pairAddress,
@@ -114,10 +137,10 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
           dexId: pair.dexId,
           chainId: pair.chainId,
           priceUsd: Number.parseFloat(pair.priceUsd) || 0,
-          volume24h: pair.volume?.h24 || 0,
-          volumeChange24h: pair.volume?.h24Change || 0,
+          volume24h: volumeH24,
+          volumeChange24h,
           liquidity: pair.liquidity?.usd || 0,
-          liquidityChange24h: pair.liquidity?.h24Change || 0,
+          liquidityChange24h,
           priceChange24h: pair.priceChange?.h24 || 0,
           feeApr,
           netApy,
