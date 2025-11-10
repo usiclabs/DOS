@@ -2,26 +2,26 @@ import type { MetadataRoute } from "next"
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Clanker - DeFi Yield Optimizer",
-    short_name: "Clanker",
-    description: "Advanced yield optimization and liquidity management for the Clanker ecosystem on Base",
+    name: "D.O.S. - DEUS Operating System",
+    short_name: "D.O.S.",
+    description: "Advanced Base-chain liquidity dashboard with AI-powered analytics",
     start_url: "/",
     display: "standalone",
-    background_color: "#0a0a0a",
-    theme_color: "#8b5cf6",
+    background_color: "#1a1a1a",
+    theme_color: "#0052FF",
     icons: [
       {
-        src: "/favicon.svg",
+        src: "/favicon.ico",
         sizes: "any",
-        type: "image/svg+xml",
+        type: "image/x-icon",
       },
       {
-        src: "/icon-192.jpg",
+        src: "/icon-192.png",
         sizes: "192x192",
         type: "image/png",
       },
       {
-        src: "/icon-512.jpg",
+        src: "/icon-512.png",
         sizes: "512x512",
         type: "image/png",
       },

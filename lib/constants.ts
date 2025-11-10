@@ -1,8 +1,8 @@
-// CLANKER token address on Base
-export const DEUS_TOKEN_ADDRESS = "0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb" // CLANKER token on Base
+// DEUS token address on Base
+export const DEUS_TOKEN_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e" // DEUS token on Base
 
-// CLANKER total supply for percentage calculations
-// CLANKER has 18 decimals, total supply is 1,000,000,000 tokens (1 billion)
+// DEUS total supply for percentage calculations
+// DEUS has 18 decimals, total supply is 1,000,000,000 tokens (1 billion)
 export const DEUS_TOTAL_SUPPLY = BigInt("1000000000000000000000000000") // 1B tokens with 18 decimals
 export const DEUS_ONE_PERCENT_THRESHOLD = DEUS_TOTAL_SUPPLY / BigInt(100) // 1% = 10M tokens
 export const DEUS_FIVE_PERCENT_THRESHOLD = DEUS_TOTAL_SUPPLY / BigInt(20) // 5% = 50M tokens
@@ -13,8 +13,7 @@ export const VOTING_START_DATE = new Date("2025-01-01T00:00:00Z").getTime()
 
 // Known token addresses on Base chain for fallback when pool data has zero addresses
 export const KNOWN_TOKEN_ADDRESSES: Record<string, string> = {
-  DEUS: "0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb",
-  CLANKER: "0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb",
+  DEUS: "0x73582df1cad3187cD0746b7A473d65c06386837e",
   WETH: "0x4200000000000000000000000000000000000006",
   ETH: "0x4200000000000000000000000000000000000006", // WETH is used for ETH
   USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",

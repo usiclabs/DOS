@@ -36,7 +36,7 @@ export interface PoolData {
 }
 
 const DEXSCREENER_SEARCH_URL = "https://api.dexscreener.com/latest/dex/search"
-const DEUS_CONTRACT = "0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb"
+const DEUS_CONTRACT = "0x73582df1cad3187cd0746b7a473d65c06386837e"
 
 export async function fetchDexscreenerPools(): Promise<PoolData[]> {
   try {
@@ -51,7 +51,7 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
       next: { revalidate: 60 },
     })
 
-    const deusSymbolResponse = await fetch(`${DEXSCREENER_SEARCH_URL}?q=CLANKER`, {
+    const deusSymbolResponse = await fetch(`${DEXSCREENER_SEARCH_URL}?q=DEUS`, {
       headers: { "User-Agent": "D.O.S./1.0" },
       next: { revalidate: 30 },
     })
@@ -80,21 +80,21 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
       .filter((pair: any) => {
         if (pair.chainId !== "base") return false
 
-        const baseIsDeus = pair.baseToken.symbol.toLowerCase() === "clanker"
-        const quoteIsDeus = pair.quoteToken.symbol.toLowerCase() === "clanker"
+        const baseIsDeus = pair.baseToken.symbol.toLowerCase() === "deus"
+        const quoteIsDeus = pair.quoteToken.symbol.toLowerCase() === "deus"
         const baseIsCorrectDeus = pair.baseToken.address.toLowerCase() === DEUS_CONTRACT.toLowerCase()
         const quoteIsCorrectDeus = pair.quoteToken.address.toLowerCase() === DEUS_CONTRACT.toLowerCase()
 
-        // If either token is labeled as CLANKER, verify it has the correct contract address
+        // If either token is labeled as DEUS, verify it has the correct contract address
         if (baseIsDeus && !baseIsCorrectDeus) {
           console.log(
-            `[v0] Excluding pool with incorrect CLANKER address: ${pair.baseToken.address} (${pair.baseToken.symbol}/${pair.quoteToken.symbol})`,
+            `[v0] Excluding pool with incorrect DEUS address: ${pair.baseToken.address} (${pair.baseToken.symbol}/${pair.quoteToken.symbol})`,
           )
           return false
         }
         if (quoteIsDeus && !quoteIsCorrectDeus) {
           console.log(
-            `[v0] Excluding pool with incorrect CLANKER address: ${pair.quoteToken.address} (${pair.baseToken.symbol}/${pair.quoteToken.symbol})`,
+            `[v0] Excluding pool with incorrect DEUS address: ${pair.quoteToken.address} (${pair.baseToken.symbol}/${pair.quoteToken.symbol})`,
           )
           return false
         }
@@ -179,9 +179,9 @@ export async function fetchDexscreenerPools(): Promise<PoolData[]> {
       })
 
     const deusPoolsFound = basePairs.filter((pool) => pool.isDeusPool)
-    console.log(`[v0] Found ${deusPoolsFound.length} CLANKER pools out of ${basePairs.length} total pools`)
+    console.log(`[v0] Found ${deusPoolsFound.length} DEUS pools out of ${basePairs.length} total pools`)
 
-    // Sort CLANKER pools first, then by net APY
+    // Sort DEUS pools first, then by net APY
     return basePairs.sort((a, b) => {
       if (a.isDeusPool && !b.isDeusPool) return -1
       if (!a.isDeusPool && b.isDeusPool) return 1

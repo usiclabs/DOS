@@ -186,9 +186,13 @@ async function fetchDeusTickerPrice(): Promise<Record<string, TokenPrice>> {
     let baseUrl: string
 
     if (process.env.NEXT_PUBLIC_VERCEL_URL) {
-      baseUrl = `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
+      // Check if URL already has protocol
+      const url = process.env.NEXT_PUBLIC_VERCEL_URL
+      baseUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`
     } else if (process.env.VERCEL_URL) {
-      baseUrl = `https://${process.env.VERCEL_URL}`
+      // Check if URL already has protocol
+      const url = process.env.VERCEL_URL
+      baseUrl = url.startsWith("http://") || url.startsWith("https://") ? url : `https://${url}`
     } else if (typeof window !== "undefined") {
       baseUrl = window.location.origin
     } else {
@@ -227,8 +231,8 @@ async function fetchDeusTickerPrice(): Promise<Record<string, TokenPrice>> {
     return {}
   } catch (error) {
     console.error("[v0] DEUS Ticker price fetch failed:", error)
-    console.log("[v0] Falling back to Uniswap V3 direct query...")
-    return fetchDeusFromUniswapV3()
+    console.log("[v0] Skipping Uniswap V3 fallback, will use DexScreener instead")
+    return {}
   }
 }
 
