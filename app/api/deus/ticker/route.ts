@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-const DEUS_CONTRACT = "0x73582df1cad3187cd0746b7a473d65c06386837e"
+const CLANKER_CONTRACT = "0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb"
 const DEXSCREENER_BASE_URL = "https://api.dexscreener.com/latest/dex/tokens"
 const BASESCAN_BASE_URL = "https://api.basescan.org/api"
 
@@ -81,7 +81,7 @@ async function fetchDexscreenerData(): Promise<DexscreenerResponse | null> {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
 
-    const response = await fetch(`${DEXSCREENER_BASE_URL}/${DEUS_CONTRACT}`, {
+    const response = await fetch(`${DEXSCREENER_BASE_URL}/${CLANKER_CONTRACT}`, {
       headers: {
         "User-Agent": "D.O.S./1.0",
         Accept: "application/json",
@@ -113,7 +113,7 @@ async function fetchBasescanHolders(): Promise<number | null> {
 
   try {
     const response = await fetch(
-      `${BASESCAN_BASE_URL}?module=token&action=tokenholdercount&contractaddress=${DEUS_CONTRACT}&apikey=${apiKey}`,
+      `${BASESCAN_BASE_URL}?module=token&action=tokenholdercount&contractaddress=${CLANKER_CONTRACT}&apikey=${apiKey}`,
       {
         next: { revalidate: 60 }, // Cache holders for 1 minute
       },

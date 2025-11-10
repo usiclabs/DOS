@@ -21,7 +21,7 @@ import { getTokenAddress } from "@/lib/constants"
 import { DeployModal } from "@/components/deploy-modal"
 import { useToast } from "@/hooks/use-toast"
 
-const DEUS_CONTRACT_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
+const DEUS_CONTRACT_ADDRESS = "0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb"
 
 export function DeusTicker() {
   const [isPaused, setIsPaused] = useState(false)
@@ -79,7 +79,7 @@ export function DeusTicker() {
 
     let detectedPairingToken: "DEUS" | "ETH" | "USDC" | "ZORA" = "ETH"
     const quoteSymbol = pair.quote.toUpperCase()
-    if (quoteSymbol === "DEUS") detectedPairingToken = "DEUS"
+    if (quoteSymbol === "CLANKER") detectedPairingToken = "DEUS"
     else if (quoteSymbol === "USDC") detectedPairingToken = "USDC"
     else if (quoteSymbol === "ZORA") detectedPairingToken = "ZORA"
     else if (quoteSymbol === "WETH" || quoteSymbol === "ETH") detectedPairingToken = "ETH"
@@ -105,7 +105,7 @@ export function DeusTicker() {
       netApy: pair.apy24h || 0,
       feeTier: pair.feeTier || "0.3%",
       poolType: "v3" as const,
-      isDeusPool: pair.base === "DEUS" || pair.quote === "DEUS",
+      isDeusPool: pair.base === "CLANKER" || pair.quote === "CLANKER",
       volatility: 10,
       detectedPairingToken,
     }
@@ -139,7 +139,7 @@ export function DeusTicker() {
           <div className="flex items-center space-x-2 text-sm text-gray-400">
             {getStatusIcon()}
             <span>{getStatusText()}</span>
-            <span className="text-xs">• $DEUS live data will appear when available</span>
+            <span className="text-xs">• $CLANKER live data will appear when available</span>
           </div>
         </div>
       </div>
@@ -149,7 +149,7 @@ export function DeusTicker() {
   const tickerItems = [
     {
       icon: <DollarSign className="h-4 w-4" />,
-      label: "$DEUS",
+      label: "$CLANKER",
       value: `$${tickerData.priceUsd.toFixed(6)}`, // Increased decimal places from 4 to 6
     },
     {
@@ -256,7 +256,7 @@ export function DeusTicker() {
             <div className="p-4">
               <div className="container mx-auto">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-bold text-white">$DEUS Token Details</h3>
+                  <h3 className="text-lg font-bold text-white">$CLANKER Token Details</h3>
                   <Button
                     variant="outline"
                     size="sm"

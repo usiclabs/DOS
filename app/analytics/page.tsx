@@ -262,7 +262,7 @@ export default function AnalyticsPage() {
               {[...Array(20)].map((_, i) => (
                 <motion.div
                   key={i}
-                  className="absolute w-1 h-1 bg-orange-400/30 rounded-full"
+                  className="absolute w-1 h-1 bg-purple-400/30 rounded-full"
                   style={{
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
@@ -286,26 +286,26 @@ export default function AnalyticsPage() {
                   <motion.div
                     animate={{ rotate: 360 }}
                     transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
-                    className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg shadow-orange-500/50"
+                    className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-purple-500/50"
                   >
                     <Sparkles className="w-6 h-6 text-white" />
                   </motion.div>
                   <div>
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white via-orange-200 to-orange-400 bg-clip-text text-transparent leading-tight">
-                      DEUS Analytics
+                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent leading-tight">
+                      CLANKER Analytics
                     </h1>
                     <p className="text-gray-400 text-sm md:text-base mt-1">Real-time ecosystem insights</p>
                   </div>
                 </div>
                 <p className="text-gray-300 text-sm md:text-lg leading-relaxed max-w-2xl">
-                  Comprehensive analytics dashboard tracking liquidity, volume, and performance across the DEUS DeFi
+                  Comprehensive analytics dashboard tracking liquidity, volume, and performance across the CLANKER DeFi
                   ecosystem
                 </p>
                 <div className="flex flex-wrap items-center gap-3">
                   <LiveDataIndicator label="Live" />
-                  <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30 text-orange-300 px-4 py-1.5">
+                  <Badge className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border-purple-500/30 text-purple-300 px-4 py-1.5">
                     <Activity className="w-3 h-3 mr-2" />
-                    DEUS Ecosystem
+                    CLANKER Ecosystem
                   </Badge>
                   <Badge className="bg-white/5 border-white/10 text-gray-300 px-4 py-1.5">
                     Updated: {new Date().toLocaleTimeString()}
@@ -324,13 +324,13 @@ export default function AnalyticsPage() {
             {[
               {
                 icon: Target,
-                label: "DEUS Price",
+                label: "CLANKER Price",
                 value: safeData.overview.deusPrice,
                 change: safeData.overview.deusChange24h,
-                formatter: formatSmallPrice, // Use formatSmallPrice for DEUS price
-                gradient: "from-orange-500/20 to-red-500/20",
-                iconColor: "text-orange-400",
-                glowColor: "shadow-orange-500/20",
+                formatter: formatSmallPrice,
+                gradient: "from-purple-500/20 to-cyan-500/20",
+                iconColor: "text-purple-400",
+                glowColor: "shadow-purple-500/20",
               },
               {
                 icon: DollarSign,
@@ -348,7 +348,7 @@ export default function AnalyticsPage() {
                 value: safeData.overview.totalVolume24h,
                 sublabel: "Trading activity",
                 formatter: formatCurrency,
-                gradient: "from-purple-500/20 to-pink-500/20",
+                gradient: "from-purple-500/20 to-cyan-500/20",
                 iconColor: "text-purple-400",
                 glowColor: "shadow-purple-500/20",
               },
@@ -438,8 +438,8 @@ export default function AnalyticsPage() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="relative group"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-white/10 to-white/[0.02] border border-white/10 hover:border-orange-500/30 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative p-6 rounded-2xl backdrop-blur-xl bg-gradient-to-br from-white/10 to-white/[0.02] border border-white/10 hover:border-purple-500/30 transition-all duration-500 shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
               <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center flex-wrap gap-4 lg:gap-8">
                   <div className="flex items-center space-x-3">
@@ -448,19 +448,19 @@ export default function AnalyticsPage() {
                       transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
                       className="w-3 h-3 bg-green-400 rounded-full shadow-lg shadow-green-400/50"
                     />
-                    <span className="text-green-300 font-semibold">DEUS Ecosystem Live</span>
+                    <span className="text-green-300 font-semibold">CLANKER Ecosystem Live</span>
                   </div>
                   <div className="flex items-center space-x-3 text-gray-300">
-                    <Activity className="h-5 w-5 text-orange-400" />
+                    <Activity className="h-5 w-5 text-purple-400" />
                     <span className="font-mono">{formatSmallPrice(safeData.overview.deusPrice)}</span>{" "}
                   </div>
                   <div className="flex items-center space-x-3 text-gray-300">
-                    <Target className="h-5 w-5 text-orange-400" />
-                    <span className="font-mono text-sm">0x7358...837e</span>
+                    <Target className="h-5 w-5 text-purple-400" />
+                    <span className="font-mono text-sm">0x1bc0...1Bcb</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-3">
-                  <Badge className="bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30 text-orange-300 px-4 py-2">
+                  <Badge className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 border-purple-500/30 text-purple-300 px-4 py-2">
                     {safeData.topPools?.length || 0} pools tracked
                   </Badge>
                   <Badge className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border-green-500/30 text-green-300 px-4 py-2">

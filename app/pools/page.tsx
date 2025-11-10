@@ -220,7 +220,7 @@ export default function PoolsPage() {
                 sublabel: "Base chain pools",
                 color: "white",
               },
-              { icon: Zap, value: deusPoolCount, label: "DEUS Pools", sublabel: "Active pairs", color: "orange" },
+              { icon: Zap, value: deusPoolCount, label: "CLANKER Pools", sublabel: "Active pairs", color: "orange" },
               {
                 icon: Shield,
                 value: formatCurrency(volume24h),
