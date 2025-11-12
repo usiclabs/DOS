@@ -482,8 +482,8 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={handleClose}>
-        <SheetContent side="bottom" className="h-[90vh] glass-card backdrop-blur-md border-orange-500/20">
-          <SheetHeader>
+        <SheetContent side="bottom" className="h-[90vh] glass-card backdrop-blur-md border-orange-500/20 flex flex-col">
+          <SheetHeader className="flex-shrink-0">
             <SheetTitle className="flex items-center gap-2 text-2xl">
               <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500/20 to-amber-500/20">
                 <Sparkles className="w-5 h-5 text-orange-400" />
@@ -494,7 +494,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               Deploy your own creator coin on Zora with automatic Uniswap V4 liquidity
             </SheetDescription>
           </SheetHeader>
-          <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <ModalContent />
           </div>
         </SheetContent>
