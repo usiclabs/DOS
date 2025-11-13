@@ -340,7 +340,8 @@ export default function SwapPage() {
     setIsSwapping(true)
 
     try {
-      console.log("[v0] Configuring MetaMask to use Alchemy RPC...")
+      console.log("[v0] Configuring MetaMask to use public RPC...")
+
       try {
         await window.ethereum.request({
           method: "wallet_addEthereumChain",
@@ -353,12 +354,12 @@ export default function SwapPage() {
                 symbol: "ETH",
                 decimals: 18,
               },
-              rpcUrls: [`https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`],
+              rpcUrls: ["https://mainnet.base.org"],
               blockExplorerUrls: ["https://basescan.org"],
             },
           ],
         })
-        console.log("[v0] MetaMask configured to use Alchemy RPC")
+        console.log("[v0] MetaMask configured to use public RPC")
       } catch (addError: any) {
         // Chain might already exist, try switching
         if (addError.code === 4902) {
@@ -431,10 +432,16 @@ export default function SwapPage() {
         ),
       })
 
-      console.log("[v0] Waiting for transaction confirmation via Alchemy...")
+      console.log("[v0] Waiting for transaction confirmation...")
+      const isServer = typeof window === "undefined"
+      const rpcUrl =
+        isServer && process.env.ALCHEMY_API_KEY
+          ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
+          : "https://mainnet.base.org"
+
       const publicClient = createPublicClient({
         chain: base,
-        transport: http(`https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
+        transport: http(rpcUrl),
       })
 
       const receipt = await publicClient.waitForTransactionReceipt({
@@ -852,7 +859,7 @@ export default function SwapPage() {
                     </div>
                     {toToken && toAmount && (
                       <div className="text-sm text-muted-foreground text-right">
-                        ${(Number.parseFloat(toAmount) * toToken.price).toFixed(2)}
+                        ${(Number.parseFloat(toAmount) / Number.parseFloat(fromAmount)).toFixed(6)} {toToken?.symbol}
                       </div>
                     )}
                   </div>

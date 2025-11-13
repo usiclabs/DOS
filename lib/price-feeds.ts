@@ -240,14 +240,19 @@ async function fetchDeusFromUniswapV3(): Promise<Record<string, TokenPrice>> {
   const startTime = Date.now()
 
   try {
+    // Use server-only API key if available, otherwise use public endpoint
+    const isServer = typeof window === "undefined"
+    const rpcUrl =
+      isServer && process.env.ALCHEMY_API_KEY
+        ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
+        : "https://mainnet.base.org"
+
     const client = createPublicClient({
       chain: base,
-      transport: http(
-        `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
-      ),
+      transport: http(rpcUrl),
     })
 
-    console.log("[v0] Fetching DEUS price from Uniswap V3 pool via Alchemy...")
+    console.log("[v0] Fetching DEUS price from Uniswap V3 pool...")
 
     // Get pool data
     const [slot0Data, token0, token1] = await Promise.all([
@@ -299,7 +304,7 @@ async function fetchDeusFromUniswapV3(): Promise<Record<string, TokenPrice>> {
       DEUS: {
         symbol: "DEUS",
         price: deusPriceUsd,
-        source: "Uniswap V3 (Alchemy)",
+        source: "Uniswap V3",
         timestamp: Date.now(),
         confidence: calculateConfidence("dexscreener", responseTime),
       },
