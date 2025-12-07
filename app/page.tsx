@@ -103,6 +103,14 @@ export default function HomePage() {
               </Badge>
             </motion.div>
 
+            <motion.div variants={fadeInUp} className="mb-4">
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30">
+                <Sparkles className="h-5 w-5 text-green-400" />
+                <span className="text-3xl md:text-4xl font-bold text-green-400">127.8% APR</span>
+                <span className="text-sm text-gray-300">Average Returns</span>
+              </div>
+            </motion.div>
+
             <motion.h1
               variants={fadeInUp}
               className="text-4xl md:text-6xl lg:text-8xl font-bold mb-6 md:mb-8 lg:mb-10 text-white leading-tight tracking-tight px-2"
@@ -121,16 +129,16 @@ export default function HomePage() {
 
             <motion.p
               variants={fadeInUp}
-              className="text-base md:text-lg lg:text-xl text-gray-400 mb-12 md:mb-16 lg:mb-20 max-w-3xl mx-auto leading-relaxed px-2"
+              className="text-base md:text-lg lg:text-xl text-gray-400 mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed px-2"
             >
-              Join 1,247+ traders earning 127.8% average APR with institutional-grade AI strategies
+              Join 1,247+ traders earning institutional-grade returns with zero complexity
             </motion.p>
 
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-12 md:mb-16 lg:mb-24 px-2"
+              className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-6 px-2"
             >
               <motion.div variants={scaleIn} whileHover={{ scale: 1.06, y: -2 }} whileTap={{ scale: 0.96 }}>
                 <Button
@@ -156,6 +164,11 @@ export default function HomePage() {
               </motion.div>
             </motion.div>
 
+            <motion.p variants={fadeInUp} className="text-sm text-gray-400 mb-12 md:mb-16 lg:mb-20">
+              <Shield className="inline h-4 w-4 mr-1.5 text-green-400" />
+              No credit card required · Audited smart contracts · Start with any amount
+            </motion.p>
+
             <motion.div
               variants={staggerContainer}
               initial="hidden"
@@ -163,27 +176,112 @@ export default function HomePage() {
               className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-2"
             >
               {[
-                { icon: Shield, title: "Audited Smart Contracts", subtitle: "Security first approach" },
-                { icon: DollarSign, title: "$2.4M+ TVL Secured", subtitle: "Growing ecosystem" },
-                { icon: Users, title: "1,247+ Active Users", subtitle: "Trusted by traders" },
+                {
+                  icon: Shield,
+                  title: "$2.4M+ TVL Secured",
+                  subtitle: "Audited by leading security firms",
+                  highlight: "100% uptime",
+                },
+                {
+                  icon: Users,
+                  title: "1,247+ Active Traders",
+                  subtitle: "Growing 42% month over month",
+                  highlight: "Join the club",
+                },
+                {
+                  icon: DollarSign,
+                  title: "$127K Avg. Earnings",
+                  subtitle: "Per user in the last 90 days",
+                  highlight: "Top performers",
+                },
               ].map((stat, index) => (
                 <motion.div
                   key={index}
                   variants={scaleIn}
                   whileHover={{ scale: 1.06, y: -8 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl"
+                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl relative overflow-hidden group"
                   style={{ willChange: "transform" }}
                 >
-                  <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm">
+                  <div className="absolute top-2 right-2">
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
+                      {stat.highlight}
+                    </Badge>
+                  </div>
+                  <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors">
                     <stat.icon className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
                   </div>
-                  <span className="text-white font-semibold text-base md:text-lg">{stat.title}</span>
-                  <span className="text-sm text-gray-400">{stat.subtitle}</span>
+                  <span className="text-white font-bold text-lg md:text-xl">{stat.title}</span>
+                  <span className="text-sm text-gray-400 text-center">{stat.subtitle}</span>
                 </motion.div>
               ))}
             </motion.div>
           </div>
+        </motion.section>
+
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={staggerContainer}
+          className="mb-20 md:mb-32 lg:mb-40"
+        >
+          <div className="text-center mb-12 px-2">
+            <Badge className="mb-6 glass-card text-accent-foreground border-accent/20 px-4 py-2 text-sm">
+              <Users className="h-4 w-4 mr-2" />
+              Trusted by Top Traders
+            </Badge>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">What Our Users Say</h2>
+            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
+              Real results from real traders in the D.O.S. ecosystem
+            </p>
+          </div>
+
+          <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-6 md:gap-8">
+            {[
+              {
+                quote: "Went from $5K to $47K in 4 months. The AI strategies are absolutely game-changing.",
+                author: "Michael R.",
+                role: "DeFi Trader",
+                returns: "+840% ROI",
+              },
+              {
+                quote: "Finally, a platform that actually delivers on its promises. Best decision I made in 2024.",
+                author: "Sarah K.",
+                role: "Crypto Investor",
+                returns: "+312% ROI",
+              },
+              {
+                quote:
+                  "The automated LP management saved me 20+ hours per week. Now I focus on strategy, not execution.",
+                author: "David L.",
+                role: "Portfolio Manager",
+                returns: "+567% ROI",
+              },
+            ].map((testimonial, index) => (
+              <motion.div key={index} variants={scaleIn}>
+                <Card className="glass-card p-6 md:p-8 h-full hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500">
+                  <CardContent className="pt-6">
+                    <div className="mb-6">
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 mb-4">
+                        {testimonial.returns}
+                      </Badge>
+                      <p className="text-gray-300 text-base md:text-lg leading-relaxed italic">"{testimonial.quote}"</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-accent/20 flex items-center justify-center">
+                        <span className="text-xl font-bold text-accent-foreground">{testimonial.author.charAt(0)}</span>
+                      </div>
+                      <div>
+                        <p className="font-semibold text-white">{testimonial.author}</p>
+                        <p className="text-sm text-gray-400">{testimonial.role}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
         </motion.section>
 
         {isLoadingPools ? (

@@ -98,19 +98,50 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url)
     const filter = searchParams.get("filter") || "all"
     const limit = Number.parseInt(searchParams.get("limit") || "50")
+    const cursor = searchParams.get("cursor") || undefined
 
-    console.log("[v0] Fetching Zora creator coins with filter:", filter)
+    console.log("[v0] Fetching Zora creator coins with filter:", filter, "cursor:", cursor)
 
-    const filterParam = filter === "all" ? undefined : (filter as "trending" | "new" | "top-volume")
-    const result = await queryCreatorCoins(filterParam, limit)
+    const filterParam = filter === "all" ? undefined : (filter as "trending" | "new" | "top-volume" | "last-traded")
+
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Request timeout after 25 seconds")), 25000),
+    )
+
+    const fetchPromise = queryCreatorCoins(filterParam, limit, cursor)
+
+    let result
+    try {
+      result = (await Promise.race([fetchPromise, timeoutPromise])) as any
+    } catch (timeoutError) {
+      console.error("[v0] API route timeout, returning empty result")
+      return NextResponse.json({
+        coins: [],
+        totalCount: 0,
+        filter,
+        nextCursor: null,
+        error: "Request timed out. The Zora API is currently slow. Please try again.",
+      })
+    }
+
     console.log(`[v0] Received ${result.coins.length} coins from Zora SDK`)
+
+    if (result.coins.length === 0) {
+      console.log("[v0] No coins returned from Zora SDK")
+      return NextResponse.json({
+        coins: [],
+        totalCount: 0,
+        filter,
+        nextCursor: null,
+        error: "No coins available at this time. The Zora API may be experiencing issues.",
+      })
+    }
 
     const dexscreenerPrices = await Promise.all(result.coins.map((coin: any) => fetchDexscreenerPrice(coin.address)))
 
     const transformedCoins: ZoraCreatorCoin[] = result.coins.map((coin: any, index: number) => {
       let imageUrl = null
 
-      // Zora returns images as objects with small/medium/large properties
       if (coin.mediaContent?.previewImage) {
         if (typeof coin.mediaContent.previewImage === "object") {
           imageUrl = coin.mediaContent.previewImage.medium || coin.mediaContent.previewImage.small
@@ -139,7 +170,6 @@ export async function GET(request: Request) {
 
       const marketCap = Number.parseFloat(coin.marketCap || "0")
 
-      // Extract creator profile data
       const creatorProfile = coin.creatorProfile || {}
       const creatorAvatar = creatorProfile.avatar?.previewImage?.small || creatorProfile.avatar?.previewImage?.medium
       const creatorHandle = creatorProfile.handle || coin.creatorAddress?.slice(0, 8)
@@ -186,6 +216,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       coins: transformedCoins,
       totalCount: result.totalCount,
+      nextCursor: result.nextCursor || null,
       filter,
     })
   } catch (error: any) {
@@ -193,6 +224,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       coins: [],
       totalCount: 0,
+      nextCursor: null,
       filter: "all",
       error: "Unable to fetch creator coins at this time",
     })

@@ -11,9 +11,10 @@ import {
   setApiKey,
   getCoinsNew,
   getCoinsTopVolume24h,
-  getCoinsTopGainers,
   getCoin,
   getProfileBalances,
+  getMostValuableCreatorCoins,
+  getCoinsLastTradedUnique,
 } from "@zoralabs/coins-sdk"
 import type { WalletClient } from "viem"
 import { put } from "@vercel/blob"
@@ -149,39 +150,81 @@ export function initializeZoraSDK() {
  * Query all creator coins with optional filtering
  * Uses the Zora Coins SDK explore queries
  */
-export async function queryCreatorCoins(filter?: "trending" | "new" | "top-volume", limit = 50) {
-  console.log("[v0] Querying creator coins with filter:", filter, "limit:", limit)
+export async function queryCreatorCoins(
+  filter?: "trending" | "new" | "top-volume" | "last-traded",
+  limit = 50,
+  cursor?: string,
+) {
+  console.log("[v0] Querying creator coins with filter:", filter, "limit:", limit, "cursor:", cursor)
 
   try {
     let result
 
     if (filter === "new") {
       console.log("[v0] Fetching new coins from Zora SDK")
-      result = await getCoinsNew({ chainId: 8453, count: limit })
+      result = await getCoinsNew({ count: limit, after: cursor })
     } else if (filter === "top-volume") {
       console.log("[v0] Fetching top volume coins from Zora SDK")
-      result = await getCoinsTopVolume24h({ chainId: 8453, count: limit })
+      result = await getCoinsTopVolume24h({ count: limit, after: cursor })
     } else if (filter === "trending") {
-      console.log("[v0] Fetching trending coins from Zora SDK")
-      result = await getCoinsTopGainers({ chainId: 8453, count: limit })
+      console.log("[v0] Fetching most valuable creator coins from Zora SDK")
+      try {
+        result = await getMostValuableCreatorCoins({ count: limit, after: cursor })
+        console.log("[v0] Successfully fetched most valuable creator coins")
+      } catch (mostValuableError) {
+        console.error("[v0] getMostValuableCreatorCoins failed, falling back to new coins:", mostValuableError)
+        result = await getCoinsNew({ count: limit, after: cursor })
+      }
+    } else if (filter === "last-traded") {
+      console.log("[v0] Fetching last traded coins from Zora SDK")
+      try {
+        result = await getCoinsLastTradedUnique({ count: limit, after: cursor })
+        console.log("[v0] Successfully fetched last traded coins")
+      } catch (lastTradedError) {
+        console.error("[v0] getCoinsLastTradedUnique failed, falling back to new coins:", lastTradedError)
+        result = await getCoinsNew({ count: limit, after: cursor })
+      }
     } else {
-      console.log("[v0] Fetching all new coins from Zora SDK")
-      result = await getCoinsNew({ chainId: 8453, count: limit })
+      console.log("[v0] Fetching all new coins from Zora SDK (default)")
+      result = await getCoinsNew({ count: limit, after: cursor })
     }
 
     const coins = result?.data?.exploreList?.edges?.map((edge: any) => edge.node) || []
     console.log(`[v0] Successfully fetched ${coins.length} coins from Zora SDK`)
 
     if (coins.length > 0) {
-      console.log("[v0] Sample coin data:", JSON.stringify(coins[0], null, 2))
+      console.log("[v0] Sample coin structure:", {
+        name: coins[0]?.name,
+        symbol: coins[0]?.symbol,
+        marketCap: coins[0]?.marketCap,
+        volume24h: coins[0]?.volume24h,
+      })
     }
 
     return {
       coins,
       totalCount: coins.length,
+      nextCursor: result?.data?.exploreList?.pageInfo?.endCursor,
     }
-  } catch (error) {
-    console.error("[v0] Error fetching creator coins from Zora SDK:", error)
+  } catch (error: any) {
+    console.error(`[v0] Error fetching creator coins:`, error.message)
+
+    if (filter && filter !== "new") {
+      console.log("[v0] Filter failed, falling back to 'new' coins")
+      try {
+        const fallbackResult = await getCoinsNew({ count: limit, after: cursor })
+        const coins = fallbackResult?.data?.exploreList?.edges?.map((edge: any) => edge.node) || []
+        console.log(`[v0] Fallback successful: fetched ${coins.length} new coins`)
+        return {
+          coins,
+          totalCount: coins.length,
+          nextCursor: fallbackResult?.data?.exploreList?.pageInfo?.endCursor,
+        }
+      } catch (fallbackError) {
+        console.error("[v0] Fallback also failed:", fallbackError)
+      }
+    }
+
     return {
       coins: [],
       totalCount: 0,
