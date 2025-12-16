@@ -16,7 +16,19 @@ import { Badge } from "@/components/ui/badge"
 import { LiveDataIndicator } from "@/components/live-data-indicator"
 import useSWR from "swr"
 import type { PoolData } from "@/lib/pool-data"
-import { Shield, Brain, BarChart3, Rocket, Users, DollarSign, Sparkles, Trophy } from "lucide-react"
+import {
+  Shield,
+  Brain,
+  BarChart3,
+  Rocket,
+  Users,
+  DollarSign,
+  Sparkles,
+  Trophy,
+  Zap,
+  TrendingUp,
+  Lock,
+} from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -76,6 +88,22 @@ export default function HomePage() {
 
   const pools = poolsData?.pools || []
 
+  const { data: metricsData } = useSWR<{
+    avgApr?: number
+    totalUsers?: number
+    tvl?: number
+  }>("/api/analytics/metrics", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 600000,
+    refreshInterval: 600000,
+  })
+
+  const metrics = {
+    avgApr: metricsData?.avgApr || null,
+    totalUsers: metricsData?.totalUsers || null,
+    tvl: metricsData?.tvl || null,
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <StickyHeader />
@@ -103,13 +131,17 @@ export default function HomePage() {
               </Badge>
             </motion.div>
 
-            <motion.div variants={fadeInUp} className="mb-4">
-              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30">
-                <Sparkles className="h-5 w-5 text-green-400" />
-                <span className="text-3xl md:text-4xl font-bold text-green-400">127.8% APR</span>
-                <span className="text-sm text-gray-300">Average Returns</span>
-              </div>
-            </motion.div>
+            {metrics.avgApr !== null && (
+              <motion.div variants={fadeInUp} className="mb-2">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30">
+                  <Sparkles className="h-4 w-4 text-green-400" />
+                  <span className="text-2xl md:text-3xl font-bold text-green-400">
+                    {metrics.avgApr.toFixed(1)}% APR
+                  </span>
+                  <span className="text-xs md:text-sm text-gray-300">Avg Returns</span>
+                </div>
+              </motion.div>
+            )}
 
             <motion.h1
               variants={fadeInUp}
@@ -131,7 +163,14 @@ export default function HomePage() {
               variants={fadeInUp}
               className="text-base md:text-lg lg:text-xl text-gray-400 mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed px-2"
             >
-              Join 1,247+ traders earning institutional-grade returns with zero complexity
+              {metrics.totalUsers ? (
+                <>
+                  Join {metrics.totalUsers.toLocaleString()}+ traders earning institutional-grade returns with zero
+                  complexity
+                </>
+              ) : (
+                <>Join thousands of traders earning institutional-grade returns with zero complexity</>
+              )}
             </motion.p>
 
             <motion.div
@@ -175,46 +214,57 @@ export default function HomePage() {
               animate="visible"
               className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-2"
             >
-              {[
-                {
-                  icon: Shield,
-                  title: "$2.4M+ TVL Secured",
-                  subtitle: "Audited by leading security firms",
-                  highlight: "100% uptime",
-                },
-                {
-                  icon: Users,
-                  title: "1,247+ Active Traders",
-                  subtitle: "Growing 42% month over month",
-                  highlight: "Join the club",
-                },
-                {
-                  icon: DollarSign,
-                  title: "$127K Avg. Earnings",
-                  subtitle: "Per user in the last 90 days",
-                  highlight: "Top performers",
-                },
-              ].map((stat, index) => (
+              {metrics.tvl !== null && (
                 <motion.div
-                  key={index}
                   variants={scaleIn}
                   whileHover={{ scale: 1.06, y: -8 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
                   className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl relative overflow-hidden group"
                   style={{ willChange: "transform" }}
                 >
-                  <div className="absolute top-2 right-2">
-                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-xs">
-                      {stat.highlight}
-                    </Badge>
-                  </div>
                   <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors">
-                    <stat.icon className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
+                    <DollarSign className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
                   </div>
-                  <span className="text-white font-bold text-lg md:text-xl">{stat.title}</span>
-                  <span className="text-sm text-gray-400 text-center">{stat.subtitle}</span>
+                  <span className="text-white font-bold text-lg md:text-xl">
+                    ${(metrics.tvl / 1000000).toFixed(1)}M TVL
+                  </span>
+                  <span className="text-sm text-gray-400 text-center">Total Value Locked</span>
                 </motion.div>
-              ))}
+              )}
+
+              {metrics.totalUsers !== null && (
+                <motion.div
+                  variants={scaleIn}
+                  whileHover={{ scale: 1.06, y: -8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl relative overflow-hidden group"
+                  style={{ willChange: "transform" }}
+                >
+                  <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors">
+                    <Users className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
+                  </div>
+                  <span className="text-white font-bold text-lg md:text-xl">
+                    {metrics.totalUsers.toLocaleString()} Users
+                  </span>
+                  <span className="text-sm text-gray-400 text-center">Active Traders</span>
+                </motion.div>
+              )}
+
+              {metrics.avgApr !== null && (
+                <motion.div
+                  variants={scaleIn}
+                  whileHover={{ scale: 1.06, y: -8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl relative overflow-hidden group"
+                  style={{ willChange: "transform" }}
+                >
+                  <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors">
+                    <Sparkles className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
+                  </div>
+                  <span className="text-white font-bold text-lg md:text-xl">{metrics.avgApr.toFixed(1)}% APR</span>
+                  <span className="text-sm text-gray-400 text-center">Average Returns</span>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </motion.section>
@@ -228,55 +278,39 @@ export default function HomePage() {
         >
           <div className="text-center mb-12 px-2">
             <Badge className="mb-6 glass-card text-accent-foreground border-accent/20 px-4 py-2 text-sm">
-              <Users className="h-4 w-4 mr-2" />
-              Trusted by Top Traders
+              <Shield className="h-4 w-4 mr-2" />
+              Why Choose D.O.S.
             </Badge>
-            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">What Our Users Say</h2>
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">Built by Traders, For Traders</h2>
             <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
-              Real results from real traders in the D.O.S. ecosystem
+              Advanced tools designed to simplify DeFi liquidity management
             </p>
           </div>
 
           <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
-                quote: "Went from $5K to $47K in 4 months. The AI strategies are absolutely game-changing.",
-                author: "Michael R.",
-                role: "DeFi Trader",
-                returns: "+840% ROI",
+                icon: Zap,
+                title: "Automated Strategies",
+                description: "Set and forget. Our AI-powered bots handle liquidity optimization while you sleep.",
               },
               {
-                quote: "Finally, a platform that actually delivers on its promises. Best decision I made in 2024.",
-                author: "Sarah K.",
-                role: "Crypto Investor",
-                returns: "+312% ROI",
+                icon: TrendingUp,
+                title: "Real-Time Analytics",
+                description: "Monitor pool performance, track gains, and make data-driven decisions instantly.",
               },
               {
-                quote:
-                  "The automated LP management saved me 20+ hours per week. Now I focus on strategy, not execution.",
-                author: "David L.",
-                role: "Portfolio Manager",
-                returns: "+567% ROI",
+                icon: Lock,
+                title: "Security First",
+                description: "Your keys, your crypto. Non-custodial platform with audited smart contracts.",
               },
-            ].map((testimonial, index) => (
+            ].map((item, index) => (
               <motion.div key={index} variants={scaleIn}>
                 <Card className="glass-card p-6 md:p-8 h-full hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500">
                   <CardContent className="pt-6">
-                    <div className="mb-6">
-                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30 mb-4">
-                        {testimonial.returns}
-                      </Badge>
-                      <p className="text-gray-300 text-base md:text-lg leading-relaxed italic">"{testimonial.quote}"</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-accent/20 flex items-center justify-center">
-                        <span className="text-xl font-bold text-accent-foreground">{testimonial.author.charAt(0)}</span>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-white">{testimonial.author}</p>
-                        <p className="text-sm text-gray-400">{testimonial.role}</p>
-                      </div>
-                    </div>
+                    <item.icon className="h-12 w-12 text-accent-foreground mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-3">{item.title}</h3>
+                    <p className="text-gray-300 text-base leading-relaxed">{item.description}</p>
                   </CardContent>
                 </Card>
               </motion.div>
