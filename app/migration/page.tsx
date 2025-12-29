@@ -18,9 +18,9 @@ import { Zap, CheckCircle2, Lock, Rocket, TrendingUp, Wallet, Copy, ExternalLink
 const Canvas3DCountdown = dynamic(() => import("@/components/canvas-3d-countdown"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className="w-full h-80 flex items-center justify-center">
       <div className="text-center">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#eb5a3c] mb-4"></div>
+        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mb-4"></div>
         <p className="text-gray-400">Loading countdown...</p>
       </div>
     </div>
