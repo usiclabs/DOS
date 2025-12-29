@@ -30,6 +30,7 @@ interface TrendingToken {
     volume24h: number
   }>
   isTrending: boolean
+  image?: string
 }
 
 export default function DEXPage() {
@@ -155,34 +156,46 @@ export default function DEXPage() {
         <StickyHeader />
         <DeusTicker />
 
-        <div className="min-h-screen bg-background p-4 md:p-8">
-          <div className="max-w-7xl mx-auto space-y-6">
-            {/* Header */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="text-3xl font-bold">DEX Trending</h1>
-                  <p className="text-muted-foreground mt-1">Top 30 trending tokens on Base chain</p>
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/80 p-4 md:p-12">
+          <div className="max-w-7xl mx-auto space-y-8">
+            {/* Header Section */}
+            <div className="space-y-6">
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                <div className="space-y-2">
+                  <h1 className="text-4xl md:text-5xl font-bold tracking-tight">DEX Trending</h1>
+                  <p className="text-base text-muted-foreground/80 font-light max-w-2xl">
+                    Discover the top 30 most active tokens on Base chain. Swap instantly or create liquidity pools.
+                  </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant={view === "grid" ? "default" : "outline"} size="sm" onClick={() => setView("grid")}>
+                  <Button
+                    variant={view === "grid" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setView("grid")}
+                    className="px-4"
+                  >
                     Grid
                   </Button>
-                  <Button variant={view === "table" ? "default" : "outline"} size="sm" onClick={() => setView("table")}>
+                  <Button
+                    variant={view === "table" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setView("table")}
+                    className="px-4"
+                  >
                     Table
                   </Button>
                 </div>
               </div>
 
-              {/* Search and Filters */}
-              <div className="space-y-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              {/* Search and Filters - Premium styling */}
+              <div className="space-y-4">
+                <div className="relative group">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground/50 group-focus-within:text-accent transition-colors" />
                   <Input
-                    placeholder="Search tokens..."
+                    placeholder="Search tokens by symbol or name..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-12 h-11 bg-background/50 border-muted hover:border-muted-foreground/30 focus:border-accent transition-colors"
                   />
                 </div>
 
@@ -197,7 +210,7 @@ export default function DEXPage() {
                       variant={sortBy === sort.id ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSortBy(sort.id as any)}
-                      className="flex items-center gap-2 whitespace-nowrap"
+                      className="flex items-center gap-2 whitespace-nowrap px-4"
                     >
                       <sort.icon className="h-4 w-4" />
                       {sort.label}
@@ -209,20 +222,24 @@ export default function DEXPage() {
 
             {/* Loading State */}
             {isLoading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
                 {[...Array(9)].map((_, i) => (
-                  <div key={i} className="h-64 bg-muted rounded-lg animate-pulse" />
+                  <div key={i} className="h-80 bg-muted/40 rounded-xl animate-pulse border border-muted/50" />
                 ))}
-              </div>
+              </motion.div>
             ) : filteredTokens.length === 0 ? (
-              <div className="text-center py-20">
-                <Search className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold text-muted-foreground">No tokens found</h3>
-                <p className="text-sm text-muted-foreground">Try adjusting your search</p>
+              <div className="text-center py-24">
+                <Search className="h-20 w-20 text-muted-foreground/30 mx-auto mb-6" />
+                <h3 className="text-xl font-semibold text-muted-foreground">No tokens found</h3>
+                <p className="text-sm text-muted-foreground/70 mt-2">Try adjusting your search or filters</p>
               </div>
             ) : (
               <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
@@ -233,83 +250,122 @@ export default function DEXPage() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 20 }}
-                      whileHover={{ y: -4 }}
+                      whileHover={{ y: -8, transition: { duration: 0.2 } }}
+                      className="group"
                     >
-                      <Card className="h-full hover:border-accent/50 transition-colors cursor-pointer overflow-hidden">
-                        <CardContent className="p-4 space-y-4 h-full flex flex-col">
-                          {/* Token Header */}
+                      <Card className="h-full border-muted/50 hover:border-accent/30 transition-all duration-300 overflow-hidden shadow-sm hover:shadow-md relative">
+                        {/* Blurred background image */}
+                        {token.image && (
+                          <div
+                            className="absolute inset-0 opacity-10 bg-cover bg-center blur-xl"
+                            style={{
+                              backgroundImage: `url(${token.image})`,
+                            }}
+                          />
+                        )}
+                        {/* Gradient overlay for better text readability */}
+                        <div className="absolute inset-0 bg-gradient-to-br from-background/95 via-background/85 to-background/90" />
+
+                        <CardContent className="p-6 space-y-5 h-full flex flex-col relative z-10">
+                          {/* Token Header with circular image */}
                           <div className="flex items-start justify-between">
                             <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                                  {token.symbol[0]}
+                              <div className="flex items-center gap-3">
+                                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-accent/20 flex-shrink-0">
+                                  {token.image ? (
+                                    <img
+                                      src={token.image || "/placeholder.svg"}
+                                      alt={token.symbol}
+                                      className="w-full h-full object-cover"
+                                      crossOrigin="anonymous"
+                                    />
+                                  ) : (
+                                    <div className="w-full h-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center text-sm font-bold text-accent">
+                                      {token.symbol[0]}
+                                    </div>
+                                  )}
                                 </div>
                                 <div>
-                                  <h3 className="font-semibold">{token.symbol}</h3>
-                                  <p className="text-xs text-muted-foreground">{token.name}</p>
+                                  <h3 className="font-semibold text-base tracking-tight">{token.symbol}</h3>
+                                  <p className="text-xs text-muted-foreground/70">{token.name}</p>
                                 </div>
                               </div>
                             </div>
                             {token.isTrending && (
-                              <Badge className="bg-red-500/20 text-red-400 border-red-500/30">Trending</Badge>
+                              <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-xs font-medium px-2.5 py-1">
+                                Trending
+                              </Badge>
                             )}
                           </div>
 
-                          {/* Price */}
-                          <div className="space-y-1">
-                            <p className="text-2xl font-bold">{formatPrice(token.priceUsd)}</p>
-                            <div className="flex items-center gap-2">
+                          {/* Price Section - Premium styling */}
+                          <div className="space-y-2 border-t border-muted/30 pt-4">
+                            <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
+                              Price
+                            </p>
+                            <p className="text-3xl font-bold tracking-tight">{formatPrice(token.priceUsd)}</p>
+                            <div className="flex items-center gap-2 pt-1">
                               {token.priceChange24h >= 0 ? (
                                 <>
-                                  <TrendingUp className="h-4 w-4 text-green-500" />
-                                  <span className="text-sm text-green-500">+{token.priceChange24h.toFixed(2)}%</span>
+                                  <TrendingUp className="h-4 w-4 text-green-500/80" />
+                                  <span className="text-sm font-semibold text-green-500/90">
+                                    +{token.priceChange24h.toFixed(2)}%
+                                  </span>
                                 </>
                               ) : (
                                 <>
-                                  <TrendingDown className="h-4 w-4 text-red-500" />
-                                  <span className="text-sm text-red-500">{token.priceChange24h.toFixed(2)}%</span>
+                                  <TrendingDown className="h-4 w-4 text-red-500/80" />
+                                  <span className="text-sm font-semibold text-red-500/90">
+                                    {token.priceChange24h.toFixed(2)}%
+                                  </span>
                                 </>
                               )}
+                              <span className="text-xs text-muted-foreground/50">24h change</span>
                             </div>
                           </div>
 
-                          {/* Stats */}
-                          <div className="grid grid-cols-2 gap-3 text-sm">
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground">24h Volume</p>
-                              <p className="font-medium">{formatNumber(token.volume24h)}</p>
+                          {/* Stats Grid - Enhanced visual design */}
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1 bg-muted/20 rounded-lg p-3 border border-muted/30">
+                              <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
+                                Volume 24h
+                              </p>
+                              <p className="text-base font-semibold">{formatNumber(token.volume24h)}</p>
                             </div>
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground">Liquidity</p>
-                              <p className="font-medium">{formatNumber(token.liquidity)}</p>
+                            <div className="space-y-1 bg-muted/20 rounded-lg p-3 border border-muted/30">
+                              <p className="text-xs font-medium text-muted-foreground/60 uppercase tracking-wider">
+                                Liquidity
+                              </p>
+                              <p className="text-base font-semibold">{formatNumber(token.liquidity)}</p>
                             </div>
                           </div>
 
                           {/* Pairs Count */}
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <BarChart3 className="h-3 w-3" />
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground/70 font-medium">
+                            <div className="h-1.5 w-1.5 rounded-full bg-accent/50" />
                             <span>{token.pairs.length} active pair(s)</span>
                           </div>
 
-                          {/* Actions */}
-                          <div className="flex gap-2 mt-auto pt-2">
+                          {/* Actions - Premium buttons */}
+                          <div className="flex gap-2 mt-auto pt-4">
                             <Button
-                              onClick={() => setSelectedToken(token)}
-                              variant="outline"
-                              size="sm"
-                              className="flex-1"
+                              onClick={() => {
+                                window.location.href = `/swap?token=${token.address}`
+                              }}
+                              className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground font-medium h-10"
                             >
-                              <Zap className="h-4 w-4 mr-1" />
+                              <Zap className="h-4 w-4 mr-1.5" />
                               Swap
                             </Button>
                             <Button
-                              onClick={() => setSelectedToken(token)}
+                              onClick={() => {
+                                window.location.href = `/lp-manager?token=${token.address}`
+                              }}
                               variant="outline"
-                              size="sm"
-                              className="flex-1"
+                              className="flex-1 font-medium h-10"
                             >
-                              <Plus className="h-4 w-4 mr-1" />
-                              Add Liquidity
+                              <Plus className="h-4 w-4 mr-1.5" />
+                              Liquidity
                             </Button>
                             <Button
                               variant="ghost"
@@ -320,6 +376,7 @@ export default function DEXPage() {
                                   "_blank",
                                 )
                               }
+                              className="px-2 h-10"
                             >
                               <ExternalLink className="h-4 w-4" />
                             </Button>
@@ -340,39 +397,52 @@ export default function DEXPage() {
     )
   }
 
+  // Table view - also enhanced
   return (
     <div className="min-h-screen bg-background">
       <StickyHeader />
       <DeusTicker />
 
-      <div className="min-h-screen bg-background p-4 md:p-8">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">DEX Trending</h1>
-                <p className="text-muted-foreground mt-1">Top 30 trending tokens on Base chain</p>
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-background/80 p-4 md:p-12">
+        <div className="max-w-7xl mx-auto space-y-8">
+          {/* Header Section */}
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div className="space-y-2">
+                <h1 className="text-4xl md:text-5xl font-bold tracking-tight">DEX Trending</h1>
+                <p className="text-base text-muted-foreground/80 font-light max-w-2xl">
+                  Discover the top 30 most active tokens on Base chain. Swap instantly or create liquidity pools.
+                </p>
               </div>
               <div className="flex gap-2">
-                <Button variant={view === "grid" ? "default" : "outline"} size="sm" onClick={() => setView("grid")}>
+                <Button
+                  variant={view === "grid" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setView("grid")}
+                  className="px-4"
+                >
                   Grid
                 </Button>
-                <Button variant={view === "table" ? "default" : "outline"} size="sm" onClick={() => setView("table")}>
+                <Button
+                  variant={view === "table" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setView("table")}
+                  className="px-4"
+                >
                   Table
                 </Button>
               </div>
             </div>
 
             {/* Search and Filters */}
-            <div className="space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="space-y-4">
+              <div className="relative group">
+                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground/50 group-focus-within:text-accent transition-colors" />
                 <Input
-                  placeholder="Search tokens..."
+                  placeholder="Search tokens by symbol or name..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                  className="pl-12 h-11 bg-background/50 border-muted hover:border-muted-foreground/30 focus:border-accent transition-colors"
                 />
               </div>
 
@@ -387,7 +457,7 @@ export default function DEXPage() {
                     variant={sortBy === sort.id ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSortBy(sort.id as any)}
-                    className="whitespace-nowrap"
+                    className="whitespace-nowrap px-4"
                   >
                     {sort.label}
                   </Button>
@@ -400,60 +470,103 @@ export default function DEXPage() {
           {isLoading ? (
             <div className="space-y-2">
               {[...Array(10)].map((_, i) => (
-                <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+                <div key={i} className="h-12 bg-muted/40 rounded-lg animate-pulse border border-muted/50" />
               ))}
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
+            <div className="border border-muted/50 rounded-xl overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-muted border-b">
-                      <th className="px-4 py-3 text-left text-sm font-semibold">Token</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold">Price</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold">24h Change</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold">Volume 24h</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold">Liquidity</th>
-                      <th className="px-4 py-3 text-right text-sm font-semibold">Actions</th>
+                    <tr className="bg-muted/30 border-b border-muted/50">
+                      <th className="px-6 py-4 text-left text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                        Token
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                        Price
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                        24h Change
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                        Volume 24h
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                        Liquidity
+                      </th>
+                      <th className="px-6 py-4 text-right text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
+                  <tbody className="divide-y divide-muted/30">
                     {filteredTokens.map((token) => (
                       <motion.tr
                         key={token.address}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        className="hover:bg-muted/50 transition-colors"
+                        className="hover:bg-muted/20 transition-colors"
                       >
-                        <td className="px-4 py-3">
+                        <td className="px-6 py-4">
                           <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                              {token.symbol[0]}
+                            <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-accent/20 flex-shrink-0">
+                              {token.image ? (
+                                <img
+                                  src={token.image || "/placeholder.svg"}
+                                  alt={token.symbol}
+                                  className="w-full h-full object-cover"
+                                  crossOrigin="anonymous"
+                                />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center text-xs font-bold text-accent">
+                                  {token.symbol[0]}
+                                </div>
+                              )}
                             </div>
                             <div>
-                              <p className="font-medium">{token.symbol}</p>
-                              <p className="text-xs text-muted-foreground">{token.name}</p>
+                              <p className="font-semibold text-sm">{token.symbol}</p>
+                              <p className="text-xs text-muted-foreground/70">{token.name}</p>
                             </div>
                             {token.isTrending && (
-                              <Badge className="bg-red-500/20 text-red-400 border-red-500/30 text-xs">Trending</Badge>
+                              <Badge className="bg-red-500/15 text-red-400 border-red-500/30 text-xs">Trending</Badge>
                             )}
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-medium">{formatPrice(token.priceUsd)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <span className={token.priceChange24h >= 0 ? "text-green-500" : "text-red-500"}>
+                        <td className="px-6 py-4 text-right font-semibold">{formatPrice(token.priceUsd)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <span
+                            className={
+                              token.priceChange24h >= 0
+                                ? "text-green-500/90 font-semibold"
+                                : "text-red-500/90 font-semibold"
+                            }
+                          >
                             {token.priceChange24h >= 0 ? "+" : ""}
                             {token.priceChange24h.toFixed(2)}%
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right">{formatNumber(token.volume24h)}</td>
-                        <td className="px-4 py-3 text-right">{formatNumber(token.liquidity)}</td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => setSelectedToken(token)}>
+                        <td className="px-6 py-4 text-right font-medium">{formatNumber(token.volume24h)}</td>
+                        <td className="px-6 py-4 text-right font-medium">{formatNumber(token.liquidity)}</td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                window.location.href = `/swap?token=${token.address}`
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
                               <Zap className="h-4 w-4" />
                             </Button>
-                            <Button size="sm" variant="ghost" onClick={() => setSelectedToken(token)}>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => {
+                                window.location.href = `/lp-manager?token=${token.address}`
+                              }}
+                              className="h-8 w-8 p-0"
+                            >
                               <Plus className="h-4 w-4" />
                             </Button>
                             <Button
@@ -465,6 +578,7 @@ export default function DEXPage() {
                                   "_blank",
                                 )
                               }
+                              className="h-8 w-8 p-0"
                             >
                               <ExternalLink className="h-4 w-4" />
                             </Button>
@@ -477,10 +591,10 @@ export default function DEXPage() {
               </div>
             </div>
           )}
-
-          {/* Token Detail Modal */}
-          {selectedToken && <TokenDetailModal token={selectedToken} onClose={() => setSelectedToken(null)} />}
         </div>
+
+        {/* Token Detail Modal */}
+        {selectedToken && <TokenDetailModal token={selectedToken} onClose={() => setSelectedToken(null)} />}
       </div>
     </div>
   )
@@ -506,8 +620,19 @@ function TokenDetailModal({ token, onClose }: { token: TrendingToken; onClose: (
           <div className="space-y-3">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-lg font-bold">
-                  {token.symbol[0]}
+                <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-accent/20 flex-shrink-0">
+                  {token.image ? (
+                    <img
+                      src={token.image || "/placeholder.svg"}
+                      alt={token.symbol}
+                      className="w-full h-full object-cover"
+                      crossOrigin="anonymous"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center text-lg font-bold">
+                      {token.symbol[0]}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h2 className="text-xl font-bold">{token.symbol}</h2>
