@@ -1,6 +1,6 @@
 /**
  * Centralized RPC configuration for all blockchain interactions
- * Uses public endpoints on client, Alchemy API on server with automatic failover
+ * Uses Alchemy API with automatic failover to public endpoints
  */
 
 interface RpcEndpoint {
@@ -11,35 +11,23 @@ interface RpcEndpoint {
 }
 
 class RpcManager {
-  private endpoints: RpcEndpoint[]
-
-  constructor() {
-    const isServer = typeof window === "undefined"
-
-    this.endpoints = [
-      // Server-side: Use Alchemy with API key (highest priority)
-      ...(isServer && process.env.ALCHEMY_API_KEY
-        ? [
-            {
-              url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
-              priority: 0,
-              consecutiveFailures: 0,
-            },
-          ]
-        : []),
-      // Public endpoints (client and server fallback)
-      {
-        url: "https://mainnet.base.org",
-        priority: 1,
-        consecutiveFailures: 0,
-      },
-      {
-        url: "https://base.llamarpc.com",
-        priority: 2,
-        consecutiveFailures: 0,
-      },
-    ]
-  }
+  private endpoints: RpcEndpoint[] = [
+    {
+      url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
+      priority: 0, // Highest priority - Alchemy with API key
+      consecutiveFailures: 0,
+    },
+    {
+      url: "https://mainnet.base.org",
+      priority: 1, // Public Base RPC
+      consecutiveFailures: 0,
+    },
+    {
+      url: "https://base.llamarpc.com",
+      priority: 2, // LlamaRPC fallback
+      consecutiveFailures: 0,
+    },
+  ]
 
   private readonly FAILURE_TIMEOUT = 60000 // 1 minute cooldown after failure
   private readonly MAX_CONSECUTIVE_FAILURES = 3
@@ -199,10 +187,7 @@ export { rpcManager, RpcManager }
 
 export const RPC_CONFIG = {
   BASE_MAINNET: {
-    url:
-      typeof window === "undefined" && process.env.ALCHEMY_API_KEY
-        ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-        : "https://mainnet.base.org", // Use public endpoint on client
+    url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`,
     chainId: 8453,
     name: "Base Mainnet",
   },

@@ -15,8 +15,8 @@ import type { TaxReportData } from "@/types/tax"
 import { generateTaxReportPDF } from "@/lib/pdf-generator"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useDeusHolderCheck } from "@/hooks/use-deus-holder-check"
-import { useWallet } from "@/contexts/wallet-context"
-import { WalletConnect } from "@/components/wallet-connect"
+import { useAccount } from "wagmi"
+import { WalletButton } from "@/components/wallet-button"
 import Link from "next/link"
 
 const MINIMUM_DEUS_BALANCE = 10_000_000 // 10 million DEUS
@@ -28,7 +28,7 @@ export default function TaxesPage() {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [taxReport, setTaxReport] = useState<TaxReportData | null>(null)
   const { toast } = useToast()
-  const { address, isConnected } = useWallet()
+  const { address, isConnected } = useAccount()
   const { balance: deusBalance, isLoading: isCheckingBalance } = useDeusHolderCheck()
   const hasAccess = deusBalance >= MINIMUM_DEUS_BALANCE
 
@@ -164,7 +164,7 @@ export default function TaxesPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex justify-center">
-                  <WalletConnect />
+                  <WalletButton />
                 </div>
 
                 <div className="flex items-start gap-2 p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">

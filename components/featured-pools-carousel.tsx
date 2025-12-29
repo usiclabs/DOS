@@ -20,19 +20,19 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
   const topPools = (() => {
     const validPools = pools.filter((pool) => pool.netApy > 0 && pool.liquidity > 1000)
 
-    const deusPools = validPools.filter((pool) => pool.isDeusPool).sort((a, b) => b.netApy - a.netApy)
+    const clankerPools = validPools.filter((pool) => pool.isDeusPool).sort((a, b) => b.netApy - a.netApy)
 
     const creatorPools = validPools.filter((pool: any) => pool.isCreatorCoin)
 
-    const nonDeusPools = validPools
+    const nonClankerPools = validPools
       .filter((pool: any) => !pool.isDeusPool && !pool.isCreatorCoin)
       .sort((a, b) => b.netApy - a.netApy)
 
-    const selectedDeusPools = deusPools.slice(0, 3)
+    const selectedClankerPools = clankerPools.slice(0, 3)
     const selectedCreatorPools = creatorPools.slice(0, 2)
-    const selectedNonDeusPools = nonDeusPools.slice(0, 2)
+    const selectedNonClankerPools = nonClankerPools.slice(0, 2)
 
-    return [...selectedDeusPools, ...selectedCreatorPools, ...selectedNonDeusPools]
+    return [...selectedClankerPools, ...selectedCreatorPools, ...selectedNonClankerPools]
   })()
 
   const handleNext = useCallback(() => {
@@ -126,14 +126,14 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
   return (
     <div className="relative w-full mb-4 md:mb-6">
       <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-red-500/10 to-orange-500/10 rounded-xl md:rounded-2xl" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[oklch(0.58_0.24_285)]/10 via-[oklch(0.75_0.18_195)]/10 to-[oklch(0.58_0.24_285)]/10 rounded-xl md:rounded-2xl" />
 
         <div
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           className="relative h-[420px] md:h-[380px] rounded-xl md:rounded-2xl overflow-hidden group"
         >
-          <div className="absolute inset-0 rounded-xl md:rounded-2xl p-[1px] bg-gradient-to-r from-orange-500/30 via-red-500/30 to-orange-500/30 group-hover:from-orange-500/50 group-hover:via-red-500/50 group-hover:to-orange-500/50 transition-all duration-700" />
+          <div className="absolute inset-0 rounded-xl md:rounded-2xl p-[1px] bg-gradient-to-r from-[oklch(0.58_0.24_285)]/30 via-[oklch(0.75_0.18_195)]/30 to-[oklch(0.58_0.24_285)]/30 group-hover:from-[oklch(0.58_0.24_285)]/50 group-hover:via-[oklch(0.75_0.18_195)]/50 group-hover:to-[oklch(0.58_0.24_285)]/50 transition-all duration-700" />
 
           <AnimatePresence initial={false} custom={direction} mode="wait">
             <motion.div
@@ -179,7 +179,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="relative w-9 h-9 md:w-16 md:h-16 rounded-full border-2 md:border-3 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-orange-500/20"
+                        className="relative w-9 h-9 md:w-16 md:h-16 rounded-full border-2 md:border-3 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-[oklch(0.58_0.24_285)]/20"
                       >
                         <img
                           src={currentPool.tokenImages?.base || "/placeholder.svg?height=96&width=96"}
@@ -193,7 +193,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.4, ease: "easeOut" }}
-                        className="relative w-9 h-9 md:w-16 md:h-16 rounded-full border-2 md:border-3 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-orange-500/20"
+                        className="relative w-9 h-9 md:w-16 md:h-16 rounded-full border-2 md:border-3 border-black/50 backdrop-blur-xl bg-white/10 overflow-hidden shadow-2xl shadow-[oklch(0.58_0.24_285)]/20"
                       >
                         <img
                           src={currentPool.tokenImages?.quote || "/placeholder.svg?height=96&width=96"}
@@ -216,7 +216,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                         {currentPool.baseToken.symbol}/{currentPool.quoteToken.symbol}
                       </motion.h3>
                       <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-                        <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 backdrop-blur-sm text-[10px] md:text-sm px-2 py-0.5 md:px-3 md:py-1">
+                        <Badge className="bg-[oklch(0.58_0.24_285)]/20 text-[oklch(0.75_0.18_195)] border-[oklch(0.58_0.24_285)]/30 backdrop-blur-sm text-[10px] md:text-sm px-2 py-0.5 md:px-3 md:py-1">
                           {currentPool.dexId.toUpperCase()}
                         </Badge>
                         {isCreatorCoin && (
@@ -226,9 +226,9 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                           </Badge>
                         )}
                         {currentPool.isDeusPool && (
-                          <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-lg shadow-orange-500/30 text-[10px] md:text-sm px-2 py-0.5 md:px-3 md:py-1">
+                          <Badge className="bg-gradient-to-r from-[oklch(0.58_0.24_285)] to-[oklch(0.75_0.18_195)] text-white border-0 shadow-lg shadow-[oklch(0.58_0.24_285)]/30 text-[10px] md:text-sm px-2 py-0.5 md:px-3 md:py-1">
                             <Sparkles className="w-2.5 h-2.5 md:w-3 md:h-3 mr-1" />
-                            DEUS Pool
+                            CLANKER Pool
                           </Badge>
                         )}
                         <Badge
@@ -283,7 +283,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.3, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                       whileHover={{ scale: 1.05, y: -5 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-lg md:rounded-xl p-2 md:p-4 border border-white/10 hover:border-orange-500/50 hover:bg-white/10 hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-500 cursor-pointer"
+                      className="backdrop-blur-xl bg-white/5 rounded-lg md:rounded-xl p-2 md:p-4 border border-white/10 hover:border-[oklch(0.58_0.24_285)]/50 hover:bg-white/10 hover:shadow-xl hover:shadow-[oklch(0.58_0.24_285)]/20 transition-all duration-500 cursor-pointer"
                     >
                       <div className="flex items-center gap-1 md:gap-1.5 text-gray-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
                         <Droplets className="w-3 h-3 md:w-4 md:h-4" />
@@ -299,7 +299,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                       animate={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.4, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                       whileHover={{ scale: 1.05, y: -5 }}
-                      className="backdrop-blur-xl bg-white/5 rounded-lg md:rounded-xl p-2 md:p-4 border border-white/10 hover:border-orange-500/50 hover:bg-white/10 hover:shadow-xl hover:shadow-orange-500/20 transition-all duration-500 cursor-pointer"
+                      className="backdrop-blur-xl bg-white/5 rounded-lg md:rounded-xl p-2 md:p-4 border border-white/10 hover:border-[oklch(0.58_0.24_285)]/50 hover:bg-white/10 hover:shadow-xl hover:shadow-[oklch(0.58_0.24_285)]/20 transition-all duration-500 cursor-pointer"
                     >
                       <div className="flex items-center gap-1 md:gap-1.5 text-gray-400 text-[10px] md:text-xs mb-0.5 md:mb-1">
                         <Activity className="w-3 h-3 md:w-4 md:h-4" />
@@ -335,7 +335,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     <Button
                       size="lg"
                       onClick={handleDeploy}
-                      className="relative w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-sm md:text-lg h-10 md:h-12 rounded-lg md:rounded-xl shadow-2xl shadow-orange-500/50 hover:shadow-orange-500/80 transition-all duration-500 hover:scale-[1.03] active:scale-[0.98] group"
+                      className="relative w-full bg-gradient-to-r from-[oklch(0.58_0.24_285)] to-[oklch(0.75_0.18_195)] hover:from-[oklch(0.55_0.26_285)] hover:to-[oklch(0.72_0.20_195)] text-white font-bold text-sm md:text-lg h-10 md:h-12 rounded-lg md:rounded-xl shadow-2xl shadow-[oklch(0.58_0.24_285)]/50 hover:shadow-[oklch(0.58_0.24_285)]/80 transition-all duration-500 hover:scale-[1.03] active:scale-[0.98] group"
                     >
                       <span className="relative flex items-center justify-center">
                         <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
@@ -360,7 +360,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
             transition={{ duration: 0.3, ease: "easeOut" }}
             className={`h-2 md:h-2.5 rounded-full transition-all duration-400 ${
               index === currentIndex
-                ? "bg-gradient-to-r from-orange-500 to-red-500 w-8 md:w-10 shadow-lg shadow-orange-500/50"
+                ? "bg-gradient-to-r from-[oklch(0.58_0.24_285)] to-[oklch(0.75_0.18_195)] w-8 md:w-10 shadow-lg shadow-[oklch(0.58_0.24_285)]/50"
                 : "bg-white/40 w-2 md:w-2.5 hover:bg-white/60 hover:w-4 md:hover:w-5"
             }`}
           />

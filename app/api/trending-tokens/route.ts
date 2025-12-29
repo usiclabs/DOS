@@ -6,20 +6,22 @@ export async function GET() {
   try {
     console.log("[v0] Fetching trending tokens from Dexscreener...")
 
-    // Fetch trending tokens directly using DexScreener's search for Base chain
-    const response = await fetch(
-      "https://api.dexscreener.com/latest/dex/search?q=WETH%20USDC%20DAI%20ETH%20BASE&chainId=base&limit=50",
-    )
+    const [wethResponse, usdcResponse, daiResponse] = await Promise.all([
+      fetch("https://api.dexscreener.com/latest/dex/tokens/0x4200000000000000000000000000000000000006"), // WETH
+      fetch("https://api.dexscreener.com/latest/dex/tokens/0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"), // USDC
+      fetch("https://api.dexscreener.com/latest/dex/tokens/0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb"), // DAI
+    ])
 
-    if (!response.ok) {
-      throw new Error(`DexScreener API error: ${response.status}`)
-    }
+    const [wethData, usdcData, daiData] = await Promise.all([
+      wethResponse.ok ? wethResponse.json() : { pairs: [] },
+      usdcResponse.ok ? usdcResponse.json() : { pairs: [] },
+      daiResponse.ok ? daiResponse.json() : { pairs: [] },
+    ])
 
-    const data = await response.json()
-    const pairs = data.pairs || []
+    const allPairs = [...(wethData.pairs || []), ...(usdcData.pairs || []), ...(daiData.pairs || [])]
 
-    const basePairs = pairs.filter((pair: any) => pair.chainId === "base")
-    console.log("[v0] Found", basePairs.length, "Base pairs from DexScreener")
+    const basePairs = allPairs.filter((pair: any) => pair.chainId === "base")
+    console.log("[v0] Found", basePairs.length, "Base pairs from token searches")
 
     const tokenMap = new Map<string, any>()
 
@@ -30,7 +32,7 @@ export async function GET() {
         tokenMap.set(tokenAddress, {
           address: pair.baseToken.address,
           symbol: pair.baseToken.symbol,
-          name: pair.baseToken.name || pair.baseToken.symbol,
+          name: pair.baseToken.name,
           priceUsd: Number.parseFloat(pair.priceUsd || "0"),
           priceChange24h: pair.priceChange?.h24 || 0,
           volume24h: 0,
@@ -63,10 +65,9 @@ export async function GET() {
     return NextResponse.json({
       tokens: tokenData,
       count: tokenData.length,
-      timestamp: new Date().toISOString(),
     })
   } catch (error: any) {
     console.error("[v0] Failed to fetch trending tokens:", error)
-    return NextResponse.json({ error: error.message, tokens: [], count: 0 }, { status: 500 })
+    return NextResponse.json({ error: error.message, tokens: [] }, { status: 500 })
   }
 }

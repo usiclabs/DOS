@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -27,7 +27,6 @@ import {
   Plus,
   Flame,
   RefreshCw,
-  Clock,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
@@ -62,17 +61,12 @@ interface ZoraCreatorCoin {
 export default function CreatorsPage() {
   const [coins, setCoins] = useState<ZoraCreatorCoin[]>([])
   const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<"trending" | "top-volume" | "last-traded">("trending")
+  const [filter, setFilter] = useState<"trending" | "top-volume" | "creator-only">("trending")
   const [selectedCoin, setSelectedCoin] = useState<any | null>(null)
   const [selectedSwapCoin, setSelectedSwapCoin] = useState<ZoraCreatorCoin | null>(null)
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
   const [isSwapModalOpen, setIsSwapModalOpen] = useState(false)
   const [isCreateCoinModalOpen, setIsCreateCoinModalOpen] = useState(false)
-  const [nextCursor, setNextCursor] = useState<string | null>(null)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
-  const [hasMore, setHasMore] = useState(true)
-  const observerRef = useRef<IntersectionObserver | null>(null)
-  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
 
   const router = useRouter()
 
@@ -80,76 +74,27 @@ export default function CreatorsPage() {
     fetchCreatorCoins()
   }, [filter])
 
-  useEffect(() => {
-    if (!hasMore || isLoadingMore || loading) return
-
-    observerRef.current = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && nextCursor) {
-          console.log("[v0] Loading more coins...")
-          loadMoreCoins()
-        }
-      },
-      { threshold: 0.1 },
-    )
-
-    if (loadMoreTriggerRef.current) {
-      observerRef.current.observe(loadMoreTriggerRef.current)
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect()
-      }
-    }
-  }, [hasMore, isLoadingMore, loading, nextCursor])
-
   const fetchCreatorCoins = async () => {
     setLoading(true)
-    setNextCursor(null)
-    setHasMore(true)
     try {
       const response = await fetch(`/api/zora/creators?filter=${filter}`)
       const data = await response.json()
-      const processedCoins = data.coins || []
+      let processedCoins = data.coins || []
+
+      if (filter === "creator-only") {
+        // Sort by market cap descending and take top 10
+        processedCoins = processedCoins
+          .sort((a: ZoraCreatorCoin, b: ZoraCreatorCoin) => b.metrics.marketCap - a.metrics.marketCap)
+          .slice(0, 10)
+      }
 
       setCoins(processedCoins)
-      setNextCursor(data.nextCursor || null)
-      setHasMore(!!data.nextCursor)
-      console.log("[v0] Initial coins loaded, nextCursor:", data.nextCursor)
     } catch (error) {
       console.error("Error fetching creator coins:", error)
     } finally {
       setLoading(false)
     }
   }
-
-  const loadMoreCoins = useCallback(async () => {
-    if (!nextCursor || isLoadingMore) return
-
-    setIsLoadingMore(true)
-    console.log("[v0] Loading more coins with cursor:", nextCursor)
-    try {
-      const response = await fetch(`/api/zora/creators?filter=${filter}&cursor=${nextCursor}`)
-      const data = await response.json()
-      const newCoins = data.coins || []
-
-      if (newCoins.length > 0) {
-        setCoins((prevCoins) => [...prevCoins, ...newCoins])
-        setNextCursor(data.nextCursor || null)
-        setHasMore(!!data.nextCursor)
-        console.log("[v0] Loaded", newCoins.length, "more coins, new cursor:", data.nextCursor)
-      } else {
-        setHasMore(false)
-        console.log("[v0] No more coins to load")
-      }
-    } catch (error) {
-      console.error("Error loading more coins:", error)
-      setHasMore(false)
-    } finally {
-      setIsLoadingMore(false)
-    }
-  }, [nextCursor, filter, isLoadingMore])
 
   const formatNumber = (num: number) => {
     if (num >= 1000000000) return `$${(num / 1000000000).toFixed(2)}B`
@@ -162,11 +107,14 @@ export default function CreatorsPage() {
   const formatPrice = (price: number) => {
     if (price === 0 || price === null || price === undefined) return "$0.00"
 
+    // For extremely small numbers (< 0.000001), show up to 10 decimal places
     if (price < 0.000001) {
+      // Convert to string with fixed decimals and remove trailing zeros
       const formatted = price.toFixed(10).replace(/\.?0+$/, "")
       return `$${formatted}`
     }
 
+    // For very small numbers, show more decimal places
     if (price < 0.0001) return `$${price.toFixed(8)}`
     if (price < 0.01) return `$${price.toFixed(6)}`
     if (price < 1) return `$${price.toFixed(4)}`
@@ -190,7 +138,7 @@ export default function CreatorsPage() {
         name: coin.name,
       },
       quoteToken: {
-        address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
+        address: "0x73582df1cad3187cD0746b7A473d65c06386837e", // DEUS on Base
         symbol: "DEUS",
         name: "DEUS Finance",
       },
@@ -198,11 +146,11 @@ export default function CreatorsPage() {
       priceUsd: coin.metrics.price,
       volume24h: coin.metrics.volume24h,
       liquidity: coin.metrics.liquidity,
-      feeApr: 30,
-      netApy: 35,
+      feeApr: 30, // Estimated APR based on typical Zora coin performance
+      netApy: 35, // Estimated APY
       feeTier: "1.0%",
       poolType: "v3" as const,
-      isDeusPool: true,
+      isDeusPool: true, // Mark as DEUS pool for special handling
       volatility: Math.abs(coin.metrics.priceChange24h),
     }
 
@@ -292,12 +240,12 @@ export default function CreatorsPage() {
                   <span className="sm:hidden">Volume</span>
                 </TabsTrigger>
                 <TabsTrigger
-                  value="last-traded"
+                  value="creator-only"
                   className="text-xs sm:text-sm md:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500/30 data-[state=active]:to-amber-500/30 data-[state=active]:text-orange-200 data-[state=active]:shadow-lg data-[state=active]:shadow-orange-500/20 transition-all duration-300 rounded-lg font-medium py-2 md:py-2.5"
                 >
-                  <Clock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                  <span className="hidden sm:inline">Last Traded</span>
-                  <span className="sm:hidden">Recent</span>
+                  <Sparkles className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                  <span className="hidden sm:inline">Creators</span>
+                  <span className="sm:hidden">Creators</span>
                 </TabsTrigger>
               </TabsList>
             </Tabs>
@@ -696,33 +644,6 @@ export default function CreatorsPage() {
                 ))}
               </motion.div>
             </AnimatePresence>
-          )}
-
-          {!loading && hasMore && (
-            <div ref={loadMoreTriggerRef} className="mt-8 flex justify-center">
-              {isLoadingMore && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="flex flex-col items-center gap-3"
-                >
-                  <div className="flex items-center gap-2 text-orange-400">
-                    <RefreshCw className="w-5 h-5 animate-spin" />
-                    <span className="text-sm font-medium">Loading more coins...</span>
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          )}
-
-          {!loading && !hasMore && coins.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mt-8 text-center text-gray-500 text-sm"
-            >
-              You've reached the end of the list
-            </motion.div>
           )}
 
           {!loading && coins.length === 0 && (

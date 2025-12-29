@@ -27,30 +27,30 @@ const jetbrainsMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "D.O.S. - DEUS Operating System",
+  title: "Clanker - DeFi Yield Optimizer",
   description:
-    "Advanced Base-chain liquidity dashboard with AI-powered analytics, pool discovery, and automated deployment tools for DeFi traders and liquidity providers.",
-  keywords: ["DeFi", "Base", "DEUS", "Liquidity", "Analytics", "Crypto", "Trading", "Pools"],
-  authors: [{ name: "DEUS Team" }],
-  creator: "DEUS Operating System",
-  publisher: "DEUS",
+    "Advanced yield optimization and liquidity management platform for the Clanker ecosystem. Discover profitable opportunities, stabilize prices, and earn passive income on Base.",
+  keywords: ["Clanker", "DeFi", "Base", "Yield", "Liquidity", "Analytics", "Crypto", "Trading", "Pools", "Farcaster"],
+  authors: [{ name: "Clanker Team" }],
+  creator: "Clanker",
+  publisher: "Clanker",
   formatDetection: {
     email: false,
     address: false,
     telephone: false,
   },
-  metadataBase: new URL("https://dos.deus.finance"),
+  metadataBase: new URL("https://clanker.world"),
   openGraph: {
-    title: "D.O.S. - DEUS Operating System",
-    description: "Advanced Base-chain liquidity dashboard with AI-powered analytics",
-    url: "https://dos.deus.finance",
-    siteName: "D.O.S.",
+    title: "Clanker - DeFi Yield Optimizer",
+    description: "Advanced yield optimization and liquidity management for the Clanker ecosystem on Base",
+    url: "https://clanker.world",
+    siteName: "Clanker",
     images: [
       {
-        url: "/og-image.png",
+        url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "D.O.S. - DEUS Operating System",
+        alt: "Clanker - DeFi Yield Optimizer",
       },
     ],
     locale: "en_US",
@@ -58,9 +58,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "D.O.S. - DEUS Operating System",
-    description: "Advanced Base-chain liquidity dashboard with AI-powered analytics",
-    images: ["/og-image.png"],
+    title: "Clanker - DeFi Yield Optimizer",
+    description: "Advanced yield optimization and liquidity management for the Clanker ecosystem on Base",
+    images: ["/og-image.jpg"],
   },
   robots: {
     index: true,
@@ -82,8 +82,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
   userScalable: true,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f3ff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
   colorScheme: "dark light",
 }
@@ -96,10 +96,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#8b5cf6" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="msapplication-navbutton-color" content="#000000" />
+        <meta name="msapplication-navbutton-color" content="#8b5cf6" />
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>

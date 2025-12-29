@@ -8,7 +8,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
 export function MaintenanceModal() {
-  const isMaintenanceMode = false
+  // Set to true to enable maintenance mode
+  const isMaintenanceMode = true
 
   const [isUnlocked, setIsUnlocked] = useState(false)
   const [password, setPassword] = useState("")
@@ -49,10 +50,10 @@ export function MaintenanceModal() {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
       {/* Backdrop with blur */}
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-xl pointer-events-none" />
 
       {/* Modal content */}
-      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto pointer-events-auto">
         <div className="glass-card p-8 text-center space-y-6 animate-scale-in">
           {/* Icon */}
           <div className="flex justify-center">

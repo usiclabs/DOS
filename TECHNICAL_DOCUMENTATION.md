@@ -537,7 +537,7 @@
 
 ### Data Flow Map
 
-```
+\`\`\`
 External Sources:
 ├── Dexscreener API
 │   ├→ lib/price-feeds.ts
@@ -577,7 +577,7 @@ Client-side Caching:
 └── React Query (@tanstack/react-query)
     ├→ Server state management
     └→ Cache invalidation
-```
+\`\`\`
 
 ### Caching Strategy
 
@@ -623,9 +623,9 @@ Client-side Caching:
 ### Quick Wins
 
 1. **Add Vitest for unit tests**
-   ```bash
+   \`\`\`bash
    npm install -D vitest @testing-library/react @testing-library/jest-dom
-   ```
+   \`\`\`
 
 2. **Test critical paths:**
    - `lib/uniswap-v3-swap.ts` - Swap logic
@@ -633,9 +633,9 @@ Client-side Caching:
    - `lib/price-feeds.ts` - Price fetching
 
 3. **Add Playwright for E2E:**
-   ```bash
+   \`\`\`bash
    npm install -D @playwright/test
-   ```
+   \`\`\`
    - Test: Pool deployment flow
    - Test: Creator coin creation
    - Test: Swap execution
@@ -648,7 +648,7 @@ Client-side Caching:
 
 ### Recommended Test Structure
 
-```
+\`\`\`
 tests/
 ├── unit/
 │   ├── lib/
@@ -669,7 +669,7 @@ tests/
     ├── pool-discovery.spec.ts
     ├── creator-coin-launch.spec.ts
     └── swap-flow.spec.ts
-```
+\`\`\`
 
 ---
 
@@ -677,7 +677,7 @@ tests/
 
 ### Build Commands
 
-```bash
+\`\`\`bash
 # Development
 npm run dev          # Start dev server on :3000
 
@@ -687,7 +687,7 @@ npm run start        # Start production server
 
 # Linting
 npm run lint         # Run ESLint
-```
+\`\`\`
 
 ### Vercel Configuration
 

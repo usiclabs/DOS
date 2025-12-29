@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 const DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/search"
-const DEUS_CONTRACT_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
+const DEUS_CONTRACT_ADDRESS = "0x1bc0c42215582d5A085795f4baDbaC3ff36d1Bcb"
 
 interface DexscreenerPair {
   chainId: string
@@ -52,10 +52,9 @@ export async function GET() {
   try {
     console.log("[v0] Starting ticker data fetch...")
 
-    // Fetch DEUS data from Dexscreener
     const dexscreenerResponse = await fetch(`${DEXSCREENER_API}?q=${DEUS_CONTRACT_ADDRESS}`, {
       headers: {
-        "User-Agent": "DEUS-OS/1.0",
+        "User-Agent": "CLANKER-OS/1.0",
       },
       next: { revalidate: 300 }, // Cache for 5 minutes instead of 30 seconds
     })
@@ -80,7 +79,6 @@ export async function GET() {
       })
     }
 
-    // Find the best DEUS pair (highest liquidity on Base)
     const basePairs = pairs.filter(
       (pair: DexscreenerPair) =>
         pair.chainId === "base" && pair.baseToken.address.toLowerCase() === DEUS_CONTRACT_ADDRESS.toLowerCase(),
@@ -95,7 +93,6 @@ export async function GET() {
     }
 
     if (!bestPair) {
-      // Fallback to any DEUS pair if no Base pairs found
       bestPair =
         pairs.find(
           (pair: DexscreenerPair) => pair.baseToken.address.toLowerCase() === DEUS_CONTRACT_ADDRESS.toLowerCase(),

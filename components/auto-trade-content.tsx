@@ -33,15 +33,9 @@ import { createPublicClient, http, type Address, formatUnits } from "viem"
 import { base } from "viem/chains"
 import { toast } from "sonner"
 
-const isServer = typeof window === "undefined"
-const rpcUrl =
-  isServer && process.env.ALCHEMY_API_KEY
-    ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-    : "https://mainnet.base.org"
-
 const publicClient = createPublicClient({
   chain: base,
-  transport: http(rpcUrl),
+  transport: http(`https://base-mainnet.g.alchemy.com/v2/${process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`),
 })
 
 interface BotStatus {
