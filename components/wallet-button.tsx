@@ -14,13 +14,13 @@ import { Button } from "@/components/ui/button"
 import { Copy, ExternalLink, LogOut, Loader2, Wallet } from "lucide-react"
 
 export function WalletButton() {
-  const { address, isConnected, connectWallet, disconnectWallet } = useWallet()
+  const { address, isConnected, connect, disconnect } = useWallet()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleConnect = async () => {
     setIsLoading(true)
     try {
-      await connectWallet()
+      await connect()
     } catch (error) {
       console.error("[v0] Wallet connection failed:", error)
     } finally {
@@ -54,7 +54,7 @@ export function WalletButton() {
               View on BaseScan
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={disconnectWallet} className="text-destructive">
+            <DropdownMenuItem onClick={disconnect} className="text-destructive">
               <LogOut className="h-4 w-4 mr-2" />
               Disconnect
             </DropdownMenuItem>

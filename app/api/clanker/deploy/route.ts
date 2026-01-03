@@ -44,7 +44,7 @@ function getPairedTokenAddress(token: string): string {
   const addresses: Record<string, string> = {
     WETH: "0x4200000000000000000000000000000000000006",
     USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    DEUS: "0x73582df1cad3187cd0746b7a473d65c06386837e",
+    DEUS: "0xf44Ab962d787444F4Ae6674A7FB61A8e66581B07",
   }
   return addresses[token] || addresses.WETH
 }

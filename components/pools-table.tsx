@@ -370,11 +370,11 @@ export function PoolsTable() {
                       isPriority
                         ? "bg-gradient-to-r from-accent to-accent/80 text-accent-foreground shadow-lg shadow-accent/40"
                         : pool.isDeusPool
-                          ? "bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg shadow-purple-500/40"
+                          ? "bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg shadow-orange-500/40"
                           : ""
                     } transition-all duration-300`}
                   >
-                    {pool.isDeusPool ? "CLANKER Pool" : pool.dexId}
+                    {pool.isDeusPool ? "DEUS Pool" : pool.dexId}
                   </Badge>
                   <Badge variant="outline" className="text-xs">
                     {pool.feeTier}
@@ -590,7 +590,7 @@ export function PoolsTable() {
                             : ""
                         } transition-all duration-300`}
                       >
-                        {pool.isDeusPool ? "CLANKER" : pool.dexId}
+                        {pool.isDeusPool ? "DEUS" : pool.dexId}
                       </Badge>
                       <span className="text-xs text-muted-foreground">{pool.feeTier}</span>
                     </div>
@@ -653,7 +653,7 @@ export function PoolsTable() {
           <div className="mt-6 space-y-6 overflow-y-auto h-[calc(85vh-120px)] pb-6">
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={pool.isDeusPool ? "default" : "secondary"}>
-                {pool.isDeusPool ? "CLANKER Pool" : pool.dexId}
+                {pool.isDeusPool ? "DEUS Pool" : pool.dexId}
               </Badge>
               <Badge variant="outline">{pool.feeTier}</Badge>
               <Badge variant={pool.volatility > 10 ? "destructive" : pool.volatility > 5 ? "secondary" : "default"}>
@@ -1118,7 +1118,7 @@ export function PoolsTable() {
                       <SelectContent>
                         <SelectItem value="all">All Pools</SelectItem>
                         <SelectItem value="v3">Uniswap V3</SelectItem>
-                        <SelectItem value="xlp">CLANKER XLP</SelectItem>
+                        <SelectItem value="xlp">DEUS XLP</SelectItem>
                         <SelectItem value="v2">V2 Pools</SelectItem>
                       </SelectContent>
                     </Select>
@@ -1140,7 +1140,7 @@ export function PoolsTable() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">CLANKER Pools Only</label>
+                    <label className="text-sm font-medium">DEUS Pools Only</label>
                     <Button
                       variant={deusOnly ? "default" : "outline"}
                       onClick={() => {
@@ -1737,14 +1737,10 @@ export function PoolsTable() {
                                         <Badge
                                           variant={pool.isDeusPool ? "default" : isPriority ? "default" : "secondary"}
                                           className={
-                                            isPriority
-                                              ? "bg-accent text-accent-foreground text-xs"
-                                              : pool.isDeusPool
-                                                ? "bg-gradient-to-r from-purple-500 to-cyan-500 text-white text-xs"
-                                                : "text-xs"
+                                            isPriority ? "bg-accent text-accent-foreground text-xs" : "text-xs"
                                           }
                                         >
-                                          {pool.isDeusPool ? "CLANKER" : pool.dexId}
+                                          {pool.isDeusPool ? "DEUS" : pool.dexId}
                                         </Badge>
                                         <span>{pool.feeTier}</span>
                                       </div>

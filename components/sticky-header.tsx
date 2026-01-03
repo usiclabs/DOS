@@ -36,8 +36,7 @@ const NavItem = memo(
           variant="ghost"
           className={cn(
             "text-gray-300 hover:text-white hover:bg-accent/20 font-medium transition-all duration-300 px-3 py-2 rounded-xl text-xs",
-            isActive &&
-              "text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400 bg-accent/30 shadow-lg border border-accent/30 animate-pulse-glow",
+            isActive && "text-orange-500 bg-accent/30 shadow-lg border border-accent/30 animate-pulse-glow",
           )}
           aria-current={isActive ? "page" : undefined}
         >
@@ -112,64 +111,72 @@ export function StickyHeader() {
       >
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
-            <Link href="/" className="flex items-center gap-3 group" aria-label="Clanker Operating System Home">
-              <motion.div className="relative" whileHover={{ scale: 1.05, rotate: 5 }} whileTap={{ scale: 0.95 }}>
-                <svg
-                  width="48"
-                  height="48"
-                  viewBox="0 0 48 48"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-3 group" aria-label="DEUS Operating System Home">
+              <motion.svg
+                width="48"
+                height="48"
+                viewBox="0 0 48 48"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="transition-all duration-300"
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <rect
+                  x="6"
+                  y="6"
+                  width="36"
+                  height="36"
+                  rx="8"
+                  stroke="url(#gradient1)"
+                  strokeWidth="2"
                   className="transition-all duration-300"
-                >
-                  <path
-                    d="M8 38 L24 8 L40 38 Z"
-                    fill="url(#wizardGradient)"
-                    stroke="url(#wizardStroke)"
-                    strokeWidth="2"
-                    strokeLinejoin="round"
-                  />
-                  <ellipse
-                    cx="24"
-                    cy="38"
-                    rx="18"
-                    ry="4"
-                    fill="url(#brimGradient)"
-                    stroke="url(#wizardStroke)"
-                    strokeWidth="1.5"
-                  />
-                  <circle cx="24" cy="20" r="2" fill="#22d3ee" opacity="0.9" />
-                  <circle cx="20" cy="26" r="1.5" fill="#a78bfa" opacity="0.8" />
-                  <circle cx="28" cy="26" r="1.5" fill="#a78bfa" opacity="0.8" />
-                  <circle cx="24" cy="30" r="1" fill="#22d3ee" opacity="0.7" />
-                  <path d="M16 16 L17 18 L16 20 L14 18 Z" fill="#22d3ee" opacity="0.6" />
-                  <path d="M32 16 L33 18 L32 20 L30 18 Z" fill="#a78bfa" opacity="0.6" />
-                  <defs>
-                    <linearGradient id="wizardGradient" x1="24" y1="8" x2="24" y2="38" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#8b5cf6" />
-                      <stop offset="50%" stopColor="#7c3aed" />
-                      <stop offset="100%" stopColor="#6d28d9" />
-                    </linearGradient>
-                    <linearGradient id="wizardStroke" x1="8" y1="8" x2="40" y2="38" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#a78bfa" />
-                      <stop offset="100%" stopColor="#22d3ee" />
-                    </linearGradient>
-                    <linearGradient id="brimGradient" x1="6" y1="38" x2="42" y2="38" gradientUnits="userSpaceOnUse">
-                      <stop offset="0%" stopColor="#6d28d9" />
-                      <stop offset="50%" stopColor="#7c3aed" />
-                      <stop offset="100%" stopColor="#6d28d9" />
-                    </linearGradient>
-                  </defs>
-                </svg>
-                <motion.div
-                  className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }}
-                  transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY }}
                 />
-              </motion.div>
-              <span className="text-xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent hidden sm:block">
-                CLANKER
-              </span>
+                <path
+                  d="M 14 24 L 24 14 L 34 24 L 24 34 Z"
+                  stroke="url(#gradient2)"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                  className="transition-all duration-300"
+                />
+                <line
+                  x1="24"
+                  y1="18"
+                  x2="24"
+                  y2="30"
+                  stroke="url(#gradient3)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  className="transition-all duration-300"
+                />
+                <line
+                  x1="18"
+                  y1="24"
+                  x2="30"
+                  y2="24"
+                  stroke="url(#gradient3)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  className="transition-all duration-300"
+                />
+                <defs>
+                  <linearGradient id="gradient1" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#eb5a3c" />
+                    <stop offset="100%" stopColor="#daa520" />
+                  </linearGradient>
+                  <linearGradient id="gradient2" x1="14" y1="14" x2="34" y2="34" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#f56e50" />
+                    <stop offset="100%" stopColor="#eb5a3c" />
+                  </linearGradient>
+                  <linearGradient id="gradient3" x1="18" y1="18" x2="30" y2="30" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#daa520" />
+                    <stop offset="100%" stopColor="#f56e50" />
+                  </linearGradient>
+                </defs>
+              </motion.svg>
             </Link>
 
             {/* Desktop Navigation */}

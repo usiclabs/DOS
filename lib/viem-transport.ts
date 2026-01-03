@@ -1,19 +1,24 @@
 import { http, fallback, type Transport } from "viem"
 
-// Alchemy Base mainnet endpoint with API key from environment
-const ALCHEMY_ENDPOINT = `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY || process.env.NEXT_PUBLIC_ALCHEMY_API_KEY}`
+const isServer = typeof window === "undefined"
 
-// Fallback to public Base RPC if Alchemy fails
+const PRIMARY_ENDPOINT =
+  isServer && process.env.ALCHEMY_API_KEY
+    ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
+    : "https://mainnet.base.org"
+
+// Public Base RPC endpoints as fallbacks
 const FALLBACK_ENDPOINTS = ["https://mainnet.base.org", "https://base.llamarpc.com"]
 
 /**
- * Creates a viem transport with automatic fallback between Alchemy and public endpoints
- * When Alchemy is rate limited, it automatically tries public endpoints
+ * Creates a viem transport with automatic fallback between Alchemy (server) and public endpoints
+ * On client: uses only public endpoints
+ * On server: uses Alchemy with public fallbacks
  */
 export function createMultiEndpointTransport(): Transport {
-  // Create HTTP transports with Alchemy primary and public fallbacks
+  // Create HTTP transports with primary and public fallbacks
   const transports = [
-    http(ALCHEMY_ENDPOINT, {
+    http(PRIMARY_ENDPOINT, {
       retryCount: 0,
       timeout: 30_000,
     }),

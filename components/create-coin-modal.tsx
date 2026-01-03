@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-
+import { useRef } from "react"
 import { useState, useEffect, useCallback } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -41,6 +41,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   const [error, setError] = useState<string>("")
   const [coinAddress, setCoinAddress] = useState<string>("")
   const [txHash, setTxHash] = useState<string>("")
+  const isComponentMountedRef = useRef(true)
 
   useEffect(() => {
     if (isOpen && isConnected) {
@@ -48,6 +49,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
       console.log("[v0] Current chain ID:", chainId)
       console.log("[v0] Is Base (8453):", chainId === 8453)
       console.log("[v0] Is Base Sepolia (84532):", chainId === 84532)
+    }
+    return () => {
+      isComponentMountedRef.current = false
     }
   }, [isOpen, isConnected, chainId])
 
@@ -78,16 +82,19 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   }, []) // Empty dependency array ensures this function is only created once
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[v0] Name change:", e.target.value) // add debug logging
     setFormData((prev) => ({ ...prev, name: e.target.value }))
-  }, []) // Empty dependency array ensures this function is only created once
+  }, [])
 
   const handleSymbolChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("[v0] Symbol change:", e.target.value) // add debug logging
     setFormData((prev) => ({ ...prev, symbol: e.target.value.toUpperCase() }))
-  }, []) // Empty dependency array ensures this function is only created once
+  }, [])
 
   const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    console.log("[v0] Description change:", e.target.value) // add debug logging
     setFormData((prev) => ({ ...prev, description: e.target.value }))
-  }, []) // Empty dependency array ensures this function is only created once
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -390,8 +397,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
             </Button>
             <Button
               type="submit"
-              disabled={!isConnected || !formData.name || !formData.symbol}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+              className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white pointer-events-auto cursor-pointer"
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Create Coin
@@ -423,25 +429,83 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
           </div>
           <div>
             <h3 className="text-xl font-bold mb-2">Coin Created Successfully!</h3>
-            <p className="text-muted-foreground mb-4">Your coin has been deployed and is now live on Zora</p>
-            <div className="space-y-2">
+            <p className="text-muted-foreground mb-6">Your coin has been deployed and is now live on Zora</p>
+
+            <div className="space-y-4 bg-gradient-to-br from-orange-500/5 to-amber-500/5 rounded-lg p-4 border border-orange-500/10">
               {coinAddress && (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-sm text-muted-foreground">Coin Address:</span>
-                  <Badge variant="outline" className="text-xs font-mono">
-                    {coinAddress.slice(0, 6)}...{coinAddress.slice(-4)}
-                  </Badge>
+                <div className="space-y-2">
+                  <span className="text-sm font-semibold text-orange-400">Contract Address</span>
+                  <div className="flex items-center gap-2 justify-center">
+                    <code className="text-xs font-mono bg-background/50 px-3 py-2 rounded flex-1 break-all text-foreground/90">
+                      {coinAddress}
+                    </code>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(coinAddress)
+                        // Optional: Show toast notification
+                      }}
+                      className="p-2 hover:bg-orange-500/20 rounded transition-colors"
+                      title="Copy contract address"
+                    >
+                      <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               )}
+
               {txHash && (
-                <div className="flex items-center justify-center gap-2">
-                  <span className="text-sm text-muted-foreground">Transaction:</span>
-                  <Badge variant="outline" className="text-xs font-mono">
-                    {txHash.slice(0, 6)}...{txHash.slice(-4)}
-                  </Badge>
+                <div className="space-y-2">
+                  <span className="text-sm font-semibold text-orange-400">Transaction Hash</span>
+                  <div className="flex items-center gap-2 justify-center">
+                    <Badge variant="outline" className="text-xs font-mono">
+                      {txHash.slice(0, 6)}...{txHash.slice(-4)}
+                    </Badge>
+                    <a
+                      href={`https://basescan.org/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-orange-500/20 rounded transition-colors"
+                      title="View on BaseScan"
+                    >
+                      <svg className="w-4 h-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                        />
+                      </svg>
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
+
+            {coinAddress && (
+              <a
+                href={`https://zora.co/token/${coinAddress}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors mt-4 text-sm font-medium"
+              >
+                View on Zora
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                  />
+                </svg>
+              </a>
+            )}
           </div>
           <Button
             onClick={handleClose}
@@ -482,8 +546,8 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   if (isMobile) {
     return (
       <Sheet open={isOpen} onOpenChange={handleClose}>
-        <SheetContent side="bottom" className="h-[90vh] glass-card backdrop-blur-md border-orange-500/20">
-          <SheetHeader>
+        <SheetContent side="bottom" className="h-[90vh] glass-card backdrop-blur-md border-orange-500/20 flex flex-col">
+          <SheetHeader className="flex-shrink-0">
             <SheetTitle className="flex items-center gap-2 text-2xl">
               <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500/20 to-amber-500/20">
                 <Sparkles className="w-5 h-5 text-orange-400" />
@@ -494,7 +558,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               Deploy your own creator coin on Zora with automatic Uniswap V4 liquidity
             </SheetDescription>
           </SheetHeader>
-          <div className="overflow-y-auto max-h-[calc(90vh-120px)] pr-2">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <ModalContent />
           </div>
         </SheetContent>

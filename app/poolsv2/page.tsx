@@ -348,7 +348,7 @@ export default function PoolsV2Page() {
                   className="w-full justify-start"
                 >
                   <Star className="h-4 w-4 mr-2" />
-                  CLANKER Pools Only
+                  DEUS Pools Only
                 </Button>
               </div>
             </div>
@@ -414,14 +414,16 @@ function PoolCard({
                 {pool.baseToken.symbol}/{pool.quoteToken.symbol}
               </h3>
               {pool.isDeusPool && (
-                <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs">CLANKER</Badge>
+                <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs">DEUS</Badge>
               )}
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant={pool.isDeusPool ? "default" : "secondary"}>
-                {pool.isDeusPool ? "CLANKER Pool" : pool.dexId}
+              <Badge variant="outline" className="text-xs">
+                {pool.dexId}
               </Badge>
-              <Badge variant="outline">{pool.feeTier}</Badge>
+              <Badge variant="outline" className="text-xs">
+                {pool.feeTier}
+              </Badge>
             </div>
           </div>
           <motion.button
@@ -519,7 +521,7 @@ function PoolDetailsDrawer({
             </SheetTitle>
             <div className="flex items-center gap-2">
               <Badge variant={pool.isDeusPool ? "default" : "secondary"}>
-                {pool.isDeusPool ? "CLANKER Pool" : pool.dexId}
+                {pool.isDeusPool ? "DEUS Pool" : pool.dexId}
               </Badge>
               <Badge variant="outline">{pool.feeTier}</Badge>
             </div>

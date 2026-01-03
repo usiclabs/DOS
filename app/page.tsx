@@ -10,13 +10,25 @@ import { WelcomeBanner } from "@/components/onboarding/welcome-banner"
 import { AIInsightsPanel } from "@/components/ai-insights-panel"
 import { FeaturedPoolsCarousel } from "@/components/featured-pools-carousel"
 import { useOnboarding } from "@/hooks/use-onboarding"
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LiveDataIndicator } from "@/components/live-data-indicator"
 import useSWR from "swr"
 import type { PoolData } from "@/lib/pool-data"
-import { TrendingUp, Shield, Zap, Target, LineChart, Coins, ArrowUpRight, Sparkles, Lock, Users } from "lucide-react"
+import {
+  Shield,
+  Brain,
+  BarChart3,
+  Rocket,
+  Users,
+  DollarSign,
+  Sparkles,
+  Trophy,
+  Zap,
+  TrendingUp,
+  Lock,
+} from "lucide-react"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -69,12 +81,28 @@ export default function HomePage() {
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
-      dedupingInterval: 300000,
-      refreshInterval: 600000,
+      dedupingInterval: 300000, // Dedupe for 5 minutes instead of 1 minute
+      refreshInterval: 600000, // Refresh every 10 minutes
     },
   )
 
   const pools = poolsData?.pools || []
+
+  const { data: metricsData } = useSWR<{
+    avgApr?: number
+    totalUsers?: number
+    tvl?: number
+  }>("/api/analytics/metrics", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 600000,
+    refreshInterval: 600000,
+  })
+
+  const metrics = {
+    avgApr: metricsData?.avgApr || null,
+    totalUsers: metricsData?.totalUsers || null,
+    tvl: metricsData?.tvl || null,
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -94,25 +122,33 @@ export default function HomePage() {
           variants={fadeInUp}
           className="text-center py-8 md:py-12 lg:py-20 relative"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-accent/5 via-transparent to-accent/5 blur-3xl" />
           <div className="max-w-5xl mx-auto relative space-y-6 md:space-y-8 lg:space-y-10">
             <motion.div variants={fadeInUp}>
-              <Badge className="mb-6 md:mb-8 lg:mb-10 backdrop-blur-lg bg-primary/20 text-primary-foreground border border-primary/30 hover:bg-primary/25 hover:border-primary/40 transition-all duration-500 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm">
+              <Badge className="mb-6 md:mb-8 lg:mb-10 backdrop-blur-lg bg-white/10 text-white border border-white/20 hover:bg-white/15 hover:border-white/30 transition-all duration-500 px-3 py-1.5 md:px-4 md:py-2 text-xs md:text-sm">
                 <LiveDataIndicator size="sm" label="Live on Base" className="mr-1.5 md:mr-2" />
-                <span className="text-xs md:text-sm">Powering the Clanker Ecosystem</span>
+                <span className="text-xs md:text-sm">Base's Most Advanced Liquidity Hub</span>
               </Badge>
             </motion.div>
+
+            {metrics.avgApr !== null && (
+              <motion.div variants={fadeInUp} className="mb-2">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30">
+                  <Sparkles className="h-4 w-4 text-green-400" />
+                  <span className="text-2xl md:text-3xl font-bold text-green-400">
+                    {metrics.avgApr.toFixed(1)}% APR
+                  </span>
+                  <span className="text-xs md:text-sm text-gray-300">Avg Returns</span>
+                </div>
+              </motion.div>
+            )}
 
             <motion.h1
               variants={fadeInUp}
               className="text-4xl md:text-6xl lg:text-8xl font-bold mb-6 md:mb-8 lg:mb-10 text-white leading-tight tracking-tight px-2"
             >
-              <span className="bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                Maximize Yield.
-              </span>
-              <br />
-              <span className="bg-gradient-to-r from-white via-primary-foreground to-white bg-clip-text text-transparent">
-                Stabilize Prices.
+              <span className="bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">
+                DEUS Operating System
               </span>
             </motion.h1>
 
@@ -120,31 +156,37 @@ export default function HomePage() {
               variants={fadeInUp}
               className="text-lg md:text-2xl lg:text-3xl text-gray-300 mb-4 md:mb-6 lg:mb-8 max-w-4xl mx-auto leading-relaxed font-medium px-2"
             >
-              The intelligent liquidity layer for the <span className="text-primary font-bold">$CLANKER</span> ecosystem
+              AI-powered liquidity management that outperforms the competition by 3x
             </motion.p>
 
             <motion.p
               variants={fadeInUp}
-              className="text-base md:text-lg lg:text-xl text-gray-400 mb-12 md:mb-16 lg:mb-20 max-w-3xl mx-auto leading-relaxed px-2"
+              className="text-base md:text-lg lg:text-xl text-gray-400 mb-8 md:mb-12 max-w-3xl mx-auto leading-relaxed px-2"
             >
-              AI-powered yield discovery that identifies profitable opportunities, strengthens token prices through
-              strategic liquidity deployment, and generates passive income for the entire Farcaster community
+              {metrics.totalUsers ? (
+                <>
+                  Join {metrics.totalUsers.toLocaleString()}+ traders earning institutional-grade returns with zero
+                  complexity
+                </>
+              ) : (
+                <>Join thousands of traders earning institutional-grade returns with zero complexity</>
+              )}
             </motion.p>
 
             <motion.div
               variants={staggerContainer}
               initial="hidden"
               animate="visible"
-              className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-12 md:mb-16 lg:mb-24 px-2"
+              className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center mb-6 px-2"
             >
               <motion.div variants={scaleIn} whileHover={{ scale: 1.06, y: -2 }} whileTap={{ scale: 0.96 }}>
                 <Button
                   size="lg"
-                  className="btn-premium text-white shadow-2xl hover:shadow-primary/30 transition-all duration-500 px-6 py-4 md:px-10 md:py-6 text-base md:text-lg lg:text-xl font-semibold bg-transparent w-full sm:w-auto min-h-[48px]"
-                  onClick={() => (window.location.href = "/pools")}
+                  className="btn-premium text-white shadow-2xl hover:shadow-accent/30 transition-all duration-500 px-6 py-4 md:px-10 md:py-6 text-base md:text-lg lg:text-xl font-semibold bg-transparent w-full sm:w-auto min-h-[48px]"
+                  onClick={() => (window.location.href = "/swap")}
                 >
-                  <TrendingUp className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
-                  Discover Yield Opportunities
+                  <Rocket className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
+                  Launch Platform
                 </Button>
               </motion.div>
 
@@ -152,14 +194,19 @@ export default function HomePage() {
                 <Button
                   size="lg"
                   variant="outline"
-                  className="glass-card border-primary/30 text-primary-foreground hover:bg-primary/10 hover:border-primary/50 bg-transparent px-6 py-4 md:px-10 md:py-6 text-base md:text-lg lg:text-xl font-semibold transition-all duration-500 w-full sm:w-auto min-h-[48px]"
+                  className="glass-card border-accent/30 text-accent-foreground hover:bg-accent/10 hover:border-accent/50 bg-transparent px-6 py-4 md:px-10 md:py-6 text-base md:text-lg lg:text-xl font-semibold transition-all duration-500 w-full sm:w-auto min-h-[48px]"
                   onClick={() => (window.location.href = "/analytics")}
                 >
-                  <LineChart className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
-                  View Ecosystem Analytics
+                  <BarChart3 className="h-5 w-5 md:h-6 md:w-6 mr-2 md:mr-3" />
+                  View Analytics
                 </Button>
               </motion.div>
             </motion.div>
+
+            <motion.p variants={fadeInUp} className="text-sm text-gray-400 mb-12 md:mb-16 lg:mb-20">
+              <Shield className="inline h-4 w-4 mr-1.5 text-green-400" />
+              No credit card required · Audited smart contracts · Start with any amount
+            </motion.p>
 
             <motion.div
               variants={staggerContainer}
@@ -167,26 +214,57 @@ export default function HomePage() {
               animate="visible"
               className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 max-w-5xl mx-auto px-2"
             >
-              {[
-                { icon: Coins, title: "$2.4M+ in $CLANKER Pools", subtitle: "Growing liquidity depth" },
-                { icon: TrendingUp, title: "127.8% Average APR", subtitle: "Outperforming alternatives" },
-                { icon: Users, title: "1,247+ Active LPs", subtitle: "Earning passive income" },
-              ].map((stat, index) => (
+              {metrics.tvl !== null && (
                 <motion.div
-                  key={index}
                   variants={scaleIn}
                   whileHover={{ scale: 1.06, y: -8 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl border border-primary/20"
+                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl relative overflow-hidden group"
                   style={{ willChange: "transform" }}
                 >
-                  <div className="p-3 md:p-4 rounded-full bg-primary/20 backdrop-blur-sm">
-                    <stat.icon className="h-6 w-6 md:h-7 md:w-7 text-primary-foreground" />
+                  <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors">
+                    <DollarSign className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
                   </div>
-                  <span className="text-white font-semibold text-base md:text-lg text-center">{stat.title}</span>
-                  <span className="text-sm text-gray-400">{stat.subtitle}</span>
+                  <span className="text-white font-bold text-lg md:text-xl">
+                    ${(metrics.tvl / 1000000).toFixed(1)}M TVL
+                  </span>
+                  <span className="text-sm text-gray-400 text-center">Total Value Locked</span>
                 </motion.div>
-              ))}
+              )}
+
+              {metrics.totalUsers !== null && (
+                <motion.div
+                  variants={scaleIn}
+                  whileHover={{ scale: 1.06, y: -8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl relative overflow-hidden group"
+                  style={{ willChange: "transform" }}
+                >
+                  <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors">
+                    <Users className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
+                  </div>
+                  <span className="text-white font-bold text-lg md:text-xl">
+                    {metrics.totalUsers.toLocaleString()} Users
+                  </span>
+                  <span className="text-sm text-gray-400 text-center">Active Traders</span>
+                </motion.div>
+              )}
+
+              {metrics.avgApr !== null && (
+                <motion.div
+                  variants={scaleIn}
+                  whileHover={{ scale: 1.06, y: -8 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="flex flex-col items-center space-y-3 md:space-y-4 p-6 md:p-8 glass-card rounded-2xl relative overflow-hidden group"
+                  style={{ willChange: "transform" }}
+                >
+                  <div className="p-3 md:p-4 rounded-full bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors">
+                    <Sparkles className="h-6 w-6 md:h-7 md:w-7 text-accent-foreground" />
+                  </div>
+                  <span className="text-white font-bold text-lg md:text-xl">{metrics.avgApr.toFixed(1)}% APR</span>
+                  <span className="text-sm text-gray-400 text-center">Average Returns</span>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </motion.section>
@@ -198,76 +276,42 @@ export default function HomePage() {
           variants={staggerContainer}
           className="mb-20 md:mb-32 lg:mb-40"
         >
-          <div className="text-center mb-8 md:mb-12 px-2">
-            <Badge className="mb-4 md:mb-6 glass-card text-primary-foreground border-primary/20 px-3 py-1 md:px-4 md:py-2 text-sm">
-              <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-              Strategic Value Proposition
+          <div className="text-center mb-12 px-2">
+            <Badge className="mb-6 glass-card text-accent-foreground border-accent/20 px-4 py-2 text-sm">
+              <Shield className="h-4 w-4 mr-2" />
+              Why Choose D.O.S.
             </Badge>
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-white">
-              Why Clanker Needs This Platform
-            </h2>
-            <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              The missing infrastructure layer that transforms $CLANKER from a token into a thriving DeFi ecosystem
+            <h2 className="text-3xl md:text-5xl font-bold mb-4 text-white">Built by Traders, For Traders</h2>
+            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto">
+              Advanced tools designed to simplify DeFi liquidity management
             </p>
           </div>
 
-          <motion.div variants={staggerContainer} className="grid md:grid-cols-2 gap-6 md:gap-8">
+          <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
-                title: "Price Stabilization Through Liquidity",
-                description:
-                  "Our AI identifies optimal liquidity deployment strategies that reduce price volatility by 47% on average. Deep, well-managed liquidity pools create price stability that attracts institutional capital and builds long-term holder confidence.",
-                metric: "47% less volatility",
-                icon: Shield,
-                gradient: "from-primary/20 to-accent/20",
-              },
-              {
-                title: "Automated Yield Discovery",
-                description:
-                  "Real-time scanning of all $CLANKER pairs across Base to surface the highest-yield opportunities. Our algorithms analyze 50+ metrics per pool to identify sustainable APRs that reward liquidity providers while strengthening the ecosystem.",
-                metric: "50+ metrics analyzed",
-                icon: Target,
-                gradient: "from-accent/20 to-primary/20",
-              },
-              {
-                title: "Passive Income for Holders",
-                description:
-                  "Transform $CLANKER holders into active ecosystem participants earning 127.8% average APR. By making yield farming accessible and automated, we increase token utility and create sustainable demand beyond speculation.",
-                metric: "127.8% avg APR",
-                icon: Coins,
-                gradient: "from-primary/20 to-accent/20",
-              },
-              {
-                title: "Ecosystem Growth Engine",
-                description:
-                  "Every liquidity position deployed through our platform strengthens the entire $CLANKER ecosystem. Better liquidity attracts more traders, more volume generates more fees, and more fees reward liquidity providers—creating a virtuous growth cycle.",
-                metric: "3x volume increase",
                 icon: Zap,
-                gradient: "from-accent/20 to-primary/20",
+                title: "Automated Strategies",
+                description: "Set and forget. Our AI-powered bots handle liquidity optimization while you sleep.",
               },
-            ].map((feature, index) => (
-              <motion.div key={index} variants={scaleIn} whileHover={{ scale: 1.02, y: -5 }}>
-                <Card
-                  className={`glass-card p-6 md:p-8 hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 group h-full border border-primary/20 bg-gradient-to-br ${feature.gradient}`}
-                >
-                  <CardHeader className="pb-3 md:pb-4">
-                    <div className="flex items-center justify-between mb-3 md:mb-4">
-                      <motion.div
-                        whileHover={{ rotate: 360 }}
-                        transition={{ duration: 0.6 }}
-                        className="p-3 md:p-4 rounded-xl bg-primary/30 backdrop-blur-sm group-hover:bg-primary/40 transition-colors duration-300"
-                      >
-                        <feature.icon className="h-7 w-7 md:h-8 md:w-8 text-primary-foreground" />
-                      </motion.div>
-                      <Badge className="bg-primary/30 text-primary-foreground border-primary/40 text-xs">
-                        {feature.metric}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-xl md:text-2xl text-white mb-2">{feature.title}</CardTitle>
-                    <CardDescription className="text-gray-300 text-base md:text-lg leading-relaxed">
-                      {feature.description}
-                    </CardDescription>
-                  </CardHeader>
+              {
+                icon: TrendingUp,
+                title: "Real-Time Analytics",
+                description: "Monitor pool performance, track gains, and make data-driven decisions instantly.",
+              },
+              {
+                icon: Lock,
+                title: "Security First",
+                description: "Your keys, your crypto. Non-custodial platform with audited smart contracts.",
+              },
+            ].map((item, index) => (
+              <motion.div key={index} variants={scaleIn}>
+                <Card className="glass-card p-6 md:p-8 h-full hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500">
+                  <CardContent className="pt-6">
+                    <item.icon className="h-12 w-12 text-accent-foreground mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-3">{item.title}</h3>
+                    <p className="text-gray-300 text-base leading-relaxed">{item.description}</p>
+                  </CardContent>
                 </Card>
               </motion.div>
             ))}
@@ -283,22 +327,23 @@ export default function HomePage() {
             className="mb-20 md:mb-32 lg:mb-40"
           >
             <div className="text-center mb-8 md:mb-12 px-2">
-              <Badge className="mb-4 md:mb-6 glass-card text-primary-foreground border-primary/20 px-3 py-1 md:px-4 md:py-2 text-sm">
+              <Badge className="mb-4 md:mb-6 glass-card text-accent-foreground border-accent/20 px-3 py-1 md:px-4 md:py-2 text-sm">
                 <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-                Live Yield Opportunities
+                Top LP Opportunities
               </Badge>
               <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-white">
-                Top $CLANKER Pools Right Now
+                Featured Liquidity Pools
               </h2>
               <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                Real-time yield opportunities in the Clanker ecosystem, ranked by profitability
+                Discover the highest-yielding liquidity opportunities on Base chain
               </p>
             </div>
+            {/* Loading skeleton */}
             <div className="relative w-full mb-6 md:mb-8">
               <div className="relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 rounded-2xl md:rounded-3xl" />
+                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/10 via-red-500/10 to-orange-500/10 rounded-2xl md:rounded-3xl" />
                 <div className="relative h-[600px] md:h-[540px] rounded-2xl md:rounded-3xl overflow-hidden">
-                  <div className="absolute inset-0 rounded-2xl md:rounded-3xl p-[1px] bg-gradient-to-r from-primary/30 via-accent/30 to-primary/30" />
+                  <div className="absolute inset-0 rounded-2xl md:rounded-3xl p-[1px] bg-gradient-to-r from-orange-500/30 via-red-500/30 to-orange-500/30" />
                   <div className="absolute inset-0 bg-gradient-to-br from-black/85 via-black/70 to-transparent animate-pulse" />
                 </div>
               </div>
@@ -313,15 +358,15 @@ export default function HomePage() {
             className="mb-20 md:mb-32 lg:mb-40"
           >
             <div className="text-center mb-8 md:mb-12 px-2">
-              <Badge className="mb-4 md:mb-6 glass-card text-primary-foreground border-primary/20 px-3 py-1 md:px-4 md:py-2 text-sm">
+              <Badge className="mb-4 md:mb-6 glass-card text-accent-foreground border-accent/20 px-3 py-1 md:px-4 md:py-2 text-sm">
                 <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-                Live Yield Opportunities
+                Top LP Opportunities
               </Badge>
               <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 md:mb-6 text-white">
-                Top $CLANKER Pools Right Now
+                Featured Liquidity Pools
               </h2>
               <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-                Real-time yield opportunities in the Clanker ecosystem, ranked by profitability
+                Discover the highest-yielding liquidity opportunities on Base chain
               </p>
             </div>
 
@@ -339,64 +384,71 @@ export default function HomePage() {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={staggerContainer}
-          className="mb-16 md:mb-20 lg:mb-24"
+          className="mb-20 md:mb-32 lg:mb-40"
         >
-          <div className="text-center mb-12 md:mb-14 lg:mb-16 px-2">
+          <div className="text-center mb-8 md:mb-12 px-2">
+            <Badge className="mb-4 md:mb-6 glass-card text-accent-foreground border-accent/20 px-3 py-1 md:px-4 md:py-2 text-sm">
+              <Sparkles className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+              Platform Advantages
+            </Badge>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 lg:mb-6 text-white">
-              Strategic Acquisition Value
+              Beyond The Competition
             </h2>
-            <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Why this platform is essential infrastructure for Clanker's long-term success
+            <p className="text-lg md:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              Features that make D.O.S. the ultimate DeFi platform
             </p>
           </div>
 
-          <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
+          <motion.div variants={staggerContainer} className="grid md:grid-cols-2 gap-6 md:gap-8">
             {[
               {
-                icon: Lock,
-                title: "Liquidity Moat",
-                description:
-                  "Control the liquidity layer and you control the ecosystem. This platform becomes the default interface for all $CLANKER liquidity management, creating a defensible competitive advantage.",
-                badge: "Strategic Asset",
-                badgeColor: "primary",
+                title: "Real-Time AI Insights",
+                description: "Get instant notifications about profitable opportunities before anyone else",
+                metric: "94% accuracy",
+                icon: Brain,
               },
               {
+                title: "Social Trading",
+                description: "Copy strategies from top performers and build your reputation",
+                metric: "1,247 traders",
                 icon: Users,
-                title: "Community Retention",
-                description:
-                  "Transform passive holders into active ecosystem participants earning yield. Engaged users who earn income are 5x more likely to remain long-term community members.",
-                badge: "User Stickiness",
-                badgeColor: "accent",
               },
               {
-                icon: ArrowUpRight,
-                title: "Revenue Generation",
-                description:
-                  "Built-in monetization through protocol fees on every liquidity deployment. As the ecosystem grows, platform revenue scales automatically without additional overhead.",
-                badge: "Sustainable Model",
-                badgeColor: "primary",
+                title: "Gamified Experience",
+                description: "Earn XP, unlock achievements, and compete on leaderboards",
+                metric: "Level up system",
+                icon: Trophy,
               },
-            ].map((item, index) => (
-              <motion.div key={index} variants={scaleIn} whileHover={{ scale: 1.05, y: -10 }}>
-                <Card className="glass-card p-8 md:p-10 text-center hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 group h-full border border-primary/20">
-                  <motion.div
-                    whileHover={{ rotate: 360, scale: 1.1 }}
-                    transition={{ duration: 0.6 }}
-                    className="p-5 md:p-6 rounded-full bg-primary/20 backdrop-blur-sm w-fit mx-auto mb-6 md:mb-8 group-hover:bg-primary/30 transition-colors duration-300"
-                  >
-                    <item.icon className="h-10 w-10 md:h-12 md:w-12 text-primary-foreground" />
-                  </motion.div>
-                  <h3 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-white">{item.title}</h3>
-                  <p className="text-gray-300 mb-6 md:mb-8 text-base md:text-lg leading-relaxed">{item.description}</p>
-                  <Badge
-                    className={`${
-                      item.badgeColor === "accent"
-                        ? "bg-accent/20 text-accent-foreground border-accent/30"
-                        : "bg-primary/20 text-primary-foreground border-primary/30"
-                    } px-3 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold`}
-                  >
-                    {item.badge}
-                  </Badge>
+              {
+                title: "Advanced Analytics",
+                description: "Professional-grade charts and metrics for data-driven decisions",
+                metric: "Real-time data",
+                icon: BarChart3,
+              },
+            ].map((feature, index) => (
+              <motion.div key={index} variants={scaleIn} whileHover={{ scale: 1.02, y: -5 }}>
+                <Card className="glass-card p-6 md:p-8 hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 group h-full">
+                  <CardHeader className="pb-3 md:pb-4">
+                    <div className="flex items-center justify-between mb-3 md:mb-4">
+                      <motion.div
+                        whileHover={{ rotate: 360 }}
+                        transition={{ duration: 0.6 }}
+                        className="p-3 md:p-4 rounded-xl bg-accent/20 backdrop-blur-sm group-hover:bg-accent/30 transition-colors duration-300"
+                      >
+                        <feature.icon className="h-7 w-7 md:h-8 md:w-8 text-accent-foreground" />
+                      </motion.div>
+                      <LiveDataIndicator size="sm" />
+                    </div>
+                    <CardTitle className="text-xl md:text-2xl text-white mb-2">{feature.title}</CardTitle>
+                    <CardDescription className="text-gray-300 text-base md:text-lg leading-relaxed">
+                      {feature.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Badge className="bg-accent/20 text-accent-foreground border-accent/30 text-sm">
+                      {feature.metric}
+                    </Badge>
+                  </CardContent>
                 </Card>
               </motion.div>
             ))}
@@ -407,38 +459,71 @@ export default function HomePage() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          variants={fadeInUp}
-          className="text-center py-12 md:py-16 lg:py-20 relative"
+          variants={staggerContainer}
+          className="mb-16 md:mb-20 lg:mb-24"
         >
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 blur-3xl" />
-          <div className="max-w-4xl mx-auto relative space-y-6 md:space-y-8 px-2">
-            <Badge className="mb-4 md:mb-6 glass-card text-primary-foreground border-primary/20 px-3 py-1 md:px-4 md:py-2 text-sm">
-              <LiveDataIndicator size="sm" className="mr-2" />
-              Ready to Deploy
-            </Badge>
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 md:mb-8 text-white">
-              The Future of $CLANKER Liquidity
+          <div className="text-center mb-12 md:mb-14 lg:mb-16 px-2">
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 md:mb-5 lg:mb-6 text-white">
+              Built Different
             </h2>
-            <p className="text-lg md:text-xl lg:text-2xl text-gray-300 mb-8 md:mb-12 leading-relaxed">
-              Join the platform that's transforming how the Farcaster community earns yield and strengthens the Clanker
-              ecosystem
+            <p className="text-lg md:text-xl lg:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+              What sets DEUS apart from every other platform in the DeFi ecosystem
             </p>
-            <motion.div
-              variants={scaleIn}
-              whileHover={{ scale: 1.06, y: -2 }}
-              whileTap={{ scale: 0.96 }}
-              className="inline-block"
-            >
-              <Button
-                size="lg"
-                className="btn-premium text-white shadow-2xl hover:shadow-primary/30 transition-all duration-500 px-8 py-5 md:px-12 md:py-7 text-lg md:text-xl lg:text-2xl font-semibold bg-transparent"
-                onClick={() => (window.location.href = "/pools")}
-              >
-                <TrendingUp className="h-6 w-6 md:h-7 md:w-7 mr-3" />
-                Start Earning Yield Today
-              </Button>
-            </motion.div>
           </div>
+
+          <motion.div variants={staggerContainer} className="grid md:grid-cols-3 gap-6 md:gap-8 lg:gap-10">
+            {[
+              {
+                icon: Brain,
+                title: "AI-First Architecture",
+                description:
+                  "Every decision powered by machine learning algorithms trained on billions of data points from across DeFi",
+                badge: "Patent Pending",
+                badgeColor: "accent",
+              },
+              {
+                icon: Shield,
+                title: "Institutional Security",
+                description:
+                  "Bank-grade security protocols with multi-signature wallets and comprehensive insurance coverage",
+                badge: "Audited",
+                badgeColor: "green",
+              },
+              {
+                icon: Rocket,
+                title: "Unmatched Performance",
+                description:
+                  "127.8% average APR with 94.2% success rate - numbers that speak for themselves in the market",
+                badge: "Market Leading",
+                badgeColor: "yellow",
+              },
+            ].map((item, index) => (
+              <motion.div key={index} variants={scaleIn} whileHover={{ scale: 1.05, y: -10 }}>
+                <Card className="glass-card p-8 md:p-10 text-center hover:shadow-2xl hover:shadow-accent/10 transition-all duration-500 group h-full">
+                  <motion.div
+                    whileHover={{ rotate: 360, scale: 1.1 }}
+                    transition={{ duration: 0.6 }}
+                    className="p-5 md:p-6 rounded-full bg-accent/20 backdrop-blur-sm w-fit mx-auto mb-6 md:mb-8 group-hover:bg-accent/30 transition-colors duration-300"
+                  >
+                    <item.icon className="h-10 w-10 md:h-12 md:w-12 text-accent-foreground" />
+                  </motion.div>
+                  <h3 className="text-xl md:text-2xl font-bold mb-4 md:mb-6 text-white">{item.title}</h3>
+                  <p className="text-gray-300 mb-6 md:mb-8 text-base md:text-lg leading-relaxed">{item.description}</p>
+                  <Badge
+                    className={`${
+                      item.badgeColor === "green"
+                        ? "bg-green-500/20 text-green-200 border-green-500/30"
+                        : item.badgeColor === "yellow"
+                          ? "bg-yellow-500/20 text-yellow-200 border-yellow-500/30"
+                          : "bg-accent/20 text-accent-foreground border-accent/30"
+                    } px-3 py-1 md:px-4 md:py-2 text-xs md:text-sm font-semibold`}
+                  >
+                    {item.badge}
+                  </Badge>
+                </Card>
+              </motion.div>
+            ))}
+          </motion.div>
         </motion.section>
       </main>
 
