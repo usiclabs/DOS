@@ -15,7 +15,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Name, symbol, and creator address are required" }, { status: 400 })
     }
 
-    console.log("[v0] Creating Zora coin:", { name, symbol, creator })
+    // Platform referrer configuration - set to specific Ethereum address for referral rewards
+    const PLATFORM_REFERRER = process.env.NEXT_PUBLIC_ZORA_PLATFORM_REFERRER || 
+      "0xec3569fC5427945a283a3cb14c62538667b5Cc3a"
+
+    const hasPlatformReferrer = PLATFORM_REFERRER !== "0x0000000000000000000000000000000000000000"
+
+    console.log("[v0] Creating Zora coin:", { name, symbol, creator, platformReferrer: PLATFORM_REFERRER })
+
+    if (hasPlatformReferrer) {
+      console.log("[v0] Platform referrer ENABLED - rewards configuration active")
+    }
 
     const metadataUri = await uploadMetadataToIPFS(
       {
@@ -40,8 +50,19 @@ export async function POST(request: NextRequest) {
         chainId: 8453,
         payoutRecipient: creator,
         currency: "ETH",
+        platformReferrer: hasPlatformReferrer ? PLATFORM_REFERRER : undefined,
       },
-      message: "Metadata prepared. Please sign the transaction in your wallet to deploy the coin.",
+      platformReferrer: hasPlatformReferrer ? PLATFORM_REFERRER : null,
+      rewardsInfo: hasPlatformReferrer
+        ? {
+            platformFees: "20% of all trade fees",
+            referrerAddress: PLATFORM_REFERRER,
+            earnStartsImmediately: true,
+          }
+        : null,
+      message: hasPlatformReferrer
+        ? "Metadata prepared with referral rewards enabled. Please sign the transaction in your wallet to deploy the coin."
+        : "Metadata prepared. Please sign the transaction in your wallet to deploy the coin.",
     })
   } catch (error: any) {
     console.error("[v0] Error preparing coin creation:", error)

@@ -506,6 +506,14 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
     console.log("[v0] Preparing contract deployment transaction...")
     console.log("[v0] Factory address:", ZORA_FACTORY_ADDRESS)
     console.log("[v0] Currency:", params.currency, "->", currencyAddress)
+    console.log("[v0] Platform referrer:", params.platformReferrer || "none configured")
+
+    if (params.platformReferrer && params.platformReferrer !== "0x0000000000000000000000000000000000000000") {
+      console.log("[v0] ✓ Platform referrer is configured:", params.platformReferrer)
+      console.log("[v0] ✓ This deployment WILL EARN 20% of all trading fees")
+    } else {
+      console.warn("[v0] ✗ No platform referrer configured - deployment will NOT earn referral fees")
+    }
 
     // Prepare the transaction
     const hash = await walletClient.writeContract({
