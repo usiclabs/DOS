@@ -1,5 +1,6 @@
 "use client"
 
+import { DemoShaderLines } from "@/components/demo-shader-lines"
 import { motion } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -267,6 +268,16 @@ export default function HomePage() {
               )}
             </motion.div>
           </div>
+        </motion.section>
+
+        <motion.section
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          variants={staggerContainer}
+          className="mb-20 md:mb-32 lg:mb-40"
+        >
+          <DemoShaderLines />
         </motion.section>
 
         <motion.section

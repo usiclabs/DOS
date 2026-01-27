@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-const DEUS_CONTRACT = "0xf44Ab962d787444F4Ae6674A7FB61A8e66581B07"
+const DEUS_CONTRACT = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07"
 const DEXSCREENER_BASE_URL = "https://api.dexscreener.com/latest/dex/tokens"
 const BASESCAN_BASE_URL = "https://api.basescan.org/api"
 
