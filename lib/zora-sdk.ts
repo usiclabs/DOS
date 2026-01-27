@@ -18,6 +18,7 @@ import {
 } from "@zoralabs/coins-sdk"
 import type { WalletClient } from "viem"
 import { put } from "@vercel/blob"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
 const ZORA_API_KEY = "zora_api_a3bdc55dcf5cb9e9974348e5576525f6f4b1c81686700bf8cf52c088fef51207"
 
@@ -457,7 +458,6 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
 
     // Currency addresses on Base mainnet
     const ETH_ADDRESS = "0x0000000000000000000000000000000000000000"
-    const DEUS_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
     const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69"
     const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 
@@ -465,7 +465,7 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
     let currencyAddress: string
     switch (params.currency) {
       case "DEUS":
-        currencyAddress = DEUS_ADDRESS
+        currencyAddress = DEUS_TOKEN_ADDRESS
         break
       case "ZORA":
         currencyAddress = ZORA_ADDRESS

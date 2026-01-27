@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DeployModal } from "@/components/deploy-modal"
 import { CreatorSwapModal } from "@/components/creator-swap-modal"
 import { CreateCoinModal } from "@/components/create-coin-modal"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 import {
   TrendingUp,
   TrendingDown,
@@ -28,9 +29,12 @@ import {
   Flame,
   RefreshCw,
   Clock,
+  Wallet,
 } from "lucide-react"
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { useWallet } from "@/contexts/wallet-context"
+import { useWalletConnectionStatus } from "@/hooks/use-wallet-connection-status"
 
 interface ZoraCreatorCoin {
   address: string
@@ -71,10 +75,24 @@ export default function CreatorsPage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)
+  const [walletCheckPending, setWalletCheckPending] = useState(true)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
 
   const router = useRouter()
+  const { isConnected: contextConnected, connectWallet, isConnecting: contextConnecting, address: contextAddress } = useWallet()
+  const walletStatus = useWalletConnectionStatus()
+
+  // Monitor wallet connection status from hook
+  useEffect(() => {
+    console.log("[v0] Creators page: Wallet status updated", {
+      hookConnected: walletStatus.isConnected,
+      hookAddress: walletStatus.address,
+      contextConnected,
+      contextAddress,
+    })
+    setWalletCheckPending(false)
+  }, [walletStatus.isConnected, walletStatus.address, contextConnected, contextAddress])
 
   useEffect(() => {
     fetchCreatorCoins()
@@ -180,7 +198,46 @@ export default function CreatorsPage() {
     return `${sign}${change.toFixed(2)}%`
   }
 
-  const handleDeployLiquidity = (coin: ZoraCreatorCoin) => {
+  const handleDeployLiquidity = async (coin: ZoraCreatorCoin) => {
+    console.log("[v0] Deploy button clicked", {
+      isConnected: walletStatus.isConnected,
+      address: walletStatus.address,
+      isConnecting: walletStatus.isConnecting,
+    })
+
+    // Check if wallet is connected
+    if (!walletStatus.isConnected) {
+      console.log("[v0] Wallet not connected, prompting user to connect")
+      try {
+        await walletStatus.tryConnect("metamask")
+        console.log("[v0] Wallet connection initiated, waiting for confirmation...")
+        
+        // Wait for connection to complete
+        const maxAttempts = 20
+        let attempts = 0
+        const checkConnection = setInterval(() => {
+          attempts++
+          if (walletStatus.isConnected) {
+            console.log("[v0] Wallet connected successfully, opening deploy modal")
+            clearInterval(checkConnection)
+            openDeployModal(coin)
+          } else if (attempts >= maxAttempts) {
+            console.log("[v0] Connection attempt timed out")
+            clearInterval(checkConnection)
+          }
+        }, 250)
+        return
+      } catch (error) {
+        console.error("[v0] Failed to connect wallet:", error)
+        return
+      }
+    }
+
+    // Wallet is connected, proceed with deployment
+    openDeployModal(coin)
+  }
+
+  const openDeployModal = (coin: ZoraCreatorCoin) => {
     const poolData = {
       id: coin.address,
       pairAddress: coin.poolAddress || coin.address,
@@ -190,9 +247,9 @@ export default function CreatorsPage() {
         name: coin.name,
       },
       quoteToken: {
-        address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
+        address: DEUS_TOKEN_ADDRESS,
         symbol: "DEUS",
-        name: "DEUS Finance",
+        name: "DEUS",
       },
       dexId: "uniswap-v3",
       priceUsd: coin.metrics.price,
@@ -206,6 +263,7 @@ export default function CreatorsPage() {
       volatility: Math.abs(coin.metrics.priceChange24h),
     }
 
+    console.log("[v0] Opening deploy modal for coin:", coin.name, "with DEUS address:", DEUS_TOKEN_ADDRESS)
     setSelectedCoin(poolData)
     setIsDeployModalOpen(true)
   }
@@ -656,10 +714,30 @@ export default function CreatorsPage() {
                                     e.stopPropagation()
                                     handleDeployLiquidity(coin)
                                   }}
-                                  className="w-full btn-premium text-white transition-all duration-300 h-10 md:h-auto text-xs md:text-sm"
+                                  disabled={walletStatus.isConnecting}
+                                  className={`w-full transition-all duration-300 h-10 md:h-auto text-xs md:text-sm ${
+                                    walletStatus.isConnected
+                                      ? "btn-premium text-white"
+                                      : "bg-orange-500/80 hover:bg-orange-500 text-white"
+                                  }`}
+                                  title={walletStatus.isConnected ? "Deploy liquidity for this token" : "Connect wallet to deploy"}
                                 >
-                                  <Droplets className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
-                                  <span className="truncate">Deploy</span>
+                                  {walletStatus.isConnecting ? (
+                                    <>
+                                      <RefreshCw className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0 animate-spin" />
+                                      <span className="truncate">Connecting...</span>
+                                    </>
+                                  ) : walletStatus.isConnected ? (
+                                    <>
+                                      <Droplets className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
+                                      <span className="truncate">Deploy</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Wallet className="w-3.5 h-3.5 md:w-4 md:h-4 mr-1.5 md:mr-2 flex-shrink-0" />
+                                      <span className="truncate">Connect & Deploy</span>
+                                    </>
+                                  )}
                                 </Button>
                               </motion.div>
                               <motion.div

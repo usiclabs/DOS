@@ -27,6 +27,8 @@ import {
 import Link from "next/link"
 import Image from "next/image"
 import { useParams, useRouter } from "next/navigation"
+import { useWalletConnectionStatus } from "@/hooks/use-wallet-connection-status"
+import { Wallet } from "lucide-react"
 
 interface CoinDetails {
   address: string
@@ -56,6 +58,7 @@ export default function CoinDetailPage() {
   const params = useParams()
   const router = useRouter()
   const address = params.address as string
+  const walletStatus = useWalletConnectionStatus()
 
   const [coin, setCoin] = useState<CoinDetails | null>(null)
   const [loading, setLoading] = useState(true)
@@ -122,7 +125,33 @@ export default function CoinDetailPage() {
     return `$${price.toFixed(2)}`
   }
 
-  const handleDeployLiquidity = () => {
+  const handleDeployLiquidity = async () => {
+    if (!coin) return
+
+    // Check if wallet is connected
+    if (!walletStatus.isConnected) {
+      console.log("[v0] Wallet not connected, prompting user to connect")
+      try {
+        await walletStatus.tryConnect("metamask")
+        console.log("[v0] Wallet connection initiated")
+        // Wait a bit for the connection to complete, then open modal
+        setTimeout(() => {
+          if (walletStatus.isConnected) {
+            openDeployModal()
+          }
+        }, 500)
+        return
+      } catch (error) {
+        console.error("[v0] Failed to connect wallet:", error)
+        return
+      }
+    }
+
+    // Wallet is connected, proceed with deployment
+    openDeployModal()
+  }
+
+  const openDeployModal = () => {
     if (!coin) return
 
     const poolData = {

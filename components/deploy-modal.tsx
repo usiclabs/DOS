@@ -129,6 +129,17 @@ export function DeployModal({
   const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" // USDC on Base
   const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69" // ZORA on Base
 
+  // Listen for wallet connection status changes
+  useEffect(() => {
+    if (isOpen) {
+      console.log("[v0] Deploy modal: Wallet connection status -", { isConnected })
+      // If wallet becomes connected while modal is open, update UI
+      if (isConnected && step === "input" && !baseAmount) {
+        console.log("[v0] Wallet connected in modal, UI updated")
+      }
+    }
+  }, [isConnected, isOpen, step, baseAmount])
+
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
       // Enter key to preview/deploy

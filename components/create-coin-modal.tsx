@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Sparkles, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
+import { Sparkles, Upload, Loader2, CheckCircle2, AlertCircle, Copy } from "lucide-react"
 import { useAccount, useSwitchChain, useChainId, useWalletClient } from "wagmi"
 import { Badge } from "@/components/ui/badge"
 import { deployCoin } from "@/lib/zora-sdk"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
 interface CreateCoinModalProps {
   isOpen: boolean
@@ -368,6 +369,30 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
             <p className="text-xs text-muted-foreground">
               Choose which currency your coin will be paired with in the Uniswap V4 pool
             </p>
+
+            {/* DEUS Contract Address Display */}
+            {currency === "DEUS" && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-amber-400">DEUS Token Address</span>
+                </div>
+                <div className="flex items-center gap-2 bg-background/50 p-2 rounded border border-amber-500/10">
+                  <code className="text-xs font-mono text-amber-300 flex-1 break-all">{DEUS_TOKEN_ADDRESS}</code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(DEUS_TOKEN_ADDRESS)
+                      console.log("[v0] DEUS address copied to clipboard")
+                    }}
+                    className="p-1 hover:bg-amber-500/20 rounded transition-colors flex-shrink-0"
+                    title="Copy DEUS address"
+                  >
+                    <Copy className="w-3 h-3 text-amber-400" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Info Box */}
