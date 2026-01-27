@@ -10,16 +10,22 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90',
+          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-95 transition-transform',
         destructive:
-          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60',
+          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 active:scale-95 transition-transform',
         outline:
-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50',
+          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 active:scale-95 transition-transform',
         secondary:
-          'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80',
+          'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 active:scale-95 transition-transform',
         ghost:
-          'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50',
+          'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 active:scale-95 transition-transform',
         link: 'text-primary underline-offset-4 hover:underline',
+        glass:
+          'relative bg-white/10 text-white backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300',
+        "glass-primary":
+          'relative bg-[rgba(235,90,60,0.15)] text-white backdrop-blur-md border border-[rgba(235,90,60,0.3)] hover:bg-[rgba(235,90,60,0.25)] hover:border-[rgba(235,90,60,0.5)] shadow-lg hover:shadow-[0_12px_40px_rgba(235,90,60,0.3)] hover:scale-105 active:scale-95 transition-all duration-300',
+        "glass-gold":
+          'relative bg-[rgba(218,165,32,0.15)] text-white backdrop-blur-md border border-[rgba(218,165,32,0.3)] hover:bg-[rgba(218,165,32,0.25)] hover:border-[rgba(218,165,32,0.5)] shadow-lg hover:shadow-[0_12px_40px_rgba(218,165,32,0.3)] hover:scale-105 active:scale-95 transition-all duration-300',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',

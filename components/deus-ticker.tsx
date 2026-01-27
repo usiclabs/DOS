@@ -21,7 +21,7 @@ import { getTokenAddress } from "@/lib/constants"
 import { DeployModal } from "@/components/deploy-modal"
 import { useToast } from "@/hooks/use-toast"
 
-const DEUS_CONTRACT_ADDRESS = "0xf44Ab962d787444F4Ae6674A7FB61A8e66581B07"
+const DEUS_CONTRACT_ADDRESS = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07"
 
 export function DeusTicker() {
   const [isPaused, setIsPaused] = useState(false)

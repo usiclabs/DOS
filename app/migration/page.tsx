@@ -28,7 +28,7 @@ const Canvas3DCountdown = dynamic(() => import("@/components/canvas-3d-countdown
 })
 
 const MIGRATION_WALLET = "0xFc866645306833E8F0d79c6D4f2B0DdfAA4342C8"
-const MIGRATION_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
+// const MIGRATION_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 20 },
@@ -83,7 +83,6 @@ export default function MigrationPage() {
 
   const { data: tokenBalance } = useBalance({
     address: address,
-    token: MIGRATION_TOKEN_ADDRESS as `0x${string}`,
   })
 
   const { sendTransaction, data: hash, isPending } = useSendTransaction()
@@ -317,9 +316,6 @@ export default function MigrationPage() {
                 <div className="glass-card p-4 rounded-lg border-white/5 space-y-2">
                   <p className="text-sm text-gray-300">
                     <span className="font-semibold text-white">Network:</span> Base Chain
-                  </p>
-                  <p className="text-sm text-gray-300">
-                    <span className="font-semibold text-white">Token Contract:</span> {MIGRATION_TOKEN_ADDRESS}
                   </p>
                   <p className="text-sm text-gray-300">
                     <span className="font-semibold text-white">Migration Ratio:</span> 1:100 (Your % of supply

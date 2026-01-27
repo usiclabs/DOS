@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
-const DEUS_CONTRACT_ADDRESS = "0xf44Ab962d787444F4Ae6674A7FB61A8e66581B07"
+const DEUS_CONTRACT_ADDRESS = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07"
 
 const FETCH_TIMEOUT = 10000 // 10 seconds
 

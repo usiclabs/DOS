@@ -1,5 +1,5 @@
 // DEUS token address on Base
-export const DEUS_TOKEN_ADDRESS = "0xf44Ab962d787444F4Ae6674A7FB61A8e66581B07" // DEUS token on Base
+export const DEUS_TOKEN_ADDRESS = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07" // DEUS token on Base
 
 // DEUS total supply for percentage calculations
 // DEUS has 18 decimals, total supply is 1,000,000,000 tokens (1 billion)
@@ -13,7 +13,7 @@ export const VOTING_START_DATE = new Date("2025-01-01T00:00:00Z").getTime()
 
 // Known token addresses on Base chain for fallback when pool data has zero addresses
 export const KNOWN_TOKEN_ADDRESSES: Record<string, string> = {
-  DEUS: "0xf44Ab962d787444F4Ae6674A7FB61A8e66581B07",
+  DEUS: "0xECE5d962d17901ef200Da050C7c74AB45C96Db07",
   WETH: "0x4200000000000000000000000000000000000006",
   ETH: "0x4200000000000000000000000000000000000006", // WETH is used for ETH
   USDC: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
