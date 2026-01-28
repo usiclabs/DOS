@@ -22,10 +22,10 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
 
     const deusPools = validPools.filter((pool) => pool.isDeusPool).sort((a, b) => b.netApy - a.netApy)
 
-    const creatorPools = validPools.filter((pool: any) => pool.isCreatorCoin)
+    const creatorPools = validPools.filter((pool) => pool.isCreatorCoin)
 
     const nonDeusPools = validPools
-      .filter((pool: any) => !pool.isDeusPool && !pool.isCreatorCoin)
+      .filter((pool) => !pool.isDeusPool && !pool.isCreatorCoin)
       .sort((a, b) => b.netApy - a.netApy)
 
     const selectedDeusPools = deusPools.slice(0, 3)

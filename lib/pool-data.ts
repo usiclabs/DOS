@@ -1,5 +1,3 @@
-export const dynamic = "force-dynamic"
-
 export interface PoolData {
   id: string
   pairAddress: string
@@ -26,6 +24,7 @@ export interface PoolData {
   feeTier: string
   poolType: "v3" | "xlp" | "v2"
   isDeusPool: boolean
+  isCreatorCoin?: boolean
   volatility: number
   lastUpdated: string
   tokenImages?: {
