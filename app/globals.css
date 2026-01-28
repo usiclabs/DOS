@@ -767,6 +767,97 @@
     outline: none;
   }
 
+  /* Subtle glowing effect utilities for platform-wide consistency */
+  .glow-subtle {
+    position: relative;
+  }
+
+  .glow-subtle::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    box-shadow: 0 0 12px rgba(235, 90, 60, 0.15), inset 0 0 12px rgba(235, 90, 60, 0.05);
+  }
+
+  .glow-subtle:hover::after {
+    opacity: 1;
+  }
+
+  .glow-subtle:focus-within::after {
+    opacity: 1;
+    box-shadow: 0 0 16px rgba(235, 90, 60, 0.2), inset 0 0 16px rgba(235, 90, 60, 0.08);
+  }
+
+  .glow-card {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glow-card::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: radial-gradient(circle at 30% 40%, rgba(235, 90, 60, 0.1), transparent 50%);
+    opacity: 0;
+    transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  .glow-card:hover::before {
+    opacity: 1;
+  }
+
+  .glow-card:hover {
+    box-shadow: 0 8px 32px rgba(235, 90, 60, 0.15), 0 0 16px rgba(235, 90, 60, 0.1);
+  }
+
+  .glow-button {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glow-button:hover {
+    box-shadow: 0 0 20px rgba(235, 90, 60, 0.25), 0 4px 16px rgba(235, 90, 60, 0.15);
+  }
+
+  .glow-button:active {
+    box-shadow: 0 0 12px rgba(235, 90, 60, 0.15), 0 2px 8px rgba(235, 90, 60, 0.1);
+  }
+
+  .glow-input {
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .glow-input:focus {
+    box-shadow: 0 0 16px rgba(235, 90, 60, 0.15), inset 0 0 8px rgba(235, 90, 60, 0.05);
+    border-color: rgba(235, 90, 60, 0.4);
+  }
+
+  .glow-badge {
+    position: relative;
+  }
+
+  .glow-badge::after {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    background: radial-gradient(circle, rgba(235, 90, 60, 0.1), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+
+  .glow-badge:hover::after {
+    opacity: 1;
+  }
+
   @keyframes success-pulse {
     0%,
     100% {

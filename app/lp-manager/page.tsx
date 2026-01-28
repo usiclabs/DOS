@@ -814,27 +814,163 @@ export default function LPManagerPage() {
 
   if (!address) {
     return (
-      <div className="bg-background min-h-screen">
-        <StickyHeader>
-          <div className="flex justify-between items-center px-6 py-4">
-            <div className="flex items-center space-x-3">
-              <Wallet className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold text-white">LP Manager</h1>
-            </div>
-          </div>
-        </StickyHeader>
+      <div className="min-h-screen bg-background">
+        <StickyHeader />
+        <DeusTicker />
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-4 py-6">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            className="w-full max-w-xl"
+          >
+            <Card className="glass-card relative overflow-hidden border-2 border-primary/20 shadow-2xl shadow-primary/10">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {[...Array(30)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-primary/40 rounded-full blur-[1px]"
+                    initial={{
+                      x: Math.random() * 100 + "%",
+                      y: Math.random() * 100 + "%",
+                    }}
+                    animate={{
+                      y: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      x: [Math.random() * 100 + "%", Math.random() * 100 + "%"],
+                      opacity: [0.2, 0.8, 0.2],
+                      scale: [1, 1.5, 1],
+                    }}
+                    transition={{
+                      duration: Math.random() * 8 + 12,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  />
+                ))}
+              </div>
 
-        <div className="flex flex-col items-center justify-center min-h-[60vh] p-6">
-          <div className="max-w-md w-full space-y-6 text-center">
-            <div className="w-20 h-20 mx-auto bg-accent/10 rounded-full flex items-center justify-center">
-              <Wallet className="h-10 w-10 text-accent" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-white mb-2">Connect Your Wallet</h2>
-              <p className="text-muted-foreground">Connect your wallet to view and manage your liquidity positions</p>
-            </div>
-            <EnhancedWalletConnect onConnect={connectWallet} />
-          </div>
+              <div className="absolute top-0 left-0 w-32 h-32 border-t-2 border-l-2 border-primary/40 rounded-tl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute top-0 right-0 w-32 h-32 border-t-2 border-r-2 border-primary/40 rounded-tr-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 left-0 w-32 h-32 border-b-2 border-l-2 border-primary/40 rounded-bl-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+              <div className="absolute bottom-0 right-0 w-32 h-32 border-b-2 border-r-2 border-primary/40 rounded-br-3xl shadow-[0_0_20px_rgba(255,107,53,0.3)]" />
+
+              {[
+                { position: "top-0 left-0", delay: 0 },
+                { position: "top-0 right-0", delay: 0.75 },
+                { position: "bottom-0 left-0", delay: 1.5 },
+                { position: "bottom-0 right-0", delay: 2.25 },
+              ].map((corner, i) => (
+                <motion.div
+                  key={i}
+                  className={`absolute ${corner.position} w-32 h-32`}
+                  animate={{ opacity: [0.2, 0.5, 0.2] }}
+                  transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: corner.delay }}
+                >
+                  <div className={`absolute ${corner.position} w-16 h-16 bg-primary/30 blur-2xl rounded-full`} />
+                </motion.div>
+              ))}
+
+              <div className="relative p-8 text-center">
+                <div className="relative w-16 h-16 mx-auto mb-6">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-2xl"
+                    animate={{
+                      scale: [1, 1.3, 1],
+                      opacity: [0.3, 0.6, 0.3],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 bg-primary/20 rounded-full blur-3xl"
+                    animate={{
+                      scale: [1, 1.5, 1],
+                      opacity: [0.2, 0.5, 0.2],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                      delay: 0.5,
+                    }}
+                  />
+
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 rounded-full border-2 border-primary/30 backdrop-blur-sm shadow-[0_0_40px_rgba(255,107,53,0.3)]"
+                    animate={{ rotate: 360 }}
+                    transition={{
+                      duration: 8,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  >
+                    <Wallet className="w-6 h-6 text-primary" />
+                  </motion.div>
+                </div>
+
+                <div className="relative mb-4">
+                  <motion.h2
+                    className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
+                    animate={{
+                      backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                    }}
+                    transition={{
+                      duration: 5,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "linear",
+                    }}
+                  >
+                    Liquidity Manager
+                  </motion.h2>
+                  <motion.div
+                    className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-32 h-1 bg-gradient-to-r from-transparent via-primary to-transparent rounded-full"
+                    animate={{
+                      opacity: [0.3, 0.8, 0.3],
+                      scaleX: [0.8, 1, 0.8],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                      ease: "easeInOut",
+                    }}
+                  />
+                </div>
+
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="text-gray-300 text-lg mb-6 max-w-md mx-auto leading-relaxed"
+                >
+                  Connect your wallet to view and manage your liquidity positions across DEUS pools
+                </motion.p>
+
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <Button
+                    onClick={() => connectWallet("metamask")}
+                    className="btn-premium relative px-8 py-4 text-base rounded-2xl font-medium overflow-hidden group"
+                    size="lg"
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                    <Wallet className="w-5 h-5 mr-2 relative z-10" />
+                    <span className="relative z-10">Connect Wallet</span>
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                  className="mt-6 pt-6 border-t border-white/10"
+                >
+                  <p className="text-xs text-muted-foreground">Supported wallets: MetaMask, Coinbase, WalletConnect</p>
+                </motion.div>
+              </div>
+            </Card>
+          </motion.div>
         </div>
       </div>
     )

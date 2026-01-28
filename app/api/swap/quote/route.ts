@@ -9,9 +9,9 @@ import {
 } from "@/lib/uniswap-v3-swap"
 import { parseUnits, formatUnits } from "viem"
 import { getZoraTradeQuote, type TradeParameters } from "@/lib/zora-trade"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-const DEUS_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
 
 export async function POST(request: NextRequest) {
   try {
@@ -220,12 +220,12 @@ export async function POST(request: NextRequest) {
     console.log("[v0] ⚠️ No direct ETH pool found")
     console.log("[v0] 🔍 Step 2: Checking for multi-hop route through DEUS...")
 
-    const wethToDeusPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, DEUS_ADDRESS)
+    const wethToDeusPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, DEUS_TOKEN_ADDRESS)
     if (wethToDeusPool) {
-      const deusToTokenPool = await detectPoolFeeTier(DEUS_ADDRESS, toToken)
+      const deusToTokenPool = await detectPoolFeeTier(DEUS_TOKEN_ADDRESS, toToken)
       if (!deusToTokenPool) {
         // Try reversed direction
-        const tokenToDeusPool = await detectPoolFeeTier(toToken, DEUS_ADDRESS)
+        const tokenToDeusPool = await detectPoolFeeTier(toToken, DEUS_TOKEN_ADDRESS)
         if (tokenToDeusPool) {
           console.log("[v0] Found multi-hop route through DEUS (reversed):", {
             wethToDeus: { fee: wethToDeusPool.fee, pool: wethToDeusPool.poolAddress },
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
 
           const multiHopQuote = await getMultiHopSwapQuote(
             UNISWAP_V3_ADDRESSES.WETH,
-            DEUS_ADDRESS,
+            DEUS_TOKEN_ADDRESS,
             toToken,
             amountInWei,
             wethToDeusPool.fee,
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
               minAmountOut: toAmount * 0.995,
               uniswapV3Data: {
                 tokenIn: UNISWAP_V3_ADDRESSES.WETH,
-                intermediateToken: DEUS_ADDRESS,
+                intermediateToken: DEUS_TOKEN_ADDRESS,
                 tokenOut: toToken,
                 fee1: wethToDeusPool.fee,
                 fee2: tokenToDeusPool.fee,
@@ -294,7 +294,7 @@ export async function POST(request: NextRequest) {
 
         const multiHopQuote = await getMultiHopSwapQuote(
           UNISWAP_V3_ADDRESSES.WETH,
-          DEUS_ADDRESS,
+          DEUS_TOKEN_ADDRESS,
           toToken,
           amountInWei,
           wethToDeusPool.fee,
@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
             minAmountOut: toAmount * 0.995,
             uniswapV3Data: {
               tokenIn: UNISWAP_V3_ADDRESSES.WETH,
-              intermediateToken: DEUS_ADDRESS,
+              intermediateToken: DEUS_TOKEN_ADDRESS,
               tokenOut: toToken,
               fee1: wethToDeusPool.fee,
               fee2: deusToTokenPool.fee,
@@ -547,7 +547,31 @@ function getTokenSymbol(address: string): string {
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "USDC",
     "0x4200000000000000000000000000000000000006": "WETH",
     "0x73582df1cad3187cD0746b7A473d65c06386837e": "DEUS",
-    "0x73582df1cad3187cD0746b7A473d65c06386837f": "ZORA",
+    "0x1111111111166b7fe7bd91427724b487980afc69": "ZORA",
+  }
+  return tokenMap[address.toLowerCase()] || "TOKEN"
+}
+
+function getTokenLogo(address: string): string {
+  const logoMap: { [key: string]: string } = {
+    "0x0000000000000000000000000000000000000000": "Ξ",
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "💵",
+    "0x4200000000000000000000000000000000000006": "Ξ",
+    "0x73582df1cad3187cD0746b7A473d65c06386837e": "⚡",
+    "0x1111111111166b7fe7bd91427724b487980afc69": "◬",
+  }
+  return logoMap[address.toLowerCase()] || "◎"
+}
+  return tokenMap[address.toLowerCase()] || "TOKEN"
+}
+
+function getTokenLogo(address: string): string {
+  const logoMap: { [key: string]: string } = {
+    "0x0000000000000000000000000000000000000000": "Ξ",
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "💵",
+    "0x4200000000000000000000000000000000000006": "Ξ",
+    "0xECE5d962d17901ef200Da050C7c74AB45C96Db07": "⚡",
+    "0x73582df1cad3187cD0746b7A473d65c06386837f": "Z",
   }
   return tokenMap[address.toLowerCase()] || "TOKEN"
 }

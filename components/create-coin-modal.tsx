@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Sparkles, Upload, Loader2, CheckCircle2, AlertCircle } from "lucide-react"
+import { Sparkles, Upload, Loader2, CheckCircle2, AlertCircle, Copy } from "lucide-react"
 import { useAccount, useSwitchChain, useChainId, useWalletClient } from "wagmi"
 import { Badge } from "@/components/ui/badge"
 import { deployCoin } from "@/lib/zora-sdk"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
 
 interface CreateCoinModalProps {
   isOpen: boolean
@@ -79,21 +80,21 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
         reader.readAsDataURL(file)
       }
     }
-  }, []) // Empty dependency array ensures this function is only created once
+  }, [])
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("[v0] Name change:", e.target.value) // add debug logging
-    setFormData((prev) => ({ ...prev, name: e.target.value }))
+    const value = e.target.value
+    setFormData((prev) => ({ ...prev, name: value }))
   }, [])
 
   const handleSymbolChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("[v0] Symbol change:", e.target.value) // add debug logging
-    setFormData((prev) => ({ ...prev, symbol: e.target.value.toUpperCase() }))
+    const value = e.target.value.toUpperCase()
+    setFormData((prev) => ({ ...prev, symbol: value }))
   }, [])
 
   const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log("[v0] Description change:", e.target.value) // add debug logging
-    setFormData((prev) => ({ ...prev, description: e.target.value }))
+    const value = e.target.value
+    setFormData((prev) => ({ ...prev, description: value }))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -205,10 +206,27 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
     onClose()
   }
 
-  const ModalContent = () => (
+  const handleCloseCallback = useCallback(handleClose, [onClose])
+
+  const handleSubmitCallback = useCallback(handleSubmit, [
+    isConnected,
+    address,
+    walletClient,
+    chainId,
+    switchChain,
+    formData.name,
+    formData.symbol,
+    formData.media,
+    mediaType,
+    currency,
+  ])
+
+  // Memoize ModalContent to prevent unnecessary re-renders
+  // IMPORTANT: Only include truly static dependencies to avoid input re-mounting on every keystroke
+  const ModalContent = useCallback(() => (
     <>
       {step === "form" && (
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+        <form onSubmit={handleSubmitCallback} className="space-y-6 mt-4">
           {isConnected && chainId !== 8453 && chainId !== 84532 && (
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <div className="flex gap-3">
@@ -269,6 +287,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               onChange={handleNameChange}
               required
               className="bg-background/50"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
             />
           </div>
 
@@ -283,6 +304,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               required
               maxLength={10}
               className="bg-background/50"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
             />
             <p className="text-xs text-muted-foreground">Short ticker symbol (e.g., BTC, ETH)</p>
           </div>
@@ -297,6 +321,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               onChange={handleDescriptionChange}
               rows={4}
               className="bg-background/50 resize-none"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
             />
           </div>
 
@@ -329,6 +356,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                       ? "border-orange-500 bg-orange-500/10"
                       : "border-border hover:border-orange-500/50 bg-background/50"
                   }`}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <RadioGroupItem value="DEUS" id="currency-deus" className="sr-only" />
                   <div className="text-2xl">⚡</div>
@@ -343,6 +371,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                       ? "border-orange-500 bg-orange-500/10"
                       : "border-border hover:border-orange-500/50 bg-background/50"
                   }`}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <RadioGroupItem value="ZORA" id="currency-zora" className="sr-only" />
                   <div className="text-2xl">Z</div>
@@ -357,6 +386,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                       ? "border-orange-500 bg-orange-500/10"
                       : "border-border hover:border-orange-500/50 bg-background/50"
                   }`}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <RadioGroupItem value="USDC" id="currency-usdc" className="sr-only" />
                   <div className="text-2xl">$</div>
@@ -368,6 +398,30 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
             <p className="text-xs text-muted-foreground">
               Choose which currency your coin will be paired with in the Uniswap V4 pool
             </p>
+
+            {/* DEUS Contract Address Display */}
+            {currency === "DEUS" && (
+              <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <span className="text-xs font-semibold text-amber-400">DEUS Token Address</span>
+                </div>
+                <div className="flex items-center gap-2 bg-background/50 p-2 rounded border border-amber-500/10">
+                  <code className="text-xs font-mono text-amber-300 flex-1 break-all">{DEUS_TOKEN_ADDRESS}</code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(DEUS_TOKEN_ADDRESS)
+                      console.log("[v0] DEUS address copied to clipboard")
+                    }}
+                    className="p-1 hover:bg-amber-500/20 rounded transition-colors flex-shrink-0"
+                    title="Copy DEUS address"
+                  >
+                    <Copy className="w-3 h-3 text-amber-400" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Info Box */}
@@ -541,11 +595,11 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
         </div>
       )}
     </>
-  )
+  ), [step, isConnected, chainId, switchChain, handleSubmitCallback, handleMediaChange, handleNameChange, handleSymbolChange, handleDescriptionChange])
 
   if (isMobile) {
     return (
-      <Sheet open={isOpen} onOpenChange={handleClose}>
+      <Sheet open={isOpen} onOpenChange={handleCloseCallback}>
         <SheetContent side="bottom" className="h-[90vh] glass-card backdrop-blur-md border-orange-500/20 flex flex-col">
           <SheetHeader className="flex-shrink-0">
             <SheetTitle className="flex items-center gap-2 text-2xl">
@@ -567,7 +621,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleCloseCallback}>
       <DialogContent className="max-w-2xl max-h-[85vh] glass-card backdrop-blur-md border-orange-500/20">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
