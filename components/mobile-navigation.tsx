@@ -2,7 +2,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Home, Users, BarChart3, Droplets, Vote, Vault } from "lucide-react"
+import { Home, Users, BarChart3, Droplets, ArrowRightLeft } from "lucide-react"
 import { motion } from "framer-motion"
 import { memo, useCallback } from "react"
 
@@ -23,14 +23,9 @@ const navigationItems = [
     icon: Users,
   },
   {
-    name: "Treasury",
-    href: "/treasury",
-    icon: Vault,
-  },
-  {
-    name: "Vote",
-    href: "/governance",
-    icon: Vote,
+    name: "Swap",
+    href: "/swap",
+    icon: ArrowRightLeft,
   },
   {
     name: "Analytics",
