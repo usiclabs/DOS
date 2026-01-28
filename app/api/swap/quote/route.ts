@@ -546,9 +546,22 @@ function getTokenSymbol(address: string): string {
     "0x0000000000000000000000000000000000000000": "ETH",
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "USDC",
     "0x4200000000000000000000000000000000000006": "WETH",
-    "0xECE5d962d17901ef200Da050C7c74AB45C96Db07": "DEUS",
-    "0x73582df1cad3187cD0746b7A473d65c06386837f": "ZORA",
+    "0x73582df1cad3187cD0746b7A473d65c06386837e": "DEUS",
+    "0x1111111111166b7fe7bd91427724b487980afc69": "ZORA",
   }
+  return tokenMap[address.toLowerCase()] || "TOKEN"
+}
+
+function getTokenLogo(address: string): string {
+  const logoMap: { [key: string]: string } = {
+    "0x0000000000000000000000000000000000000000": "Ξ",
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "💵",
+    "0x4200000000000000000000000000000000000006": "Ξ",
+    "0x73582df1cad3187cD0746b7A473d65c06386837e": "⚡",
+    "0x1111111111166b7fe7bd91427724b487980afc69": "◬",
+  }
+  return logoMap[address.toLowerCase()] || "◎"
+}
   return tokenMap[address.toLowerCase()] || "TOKEN"
 }
 
