@@ -80,21 +80,21 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
         reader.readAsDataURL(file)
       }
     }
-  }, []) // Empty dependency array ensures this function is only created once
+  }, [])
 
   const handleNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("[v0] Name change:", e.target.value) // add debug logging
-    setFormData((prev) => ({ ...prev, name: e.target.value }))
+    const value = e.target.value
+    setFormData((prev) => ({ ...prev, name: value }))
   }, [])
 
   const handleSymbolChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("[v0] Symbol change:", e.target.value) // add debug logging
-    setFormData((prev) => ({ ...prev, symbol: e.target.value.toUpperCase() }))
+    const value = e.target.value.toUpperCase()
+    setFormData((prev) => ({ ...prev, symbol: value }))
   }, [])
 
   const handleDescriptionChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log("[v0] Description change:", e.target.value) // add debug logging
-    setFormData((prev) => ({ ...prev, description: e.target.value }))
+    const value = e.target.value
+    setFormData((prev) => ({ ...prev, description: value }))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -206,10 +206,27 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
     onClose()
   }
 
-  const ModalContent = () => (
+  const handleCloseCallback = useCallback(handleClose, [onClose])
+
+  const handleSubmitCallback = useCallback(handleSubmit, [
+    isConnected,
+    address,
+    walletClient,
+    chainId,
+    switchChain,
+    formData.name,
+    formData.symbol,
+    formData.media,
+    mediaType,
+    currency,
+  ])
+
+  // Memoize ModalContent to prevent unnecessary re-renders
+  // IMPORTANT: Only include truly static dependencies to avoid input re-mounting on every keystroke
+  const ModalContent = useCallback(() => (
     <>
       {step === "form" && (
-        <form onSubmit={handleSubmit} className="space-y-6 mt-4">
+        <form onSubmit={handleSubmitCallback} className="space-y-6 mt-4">
           {isConnected && chainId !== 8453 && chainId !== 84532 && (
             <div className="p-4 rounded-lg bg-amber-500/10 border border-amber-500/20">
               <div className="flex gap-3">
@@ -270,6 +287,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               onChange={handleNameChange}
               required
               className="bg-background/50"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
             />
           </div>
 
@@ -284,6 +304,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               required
               maxLength={10}
               className="bg-background/50"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
             />
             <p className="text-xs text-muted-foreground">Short ticker symbol (e.g., BTC, ETH)</p>
           </div>
@@ -298,6 +321,9 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
               onChange={handleDescriptionChange}
               rows={4}
               className="bg-background/50 resize-none"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
             />
           </div>
 
@@ -330,6 +356,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                       ? "border-orange-500 bg-orange-500/10"
                       : "border-border hover:border-orange-500/50 bg-background/50"
                   }`}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <RadioGroupItem value="DEUS" id="currency-deus" className="sr-only" />
                   <div className="text-2xl">⚡</div>
@@ -344,6 +371,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                       ? "border-orange-500 bg-orange-500/10"
                       : "border-border hover:border-orange-500/50 bg-background/50"
                   }`}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <RadioGroupItem value="ZORA" id="currency-zora" className="sr-only" />
                   <div className="text-2xl">Z</div>
@@ -358,6 +386,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
                       ? "border-orange-500 bg-orange-500/10"
                       : "border-border hover:border-orange-500/50 bg-background/50"
                   }`}
+                  onMouseDown={(e) => e.preventDefault()}
                 >
                   <RadioGroupItem value="USDC" id="currency-usdc" className="sr-only" />
                   <div className="text-2xl">$</div>
@@ -566,11 +595,11 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
         </div>
       )}
     </>
-  )
+  ), [step, isConnected, chainId, switchChain, handleSubmitCallback, handleMediaChange, handleNameChange, handleSymbolChange, handleDescriptionChange])
 
   if (isMobile) {
     return (
-      <Sheet open={isOpen} onOpenChange={handleClose}>
+      <Sheet open={isOpen} onOpenChange={handleCloseCallback}>
         <SheetContent side="bottom" className="h-[90vh] glass-card backdrop-blur-md border-orange-500/20 flex flex-col">
           <SheetHeader className="flex-shrink-0">
             <SheetTitle className="flex items-center gap-2 text-2xl">
@@ -592,7 +621,7 @@ export function CreateCoinModal({ isOpen, onClose }: CreateCoinModalProps) {
   }
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleCloseCallback}>
       <DialogContent className="max-w-2xl max-h-[85vh] glass-card backdrop-blur-md border-orange-500/20">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
