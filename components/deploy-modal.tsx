@@ -1266,16 +1266,16 @@ export function DeployModal({
                             : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
                         } ${!canResolveTokens || !isConnected ? "opacity-50 cursor-not-allowed" : ""}`}
                       >
-                        <div className="flex items-center justify-between w-full mb-2">
+                        <div className="flex items-center justify-between w-full mb-1">
                           <span className="font-semibold text-lg">0.3%</span>
                           {selectedFeeTier === "3000" && <CheckCircle2 className="w-4 h-4 text-purple-400" />}
-                          <Badge
-                            variant="secondary"
-                            className="text-xs bg-green-500/20 text-green-400 border-green-500/30"
-                          >
-                            ⭐ Recommended
-                          </Badge>
                         </div>
+                        <Badge
+                          variant="secondary"
+                          className="text-xs bg-green-500/20 text-green-400 border-green-500/30 mb-2 w-fit"
+                        >
+                          ⭐ Recommended
+                        </Badge>
                         <span className="text-xs text-gray-400">Standard pairs</span>
                         <span className="text-xs text-gray-500 mt-1">ETH/USDC, DEUS/ETH</span>
                       </Label>
