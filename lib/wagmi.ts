@@ -33,5 +33,5 @@ export const config = createConfig({
       retryDelay: 1000,
     }),
   },
-  ssr: true,
+  ssr: false,
 })
