@@ -4,12 +4,13 @@ import { useState, useEffect, useCallback, memo } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
+import { ConnectWalletButton } from "@/components/ui/connect-wallet-button"
 import { WalletConnectModal } from "@/components/wallet/wallet-connect-modal"
 import { HelpCenter } from "@/components/help/help-center"
 import { NotificationCenter } from "@/components/notifications/notification-center"
 import { SettingsModal } from "@/components/settings/settings-modal"
 import { useWallet } from "@/hooks/use-wallet"
-import { Menu, X, Wallet } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
 
@@ -192,33 +193,23 @@ export function StickyHeader() {
               </div>
 
               {isConnected ? (
-                <div className="flex items-center space-x-3">
-                  <motion.div
-                    className="hidden sm:flex items-center space-x-3 px-4 py-3 rounded-xl glass-card border border-accent/20"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" aria-label="Connected"></div>
-                    <span className="text-sm text-white font-medium">{formatAddress(address)}</span>
-                  </motion.div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={disconnectWallet}
-                    className="glass-card border-accent/30 text-accent-light hover:bg-accent/20 hover:border-accent/50 px-4 py-2 bg-transparent"
-                    aria-label="Disconnect wallet"
-                  >
-                    Disconnect
-                  </Button>
-                </div>
+                <ConnectWalletButton
+                  isConnected={isConnected}
+                  address={address}
+                  balance={balance}
+                  onConnect={handleWalletConnect}
+                  onDisconnect={disconnectWallet}
+                  network="Base"
+                  variant="dropdown"
+                  size="md"
+                  className="hidden md:flex"
+                />
               ) : (
                 <Button
                   onClick={handleConnectWallet}
-                  className="btn-premium text-white shadow-xl hover:shadow-2xl transition-all duration-300 px-6 py-3"
+                  className="btn-premium text-white shadow-xl hover:shadow-2xl transition-all duration-300 px-6 py-3 hidden md:flex gap-2 glow-button"
                   aria-label="Connect wallet"
                 >
-                  <Wallet className="h-4 w-4 mr-2" aria-hidden="true" />
                   Connect Wallet
                 </Button>
               )}
@@ -263,27 +254,23 @@ export function StickyHeader() {
 
                   <div className="pt-4 border-t border-accent/20">
                     {isConnected ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center space-x-3 px-4 py-3 rounded-xl glass-card">
-                          <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" aria-label="Connected"></div>
-                          <span className="text-sm text-white font-medium">{formatAddress(address)}</span>
-                        </div>
-                        <Button
-                          variant="outline"
-                          onClick={disconnectWallet}
-                          className="w-full glass-card border-accent/30 text-accent-light hover:bg-accent/20 bg-transparent"
-                          aria-label="Disconnect wallet"
-                        >
-                          Disconnect Wallet
-                        </Button>
-                      </div>
+                      <ConnectWalletButton
+                        isConnected={isConnected}
+                        address={address}
+                        balance={balance}
+                        onConnect={handleWalletConnect}
+                        onDisconnect={disconnectWallet}
+                        network="Base"
+                        variant="dropdown"
+                        size="md"
+                        className="w-full"
+                      />
                     ) : (
                       <Button
                         onClick={handleConnectWallet}
-                        className="w-full btn-premium text-white shadow-xl"
+                        className="w-full btn-premium text-white shadow-xl gap-2 glow-button"
                         aria-label="Connect wallet"
                       >
-                        <Wallet className="h-4 w-4 mr-2" aria-hidden="true" />
                         Connect Wallet
                       </Button>
                     )}
