@@ -4,10 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Bot, User, Copy, Check, Terminal, BookOpen, GitBranch, Zap } from 'lucide-react'
+import { Bot, User, Copy, Check, Terminal, BookOpen, GitBranch, Zap, Target, RefreshCw, TrendingUp, Flame, LayoutGrid } from 'lucide-react'
 import { StickyHeader } from '@/components/sticky-header'
 import { DeusTicker } from '@/components/deus-ticker'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { V4LPAgentControls } from '@/components/v4-lp-agent-controls'
 import { motion } from 'framer-motion'
 
 export default function SkillPage() {
@@ -378,7 +379,81 @@ export default function SkillPage() {
             </motion.div>
           </div>
 
-          {/* CTA Section */}
+          {/* Featured Skill: V4 LP Agent */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-12"
+          >
+            <div className="mb-6">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/30 text-accent-foreground text-sm font-mono mb-4">
+                <Zap className="w-3 h-3" />
+                Featured Skill
+              </div>
+              <h2 className="text-3xl font-bold text-white">Autonomous Liquidity Agent</h2>
+              <p className="text-gray-400 mt-2">Uniswap V4 concentrated liquidity with auto-compounding, fee harvesting, and Clanker integration</p>
+            </div>
+
+            <Card className="glass-card border-accent/30 bg-gradient-to-br from-accent/10 to-transparent overflow-hidden">
+              <div className="p-8">
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-4">Capabilities</h3>
+                    <ul className="space-y-3">
+                      {[
+                        { icon: Target, text: 'Position Analysis' },
+                        { icon: RefreshCw, text: 'Auto-Rebalancing' },
+                        { icon: TrendingUp, text: 'Fee Compounding' },
+                        { icon: Zap, text: 'Clanker Harvest' },
+                        { icon: Flame, text: 'Buy & Burn' },
+                        { icon: LayoutGrid, text: 'Single-Sided LP' },
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <item.icon className="w-5 h-5 text-accent-foreground flex-shrink-0" />
+                          <span className="text-gray-300">{item.text}</span>
+                        </div>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="text-xl font-bold text-white mb-4">Self-Sustaining Economics</h3>
+                    <p className="text-gray-300 text-sm mb-4">
+                      Set up automated fee harvesting to have your agent pay for its own infrastructure:
+                    </p>
+                    <div className="bg-black/40 border border-accent/20 rounded p-4 mb-4">
+                      <div className="font-mono text-xs text-accent-foreground whitespace-pre-wrap break-words">
+{`Every 4h:
+• Claim protocol fees
+• Compound 80% to LP
+• Harvest 20% to vault
+• Only if > $10 fees`}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-500">Perfect for agents managing token treasuries and liquidity</p>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Agent Controls Demo */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-12"
+          >
+            <h2 className="text-2xl font-bold text-white mb-6">Try the V4 LP Agent</h2>
+            <Card className="glass-card border-accent/20 p-8">
+              <ErrorBoundary>
+                <V4LPAgentControls />
+              </ErrorBoundary>
+            </Card>
+          </motion.div>
+
+      {/* CTA Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -389,11 +464,11 @@ export default function SkillPage() {
               <div className="p-8 relative text-center space-y-4">
                 <div className="flex items-center justify-center gap-2 text-accent-foreground mb-4">
                   <Bot className="w-5 h-5" />
-                  <span className="font-mono text-sm">Ready to Activate?</span>
+                  <span className="font-mono text-sm">Ready to Deploy?</span>
                 </div>
-                <h3 className="text-2xl font-bold text-white">Start Deploying Skills Today</h3>
+                <h3 className="text-2xl font-bold text-white">Start Your Autonomous Operations</h3>
                 <p className="text-gray-300 max-w-xl mx-auto">
-                  Join autonomous traders and agents leveraging OpenClaw for intelligent, autonomous operations
+                  Build intelligent agents with skills for Uniswap V4, Clanker protocol, and more. Integrate with OpenClaw for complete autonomy.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                   <Link href="https://openclaw.ai" target="_blank" rel="noopener noreferrer">
@@ -401,9 +476,11 @@ export default function SkillPage() {
                       Create Agent at OpenClaw
                     </Button>
                   </Link>
-                  <Button size="lg" variant="outline" className="border-accent/30 hover:bg-accent/10">
-                    View API Reference
-                  </Button>
+                  <Link href="/docs/v4-lp-agent-skill.md" target="_blank">
+                    <Button size="lg" variant="outline" className="border-accent/30 hover:bg-accent/10">
+                      Read Full Docs
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </Card>
