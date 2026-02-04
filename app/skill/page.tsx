@@ -568,20 +568,7 @@ export default function SkillPage() {
     </main>
   )
 }
-        <button
-          onClick={() => setSelectedRole(null)}
-          className="p-4 rounded-lg border-2 border-accent/30 bg-accent/5 hover:bg-accent/10 hover:border-accent/60 transition-all duration-300"
-        >
-          <div className="font-mono text-sm text-accent-foreground mb-1">molthub</div>
-          <div className="text-xs text-gray-400">Automated distribution</div>
-        </button>
-        <button
-          onClick={() => setSelectedRole(null)}
-          className="p-4 rounded-lg border-2 border-white/10 bg-white/5 hover:bg-white/10 transition-all duration-300"
-        >
-          <div className="font-mono text-sm text-white mb-1">manual</div>
-          <div className="text-xs text-gray-400">Direct configuration</div>
-        </button>
+
       </div>
 
       {/* NPX Command */}
