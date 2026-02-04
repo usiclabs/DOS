@@ -568,17 +568,6 @@ export default function SkillPage() {
     </main>
   )
 }
-
-            Equip Your Agent with Skills
-          </span>
-        </h2>
-        <p className="text-gray-400 text-lg">
-          Enable autonomous operations with enterprise-grade skill integration
-        </p>
-      </div>
-
-      {/* Installation Method Selector */}
-      <div className="grid grid-cols-2 gap-4">
         <button
           onClick={() => setSelectedRole(null)}
           className="p-4 rounded-lg border-2 border-accent/30 bg-accent/5 hover:bg-accent/10 hover:border-accent/60 transition-all duration-300"
