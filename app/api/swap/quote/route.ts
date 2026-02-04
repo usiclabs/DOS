@@ -557,17 +557,6 @@ function getTokenLogo(address: string): string {
     "0x0000000000000000000000000000000000000000": "Ξ",
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "💵",
     "0x4200000000000000000000000000000000000006": "Ξ",
-    "0xECE5d962d17901ef200Da050C7c74AB45C96Db07": "⚡",
-    "0x73582df1cad3187cD0746b7A473d65c06386837f": "Z",
-  }
-  return tokenMap[address.toLowerCase()] || "TOKEN"
-}
-
-function getTokenLogo(address: string): string {
-  const logoMap: { [key: string]: string } = {
-    "0x0000000000000000000000000000000000000000": "Ξ",
-    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "💵",
-    "0x4200000000000000000000000000000000000006": "Ξ",
     "0x73582df1cad3187cD0746b7A473d65c06386837e": "⚡",
     "0x73582df1cad3187cD0746b7A473d65c06386837f": "🖼️",
   }

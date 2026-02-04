@@ -302,23 +302,8 @@ export default function TaxesPage() {
         </div>
       </div>
     )
-  }
+}
 
-  if (isCheckingBalance) {
-    return (
-      <div className="min-h-screen bg-background">
-        <StickyHeader />
-        <main className="container mx-auto px-4 md:px-6 lg:px-8 py-8 md:py-12 pb-24 md:pb-12">
-          <div className="max-w-2xl mx-auto flex items-center justify-center min-h-[400px]">
-            <div className="text-center space-y-4">
-              <Loader2 className="h-12 w-12 animate-spin text-accent-foreground mx-auto" />
-              <p className="text-lg text-gray-300">Checking $DEUS balance...</p>
-            </div>
-          </div>
-        </main>
-      </div>
-    )
-  }
 
   if (!hasAccess) {
     return (
