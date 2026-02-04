@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Bot, User, Copy, Check, Terminal, BookOpen, GitBranch, Zap, Target, RefreshCw, TrendingUp, Flame, LayoutGrid } from 'lucide-react'
-import { StickyHeader } from '@/components/sticky-header'
-import { DeusTicker } from '@/components/deus-ticker'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { V4LPAgentControls } from '@/components/v4-lp-agent-controls'
 import { motion } from 'framer-motion'
+
+const StickyHeader = dynamic(() => import('@/components/sticky-header').then(mod => ({ default: mod.StickyHeader })), { ssr: false })
+const DeusTicker = dynamic(() => import('@/components/deus-ticker').then(mod => ({ default: mod.DeusTicker })), { ssr: false })
 
 export default function SkillPage() {
   const [selectedRole, setSelectedRole] = useState<'agent' | 'human' | null>(null)
@@ -207,9 +209,13 @@ export default function SkillPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <StickyHeader />
+      <Suspense fallback={null}>
+        <StickyHeader />
+      </Suspense>
       <ErrorBoundary>
-        <DeusTicker />
+        <Suspense fallback={null}>
+          <DeusTicker />
+        </Suspense>
       </ErrorBoundary>
 
       {/* Hero Section */}
