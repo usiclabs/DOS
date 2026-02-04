@@ -569,7 +569,6 @@ export default function SkillPage() {
   )
 }
 
-        <h2 className="text-3xl font-bold text-balance text-pretty">
           <span className="inline-flex items-center gap-2">
             <Bot className="w-8 h-8 text-accent-foreground" />
             Equip Your Agent with Skills
