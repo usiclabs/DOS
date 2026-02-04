@@ -236,30 +236,3 @@ export function useWalletContext() {
   }
   return context
 }
-
-export function useWallet() {
-  const context = useContext(WalletContext)
-  
-  // Return safe defaults when context is not available (server-side rendering)
-  if (!context) {
-    return {
-      address: null,
-      balance: "0",
-      isConnecting: false,
-      isConnected: false,
-      connectWallet: async () => {},
-      disconnectWallet: () => {},
-      network: "Base",
-      walletType: null,
-      isChecking: false,
-    }
-  }
-
-  // Return extended interface to match old useWallet hook
-  return {
-    ...context,
-    network: "Base",
-    walletType: context.isConnected ? ("metamask" as const) : null,
-    isChecking: false,
-  }
-}
