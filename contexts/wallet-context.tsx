@@ -16,6 +16,9 @@ interface WalletContextType {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
 
+// Export WalletContext for use in hooks
+export { WalletContext }
+
 // Alchemy public client for balance checks (avoid MetaMask rate limiting)
 const publicClient = getPublicClient()
 
@@ -234,14 +237,30 @@ export function useWalletContext() {
   return context
 }
 
+// This is kept here for backwards compatibility but the main version is in @/hooks/use-wallet
 export function useWallet() {
-  const context = useWalletContext()
-
-  // Return extended interface to match old useWallet hook
+  const context = useContext(WalletContext)
+  
+  // Return safe defaults when context is not available
+  if (!context) {
+    return {
+      address: null,
+      balance: "0",
+      isConnecting: false,
+      isConnected: false,
+      connectWallet: async () => {},
+      disconnectWallet: () => {},
+      network: "Base",
+      walletType: null,
+      isChecking: false,
+    }
+  }
+  
   return {
     ...context,
     network: "Base",
     walletType: context.isConnected ? ("metamask" as const) : null,
-    isChecking: false, // No longer needed with centralized provider
+    isChecking: false,
   }
 }
+
