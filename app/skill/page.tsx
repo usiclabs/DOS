@@ -8,9 +8,9 @@ import { Card } from '@/components/ui/card'
 import { Bot, User, Copy, Check, Terminal, BookOpen, GitBranch, Zap, Target, RefreshCw, TrendingUp, Flame, LayoutGrid } from 'lucide-react'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { V4LPAgentControls } from '@/components/v4-lp-agent-controls'
+import { StickyHeaderWrapper } from '@/components/sticky-header-wrapper'
 import { motion } from 'framer-motion'
 
-const StickyHeader = dynamic(() => import('@/components/sticky-header').then(mod => ({ default: mod.StickyHeader })), { ssr: false })
 const DeusTicker = dynamic(() => import('@/components/deus-ticker').then(mod => ({ default: mod.DeusTicker })), { ssr: false })
 
 export default function SkillPage() {
@@ -209,9 +209,7 @@ export default function SkillPage() {
 
   return (
     <main className="min-h-screen bg-background">
-      <Suspense fallback={null}>
-        <StickyHeader />
-      </Suspense>
+      <StickyHeaderWrapper />
       <ErrorBoundary>
         <Suspense fallback={null}>
           <DeusTicker />

@@ -16,6 +16,9 @@ interface WalletContextType {
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
 
+// Export WalletContext for use in hooks
+export { WalletContext }
+
 // Alchemy public client for balance checks (avoid MetaMask rate limiting)
 const publicClient = getPublicClient()
 
