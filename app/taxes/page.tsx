@@ -540,7 +540,6 @@ export default function TaxesPage() {
   )
 }
 
-  if (isCheckingBalance) {
     return (
       <div className="min-h-screen bg-background">
         <StickyHeader />
