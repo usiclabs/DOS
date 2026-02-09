@@ -17,11 +17,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
     setMounted(true)
   }, [])
 
-  // Only render providers after mount to avoid hydration mismatches
-  if (!mounted) {
-    return <>{children}</>
-  }
-
   return (
     <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} disableTransitionOnChange={false}>
       <QueryClientProvider client={queryClient}>
