@@ -103,8 +103,8 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
-      <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased bg-background min-h-screen`}>
-        <div className="min-h-screen bg-background overflow-x-hidden max-w-screen pt-[168px] pb-20 md:pb-0">
+      <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased bg-background`}>
+        <div className="min-h-screen bg-background overflow-x-hidden max-w-screen pt-[168px] pb-20 md:pb-0 flex flex-col">
           <ErrorBoundary>
             <Providers>
               <KeyboardShortcuts />
