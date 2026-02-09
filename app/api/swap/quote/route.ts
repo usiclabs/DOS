@@ -562,8 +562,6 @@ function getTokenLogo(address: string): string {
   }
   return logoMap[address.toLowerCase()] || "◎"
 }
-  return tokenMap[address.toLowerCase()] || "TOKEN"
-}
 
 function getTokenLogo(address: string): string {
   const logoMap: { [key: string]: string } = {
