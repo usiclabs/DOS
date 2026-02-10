@@ -175,14 +175,6 @@ const navItems: NavItem[] = [
     description: "Trading accounts",
     category: "Trading",
   },
-  {
-    name: "Taxes",
-    href: "/taxes",
-    icon: BarChart3,
-    gradient: "from-orange-500 to-amber-600",
-    description: "Tax calculator",
-    category: "Trading",
-  },
 
   // Social & Strategy
   {

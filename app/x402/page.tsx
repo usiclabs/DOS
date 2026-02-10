@@ -57,23 +57,6 @@ export default function X402Page() {
       ],
     },
     {
-      id: "tax-reports",
-      icon: FileText,
-      title: "Tax Report Generator",
-      description: "Comprehensive crypto tax reports for Base chain transactions",
-      price: "10M",
-      priceUnit: "$DEUS required",
-      color: "from-orange-500 to-red-500",
-      features: [
-        "Full fiscal year analysis",
-        "IRS Form 8949 compatible",
-        "Gains/losses calculation",
-        "PDF export for filing",
-      ],
-      isTokenGated: true,
-      link: "/taxes",
-    },
-    {
       id: "auto-trading",
       icon: Bot,
       title: "Auto-Trading Strategies",
