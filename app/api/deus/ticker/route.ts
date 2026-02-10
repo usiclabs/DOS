@@ -163,7 +163,7 @@ export async function GET() {
 
       // Filter for Base chain pairs with valid data
       const basePairs = pairs.filter(
-        (pair) => pair.chainId === "base" && pair.priceUsd && Number.parseFloat(pair.priceUsd) > 0,
+        (pair: DexscreenerPair) => pair.chainId === "base" && pair.priceUsd && Number.parseFloat(pair.priceUsd) > 0,
       )
 
       if (basePairs.length > 0) {
