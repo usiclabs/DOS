@@ -146,7 +146,7 @@ export default function HomePage() {
 
             <motion.h1
               variants={fadeInUp}
-              className="text-4xl md:text-6xl lg:text-8xl font-bold mb-6 md:mb-8 lg:mb-10 text-white leading-tight tracking-tight px-2"
+              className="text-3xl md:text-5xl lg:text-6xl font-bold mb-6 md:mb-8 lg:mb-10 text-white leading-tight tracking-tight px-2"
             >
               <span className="bg-gradient-to-r from-white via-amber-200 to-white bg-clip-text text-transparent">
                 DEUS Operating System
