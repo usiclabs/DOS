@@ -94,15 +94,12 @@ async function fetchDexscreenerData(): Promise<DexscreenerResponse | null> {
     clearTimeout(timeoutId)
 
     if (!response.ok) {
-      console.error("[v0] Dexscreener API error:", response.status, response.statusText)
       return null
     }
 
     const data = await response.json()
-    console.log("[v0] Dexscreener data fetched successfully:", data?.pairs?.length || 0, "pairs")
     return data
   } catch (error) {
-    console.error("[v0] Error fetching Dexscreener data:", error)
     return null
   }
 }
@@ -124,7 +121,6 @@ async function fetchBasescanHolders(): Promise<number | null> {
     const data = await response.json()
     return data.status === "1" ? Number.parseInt(data.result) : null
   } catch (error) {
-    console.error("Error fetching BaseScan holders:", error)
     return null
   }
 }
@@ -138,27 +134,18 @@ async function fetchGoldRushData(): Promise<any | null> {
     // For now, return null as we don't have the exact endpoint structure
     return null
   } catch (error) {
-    console.error("Error fetching GoldRush data:", error)
     return null
   }
 }
 
 export async function GET() {
   try {
-    console.log("[v0] Starting ticker data fetch...")
-
     // Fetch data from multiple sources
     const [dexscreenerData, holdersCount, goldRushData] = await Promise.allSettled([
       fetchDexscreenerData(),
       fetchBasescanHolders(),
       fetchGoldRushData(),
     ])
-
-    console.log("[v0] Data fetch results:", {
-      dexscreener: dexscreenerData.status,
-      holders: holdersCount.status,
-      goldRush: goldRushData.status,
-    })
 
     let tickerData: DeusTickerData = {
       priceUsd: 0,
@@ -173,14 +160,11 @@ export async function GET() {
     // Process Dexscreener data (primary source)
     if (dexscreenerData.status === "fulfilled" && dexscreenerData.value?.pairs?.length > 0) {
       const pairs = dexscreenerData.value.pairs
-      console.log("[v0] Processing", pairs.length, "pairs from Dexscreener")
 
       // Filter for Base chain pairs with valid data
       const basePairs = pairs.filter(
         (pair) => pair.chainId === "base" && pair.priceUsd && Number.parseFloat(pair.priceUsd) > 0,
       )
-
-      console.log("[v0] Found", basePairs.length, "valid Base pairs")
 
       if (basePairs.length > 0) {
         const bestPair = basePairs.reduce((best, current) => {
@@ -202,8 +186,6 @@ export async function GET() {
           }
         })
 
-        console.log("[v0] Selected best pair:", bestPair.dexId, "with liquidity:", bestPair.liquidity?.usd || 0)
-
         tickerData = {
           priceUsd: Number.parseFloat(bestPair.priceUsd) || 0,
           change24hPct: bestPair.priceChange?.h24 || 0,
@@ -222,18 +204,12 @@ export async function GET() {
           lastUpdatedISO: new Date().toISOString(),
           status: "live",
         }
-        console.log("[v0] Ticker data processed successfully:", tickerData.priceUsd, "USD")
-      } else {
-        console.log("[v0] No valid Base pairs found with price data")
       }
-    } else {
-      console.log("[v0] No valid Dexscreener data available")
     }
 
     // Add holders count if available
     if (holdersCount.status === "fulfilled" && holdersCount.value) {
       tickerData.holders = holdersCount.value
-      console.log("[v0] Added holders count:", holdersCount.value)
     }
 
     // Enhance with GoldRush data if available
@@ -249,11 +225,8 @@ export async function GET() {
     }
     // If we have good price data with reasonable liquidity/volume, keep it as "live"
 
-    console.log("[v0] Final ticker status:", tickerData.status)
     return NextResponse.json(tickerData)
   } catch (error) {
-    console.error("[v0] Error in ticker API:", error)
-
     return NextResponse.json(
       {
         priceUsd: 0,
