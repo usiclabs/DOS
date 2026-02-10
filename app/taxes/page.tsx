@@ -554,7 +554,6 @@ export default function TaxesPage() {
     </div>
   )
 }
-  }
 
   if (isCheckingBalance) {
     return (
