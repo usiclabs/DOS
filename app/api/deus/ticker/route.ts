@@ -158,7 +158,7 @@ export async function GET() {
     }
 
     // Process Dexscreener data (primary source)
-    if (dexscreenerData.status === "fulfilled" && dexscreenerData.value?.pairs?.length > 0) {
+    if (dexscreenerData.status === "fulfilled" && dexscreenerData.value && dexscreenerData.value.pairs && dexscreenerData.value.pairs.length > 0) {
       const pairs = dexscreenerData.value.pairs
 
       // Filter for Base chain pairs with valid data
