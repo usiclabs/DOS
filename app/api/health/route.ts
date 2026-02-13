@@ -35,8 +35,8 @@ export async function GET() {
         method: "HEAD",
         signal: AbortSignal.timeout(5000),
       })
-        .then(() => "up")
-        .catch(() => "down")
+        .then(() => ("up" as const))
+        .catch(() => ("down" as const))
     }
 
     // Test GoldRush API (if key available)
