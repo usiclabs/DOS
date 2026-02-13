@@ -18,7 +18,7 @@ export async function GET() {
 
   try {
     // Test Dexscreener API
-    const dexscreenerTest: "up" | "down" = await fetch(
+    const dexscreenerTest: "up" | "down" | "unknown" = await fetch(
       "https://api.dexscreener.com/latest/dex/tokens/0x73582df1cad3187cd0746b7a473d65c06386837e",
       {
         method: "HEAD",
@@ -47,7 +47,7 @@ export async function GET() {
     }
 
     const services = {
-      dexscreener: dexscreenerTest as "up" | "down" | "unknown",
+      dexscreener: dexscreenerTest,
       basescan: basescanTest,
       goldrush: goldrushTest,
     }
