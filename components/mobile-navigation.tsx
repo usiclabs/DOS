@@ -17,11 +17,11 @@ const navigationItems = [
     href: "/pools",
     icon: Droplets,
   },
-  {
-    name: "Creators",
-    href: "/creators",
-    icon: Users,
-  },
+  // {
+  //   name: "Creators",
+  //   href: "/creators",
+  //   icon: Users,
+  // }, // Temporarily hidden
   {
     name: "Swap",
     href: "/swap",

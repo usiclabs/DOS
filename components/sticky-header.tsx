@@ -19,7 +19,7 @@ const navItems = [
   { href: "/pools", label: "Pools" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/lp-manager", label: "LP Manager" },
-  { href: "/creators", label: "Creators" },
+  // { href: "/creators", label: "Creators" }, // Temporarily hidden
   { href: "/analytics", label: "Analytics" },
   { href: "/treasury", label: "Treasury" },
   { href: "/swap", label: "Swap" },
