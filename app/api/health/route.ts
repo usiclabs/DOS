@@ -18,15 +18,15 @@ export async function GET() {
 
   try {
     // Test Dexscreener API
-    const dexscreenerTest = await fetch(
+    const dexscreenerTest: "up" | "down" = await fetch(
       "https://api.dexscreener.com/latest/dex/tokens/0x73582df1cad3187cd0746b7a473d65c06386837e",
       {
         method: "HEAD",
         signal: AbortSignal.timeout(5000),
       },
     )
-      .then(() => "up")
-      .catch(() => "down")
+      .then(() => ("up" as const))
+      .catch(() => ("down" as const))
 
     // Test BaseScan API (if key available)
     let basescanTest: "up" | "down" | "unknown" = "unknown"
@@ -47,7 +47,7 @@ export async function GET() {
     }
 
     const services = {
-      dexscreener: dexscreenerTest,
+      dexscreener: dexscreenerTest as "up" | "down" | "unknown",
       basescan: basescanTest,
       goldrush: goldrushTest,
     }
