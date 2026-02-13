@@ -29,22 +29,19 @@ export async function GET() {
       .catch(() => ("down" as const))
 
     // Test BaseScan API (if key available)
-    let basescanTest: "up" | "down" | "unknown" = "unknown"
-    if (process.env.BASESCAN_API_KEY) {
-      basescanTest = await fetch("https://api.basescan.org/api?module=stats&action=ethsupply", {
-        method: "HEAD",
-        signal: AbortSignal.timeout(5000),
-      })
-        .then(() => ("up" as const))
-        .catch(() => ("down" as const))
-    }
+    const basescanTest: "up" | "down" | "unknown" = process.env.BASESCAN_API_KEY
+      ? await fetch("https://api.basescan.org/api?module=stats&action=ethsupply", {
+          method: "HEAD",
+          signal: AbortSignal.timeout(5000),
+        })
+          .then(() => ("up" as const))
+          .catch(() => ("down" as const))
+      : ("unknown" as const)
 
     // Test GoldRush API (if key available)
-    let goldrushTest: "up" | "down" | "unknown" = "unknown"
-    if (process.env.GOLDRUSH_API_KEY) {
-      // Would test GoldRush endpoint here when available
-      goldrushTest = "unknown"
-    }
+    const goldrushTest: "up" | "down" | "unknown" = process.env.GOLDRUSH_API_KEY
+      ? ("unknown" as const)
+      : ("unknown" as const)
 
     const services = {
       dexscreener: dexscreenerTest,
