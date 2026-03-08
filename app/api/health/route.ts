@@ -43,7 +43,11 @@ export async function GET() {
       ? ("unknown" as const)
       : ("unknown" as const)
 
-    const services = {
+    const services: {
+      dexscreener: "up" | "down" | "unknown"
+      basescan: "up" | "down" | "unknown"
+      goldrush: "up" | "down" | "unknown"
+    } = {
       dexscreener: dexscreenerTest,
       basescan: basescanTest,
       goldrush: goldrushTest,
