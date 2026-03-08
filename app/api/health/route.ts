@@ -18,35 +18,36 @@ export async function GET() {
 
   try {
     // Test Dexscreener API
-    const dexscreenerTest = await fetch(
+    const dexscreenerTest: "up" | "down" | "unknown" = await fetch(
       "https://api.dexscreener.com/latest/dex/tokens/0x73582df1cad3187cd0746b7a473d65c06386837e",
       {
         method: "HEAD",
         signal: AbortSignal.timeout(5000),
       },
     )
-      .then(() => "up")
-      .catch(() => "down")
+      .then(() => ("up" as const))
+      .catch(() => ("down" as const))
 
     // Test BaseScan API (if key available)
-    let basescanTest: "up" | "down" | "unknown" = "unknown"
-    if (process.env.BASESCAN_API_KEY) {
-      basescanTest = await fetch("https://api.basescan.org/api?module=stats&action=ethsupply", {
-        method: "HEAD",
-        signal: AbortSignal.timeout(5000),
-      })
-        .then(() => "up")
-        .catch(() => "down")
-    }
+    const basescanTest: "up" | "down" | "unknown" = process.env.BASESCAN_API_KEY
+      ? await fetch("https://api.basescan.org/api?module=stats&action=ethsupply", {
+          method: "HEAD",
+          signal: AbortSignal.timeout(5000),
+        })
+          .then(() => ("up" as const))
+          .catch(() => ("down" as const))
+      : ("unknown" as const)
 
     // Test GoldRush API (if key available)
-    let goldrushTest: "up" | "down" | "unknown" = "unknown"
-    if (process.env.GOLDRUSH_API_KEY) {
-      // Would test GoldRush endpoint here when available
-      goldrushTest = "unknown"
-    }
+    const goldrushTest: "up" | "down" | "unknown" = process.env.GOLDRUSH_API_KEY
+      ? ("unknown" as const)
+      : ("unknown" as const)
 
-    const services = {
+    const services: {
+      dexscreener: "up" | "down" | "unknown"
+      basescan: "up" | "down" | "unknown"
+      goldrush: "up" | "down" | "unknown"
+    } = {
       dexscreener: dexscreenerTest,
       basescan: basescanTest,
       goldrush: goldrushTest,
