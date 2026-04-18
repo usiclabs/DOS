@@ -47,7 +47,9 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Metadata uploaded to:", metadataUri)
 
-    // Deploy the coin with platform referrer
+    // Note: This is a temporary placeholder. In a real implementation, the wallet client
+    // and account would come from the request body (from a connected wallet on the client side)
+    // For now, we'll return the deployment parameters that would be needed on the client
     const deployParams = {
       name,
       symbol,
@@ -66,20 +68,11 @@ export async function POST(request: NextRequest) {
         : {}),
     }
 
-    const result = await deployCoin(deployParams)
-
-    if (!result.success) {
-      return NextResponse.json({ error: result.error || "Failed to deploy coin" }, { status: 500 })
-    }
-
-    console.log("[v0] Coin deployed successfully:", result)
-
+    // Return the prepared parameters - the actual deployment happens client-side
     return NextResponse.json({
       success: true,
-      message: "Coin deployed successfully",
-      coinAddress: result.coinAddress,
-      transactionHash: result.transactionHash,
-      poolAddress: result.poolAddress,
+      message: "Coin deployment parameters prepared",
+      deploymentParams: deployParams,
       metadataUri,
       platformReferrer: hasPlatformReferrer ? PLATFORM_REFERRER : null,
       rewardsInfo: hasPlatformReferrer
@@ -91,7 +84,7 @@ export async function POST(request: NextRequest) {
         : null,
     })
   } catch (error: any) {
-    console.error("[v0] Error deploying Zora coin:", error)
-    return NextResponse.json({ error: error.message || "Failed to deploy coin" }, { status: 500 })
+    console.error("[v0] Error preparing Zora coin deployment:", error)
+    return NextResponse.json({ error: error.message || "Failed to prepare coin deployment" }, { status: 500 })
   }
 }
