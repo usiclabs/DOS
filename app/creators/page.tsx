@@ -617,7 +617,6 @@ export default function CreatorsPage() {
                                     : ""
                                 }`}
                                 whileHover={{ scale: 1.05 }}
-                                transition={{ type: "spring", stiffness: 400, damping: 25 }}
                                 animate={
                                   coin.metrics.volume24h > 1000
                                     ? {
@@ -630,6 +629,9 @@ export default function CreatorsPage() {
                                     : {}
                                 }
                                 transition={{
+                                  type: "spring",
+                                  stiffness: 400,
+                                  damping: 25,
                                   duration: 2,
                                   repeat: coin.metrics.volume24h > 1000 ? Number.POSITIVE_INFINITY : 0,
                                   ease: "easeInOut",
