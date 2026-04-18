@@ -43,6 +43,7 @@ export default function DEXPage() {
   const [sortBy, setSortBy] = useState<"volume" | "price" | "liquidity">("volume")
   const [selectedToken, setSelectedToken] = useState<TrendingToken | null>(null)
   const [view, setView] = useState<"grid" | "table">("grid")
+  const currentView: "grid" | "table" = view
   const mountedRef = useRef(false)
 
   useEffect(() => {
@@ -169,7 +170,7 @@ export default function DEXPage() {
                 </div>
                 <div className="flex gap-2">
                   <Button
-                    variant={view === "grid" ? "default" : "outline"}
+                    variant={currentView === "grid" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setView("grid")}
                     className="px-4"
@@ -177,7 +178,7 @@ export default function DEXPage() {
                     Grid
                   </Button>
                   <Button
-                    variant={view === "table" ? "default" : "outline"}
+                    variant={currentView === "table" ? "default" : "outline"}
                     size="sm"
                     onClick={() => setView("table")}
                     className="px-4"
