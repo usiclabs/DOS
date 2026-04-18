@@ -116,7 +116,24 @@ export async function GET(request: Request) {
           isNew,
         }
       })
-      .filter((opp) => {
+      .filter((opp: {
+        id: string
+        creatorToken: { symbol: string; name: string; address: string }
+        pairAddress: string
+        dexId: string
+        liquidity: number
+        volume24h: number
+        priceUsd: number
+        priceChange24h: number
+        feeApr: number
+        taxRate: number
+        netApy: number
+        arbitrageOpportunity: boolean
+        v3OpportunityApy: number | undefined
+        createdAt: number
+        ageInHours: number
+        isNew: boolean
+      }) => {
         if (timeFilter === "all") return true
         return opp.createdAt >= cutoffTime
       })
