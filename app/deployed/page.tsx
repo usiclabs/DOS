@@ -34,6 +34,7 @@ interface DeployedCoinsResponse {
   deployedCoins: DeployedCoin[]
   totalCount: number
   totalValue: number
+  error?: string
 }
 
 export default function DeployedPage() {
