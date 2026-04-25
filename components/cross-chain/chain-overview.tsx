@@ -20,9 +20,15 @@ interface ChainData {
   color: string
 }
 
+interface BridgeActivity {
+  hour: string
+  volume: number
+  transactions: number
+}
+
 export function ChainOverview() {
   const [chainData, setChainData] = useState<ChainData[]>([])
-  const [bridgeActivity, setBridgeActivity] = useState([])
+  const [bridgeActivity, setBridgeActivity] = useState<BridgeActivity[]>([])
   const [timeframe, setTimeframe] = useState("24h")
 
   useEffect(() => {
@@ -305,8 +311,7 @@ export function ChainOverview() {
                     </div>
                     <Progress
                       value={(chain.bridgeVolume / chain.volume24h) * 100}
-                      className="h-1"
-                      indicatorClassName="bg-orange-500"
+                      className="h-1 [&>div]:bg-orange-500"
                     />
                   </div>
                 </div>

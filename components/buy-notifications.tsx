@@ -63,12 +63,7 @@ export function BuyNotifications() {
             const shortAddress = `${tx.buyer.slice(0, 6)}...${tx.buyer.slice(-4)}`
 
             toast({
-              title: (
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                  <span>New $DEUS Buy!</span>
-                </div>
-              ),
+              title: "New $DEUS Buy!",
               description: (
                 <div className="mt-2 space-y-1 text-sm">
                   <div className="flex justify-between">

@@ -417,7 +417,7 @@ export default function DEXPage() {
               </div>
               <div className="flex gap-2">
                 <Button
-                  variant={view === "grid" ? "default" : "outline"}
+                  variant={currentView === "grid" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setView("grid")}
                   className="px-4"
@@ -425,7 +425,7 @@ export default function DEXPage() {
                   Grid
                 </Button>
                 <Button
-                  variant={view === "table" ? "default" : "outline"}
+                  variant={currentView === "table" ? "default" : "outline"}
                   size="sm"
                   onClick={() => setView("table")}
                   className="px-4"
@@ -613,7 +613,7 @@ function TokenDetailModal({ token, onClose }: { token: TrendingToken; onClose: (
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e: React.MouseEvent) => e.stopPropagation()}
         className="w-full max-w-md bg-card border border-white/10 rounded-2xl p-6 shadow-2xl"
       >
         <div className="space-y-6">

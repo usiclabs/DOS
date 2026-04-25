@@ -256,7 +256,6 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                     <motion.div
                       className="text-5xl md:text-6xl font-black mb-3 md:mb-4"
                       whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.5, type: "spring", stiffness: 300 }}
                       animate={{
                         textShadow: [
                           "0 0 20px rgba(74, 222, 128, 0.5), 0 0 40px rgba(74, 222, 128, 0.3)",
@@ -264,7 +263,7 @@ export function FeaturedPoolsCarousel({ pools, onDeployClick }: FeaturedPoolsCar
                           "0 0 20px rgba(74, 222, 128, 0.5), 0 0 40px rgba(74, 222, 128, 0.3)",
                         ],
                       }}
-                      transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+                      transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", type: "spring", stiffness: 300 }}
                     >
                       <span className="bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent">
                         {currentPool.netApy.toFixed(1)}%

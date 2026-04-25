@@ -261,7 +261,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
         params: [txParams],
       })
 
-      setTxHash(hash)
+      setTxHash(hash as string)
 
       toast({
         title: "Transaction Submitted",
@@ -278,7 +278,7 @@ export function CreatorSwapModal({ isOpen, onClose, token }: CreatorSwapModalPro
         })
 
         if (receipt) {
-          if (receipt.status === "0x1") {
+          if ((receipt as { status: string }).status === "0x1") {
             confirmed = true
             break
           } else {
