@@ -94,7 +94,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="bg-black">
       <head>
         <meta name="theme-color" content="#000000" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -110,8 +110,11 @@ export default function RootLayout({
               <KeyboardShortcuts />
               <Suspense
                 fallback={
-                  <div className="flex items-center justify-center min-h-screen">
-                    <div className="skeleton h-32 w-32 rounded-full" />
+                  <div className="flex items-center justify-center min-h-screen bg-black">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
+                      <p className="text-white text-sm">Loading...</p>
+                    </div>
                   </div>
                 }
               >
