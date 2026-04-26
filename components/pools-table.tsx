@@ -457,7 +457,7 @@ export function PoolsTable() {
                   key={option.value}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation()
                     setSelectedPairingTokens((prev) => ({ ...prev, [pool.id]: option.value }))
                   }}
