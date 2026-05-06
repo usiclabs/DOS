@@ -479,7 +479,7 @@ export function PoolsTable() {
             whileTap={{ scale: 0.98 }}
             transition={{ type: "spring", stiffness: 400, damping: 17 }}
             className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-accent via-accent/90 to-accent text-accent-foreground font-semibold shadow-lg shadow-accent/30 hover:shadow-2xl hover:shadow-accent/50 transition-all duration-300 flex items-center justify-center gap-2 mb-4"
-            onClick={(e) => {
+            onClick={(e: React.MouseEvent) => {
               e.stopPropagation()
               handleDeploy(pool, selectedPairing)
             }}
