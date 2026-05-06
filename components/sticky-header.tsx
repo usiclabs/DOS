@@ -79,7 +79,7 @@ export function StickyHeader() {
   }, [])
 
   const handleWalletConnect = useCallback(
-    async (walletType: string) => {
+    async (walletType: "metamask" | "walletconnect") => {
       await connectWallet(walletType)
       setIsWalletModalOpen(false)
     },

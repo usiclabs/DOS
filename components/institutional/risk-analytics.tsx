@@ -9,10 +9,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { Shield, AlertTriangle, TrendingDown, Activity, Target, Zap } from "lucide-react"
 
+interface RiskDataPoint {
+  date: string
+  var95: number
+  var99: number
+  expectedShortfall: number
+  volatility: number
+  beta: number
+}
+
+interface CorrelationDataPoint {
+  asset: string
+  correlation: number
+  exposure: number
+}
+
+interface StressTestResult {
+  scenario: string
+  impact: number
+  probability: number
+}
+
 export function RiskAnalytics() {
-  const [riskData, setRiskData] = useState([])
-  const [correlationData, setCorrelationData] = useState([])
-  const [stressTestResults, setStressTestResults] = useState([])
+  const [riskData, setRiskData] = useState<RiskDataPoint[]>([])
+  const [correlationData, setCorrelationData] = useState<CorrelationDataPoint[]>([])
+  const [stressTestResults, setStressTestResults] = useState<StressTestResult[]>([])
 
   useEffect(() => {
     // Mock risk analytics data

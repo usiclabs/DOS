@@ -25,7 +25,18 @@ import {
 export default function X402Page() {
   const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
 
-  const premiumFeatures = [
+  const premiumFeatures: Array<{
+    id: string
+    icon: React.ComponentType<{ className?: string }>
+    title: string
+    description: string
+    price: string
+    priceUnit: string
+    color: string
+    features: string[]
+    isTokenGated?: boolean
+    link?: string
+  }> = [
     {
       id: "ai-insights",
       icon: Brain,
@@ -40,6 +51,7 @@ export default function X402Page() {
         "Volume surge alerts",
         "Early entry recommendations",
       ],
+      isTokenGated: false,
     },
     {
       id: "advanced-analytics",
@@ -55,6 +67,7 @@ export default function X402Page() {
         "Risk assessment reports",
         "Portfolio optimization suggestions",
       ],
+      isTokenGated: false,
     },
     {
       id: "auto-trading",
@@ -65,6 +78,7 @@ export default function X402Page() {
       priceUnit: "per month",
       color: "from-green-500 to-emerald-500",
       features: ["Automated rebalancing", "Stop-loss protection", "Take-profit automation", "Multi-pool strategies"],
+      isTokenGated: false,
     },
     {
       id: "premium-data",
@@ -80,6 +94,7 @@ export default function X402Page() {
         "Real-time TVL alerts",
         "Smart money flow analysis",
       ],
+      isTokenGated: false,
     },
   ]
 

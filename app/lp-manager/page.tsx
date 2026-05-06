@@ -803,7 +803,7 @@ function MobilePositionCard({
 }
 
 export default function LPManagerPage() {
-  const { wallet, connectWallet, address } = useWallet()
+  const { connectWallet, address } = useWallet()
   const { toast } = useToast()
 
   const { data, error, mutate } = useSWR(address ? `/api/lp-manager/${address}` : null, fetcher, {
@@ -980,14 +980,7 @@ export default function LPManagerPage() {
     return (
       <ErrorBoundary>
         <div className="bg-background min-h-screen">
-          <StickyHeader>
-            <div className="flex justify-between items-center px-6 py-4">
-              <div className="flex items-center space-x-3">
-                <Wallet className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold text-white">LP Manager</h1>
-              </div>
-            </div>
-          </StickyHeader>
+          <StickyHeader />
           <div className="flex justify-center items-center h-[60vh]">
             <div className="text-center space-y-4">
               <AlertCircle className="h-12 w-12 text-destructive mx-auto" />
@@ -1007,15 +1000,8 @@ export default function LPManagerPage() {
   if (!data) {
     return (
       <div className="bg-background min-h-screen">
-        <StickyHeader>
-          <div className="flex justify-between items-center px-6 py-4">
-            <div className="flex items-center space-x-3">
-              <Wallet className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold text-white">LP Manager</h1>
-            </div>
-          </div>
-        </StickyHeader>
-        <div className="flex flex-col justify-center items-center h-[60vh] space-y-4">
+        <StickyHeader />
+        <div className="flex flex-col justify-center items-center h-[60vh] space-y-4 pt-24">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
           <p className="text-muted-foreground">Loading your positions...</p>
         </div>
@@ -1025,19 +1011,20 @@ export default function LPManagerPage() {
 
   return (
     <div className="bg-background min-h-screen">
-      <StickyHeader>
-        <div className="flex justify-between items-center px-6 py-4">
+      <StickyHeader />
+      <div className="pt-24 px-4 md:px-6">
+        <div className="flex justify-between items-center mb-6">
           <div className="flex items-center space-x-3">
             <Wallet className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold text-white">LP Manager</h1>
           </div>
           <div className="flex items-center space-x-2">
             <div className="text-sm text-muted-foreground hidden sm:block">
-              {address.slice(0, 6)}...{address.slice(-4)}
+              {address?.slice(0, 6)}...{address?.slice(-4)}
             </div>
           </div>
         </div>
-      </StickyHeader>
+      </div>
 
       <div className="p-6 space-y-6">
         <div className="flex justify-between items-center">
@@ -1096,7 +1083,7 @@ export default function LPManagerPage() {
           </div>
         ) : (
           <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-6">
-            {data.positions.map((position) => (
+            {data.positions.map((position: LPPosition) => (
               <MobilePositionCard
                 key={position.id}
                 position={position}

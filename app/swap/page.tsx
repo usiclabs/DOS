@@ -253,7 +253,7 @@ export default function SwapPage() {
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.9, opacity: 0 }}
           className="w-full max-w-md bg-card border-2 border-white/10 rounded-2xl p-6 shadow-2xl"
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold">Select Token</h3>

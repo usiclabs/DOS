@@ -18,10 +18,25 @@ import {
 } from "recharts"
 import { TrendingUp, TrendingDown, DollarSign, Target, Download } from "lucide-react"
 
+interface PortfolioDataPoint {
+  date: string
+  totalValue: number
+  pnl: number
+  sharpeRatio: number
+  maxDrawdown: number
+}
+
+interface AllocationDataPoint {
+  name: string
+  value: number
+  amount: number
+  color: string
+}
+
 export function PortfolioOverview() {
   const [timeframe, setTimeframe] = useState("1M")
-  const [portfolioData, setPortfolioData] = useState([])
-  const [allocationData, setAllocationData] = useState([])
+  const [portfolioData, setPortfolioData] = useState<PortfolioDataPoint[]>([])
+  const [allocationData, setAllocationData] = useState<AllocationDataPoint[]>([])
 
   useEffect(() => {
     // Mock portfolio performance data

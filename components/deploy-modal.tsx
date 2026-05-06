@@ -658,7 +658,7 @@ export function DeployModal({
       return
     }
 
-    if (tokenBalances) {
+    if (tokenBalances && pool) {
       if (baseAmountNum > Number.parseFloat(tokenBalances.base)) {
         toast({
           title: "Insufficient balance",
