@@ -1,9 +1,9 @@
-import { Wallet, JsonRpcProvider } from "ethers"
+import { Wallet, JsonRpcProvider, parseEther } from "ethers"
 
 // Agent wallet management utilities
 export class AgentWalletManager {
   private provider: JsonRpcProvider
-  private agents: Map<string, { wallet: Wallet; privateKey: string }> = new Map()
+  private agents: Map<string, { wallet: any; privateKey: string }> = new Map()
 
   constructor(rpcUrl: string = process.env.ALCHEMY_API_KEY || "") {
     this.provider = new JsonRpcProvider(rpcUrl)
@@ -56,7 +56,7 @@ export class AgentWalletManager {
   async fundAgentWallet(fromPrivateKey: string, toAddress: string, amountInEth: number): Promise<string> {
     try {
       const wallet = new Wallet(fromPrivateKey, this.provider)
-      const amount = Wallet.parseEther(amountInEth.toString())
+      const amount = parseEther(amountInEth.toString())
 
       console.log("[v0] Funding agent wallet:", {
         from: wallet.address,
@@ -82,7 +82,7 @@ export class AgentWalletManager {
   /**
    * Get wallet instance by agent ID
    */
-  getWallet(agentId: string): Wallet | null {
+  getWallet(agentId: string): any | null {
     const agentData = this.agents.get(agentId)
     return agentData?.wallet || null
   }
@@ -97,7 +97,7 @@ export class AgentWalletManager {
     }
 
     try {
-      const amount = Wallet.parseEther(amountInEth.toString())
+      const amount = parseEther(amountInEth.toString())
 
       console.log("[v0] Withdrawing from agent:", {
         agentId,

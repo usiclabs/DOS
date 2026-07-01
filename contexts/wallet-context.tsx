@@ -109,8 +109,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     const removeListeners = () => {
       try {
-        window.ethereum?.removeListener("accountsChanged", handleAccountsChanged)
-        window.ethereum?.removeListener("chainChanged", handleChainChanged)
+        window.ethereum?.removeListener?.("accountsChanged", handleAccountsChanged)
+        window.ethereum?.removeListener?.("chainChanged", handleChainChanged)
         console.log("[v0] WalletProvider: Event listeners removed")
       } catch (error) {
         console.error("[v0] WalletProvider: Error removing event listeners:", error)

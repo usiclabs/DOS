@@ -380,7 +380,7 @@ export async function createPoolIfNeeded(
       // If sqrtPriceX96 is 0, the pool is not initialized
       if (sqrtPriceX96 === 0n) {
         console.log("[v0] Pool exists but is not initialized, initializing now...")
-        const poolWithSigner = pool.connect(signer)
+        const poolWithSigner = pool.connect(signer) as any
         const initTx = await poolWithSigner.initialize("79228162514264337593543950336")
         await initTx.wait()
         console.log("[v0] Pool initialized with 1:1 price")
@@ -398,7 +398,7 @@ export async function createPoolIfNeeded(
 
   // Pool doesn't exist, create it
   console.log("[v0] Pool doesn't exist, creating new pool...")
-  const factoryWithSigner = factory.connect(signer)
+  const factoryWithSigner = factory.connect(signer) as any
   const tx = await factoryWithSigner.createPool(token0, token1, feeTier)
   const receipt = await tx.wait()
 

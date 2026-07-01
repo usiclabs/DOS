@@ -14,7 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Copy, ExternalLink, LogOut, Loader2, Wallet } from "lucide-react"
 
 export function WalletButton() {
-  const { address, isConnected, connect, disconnect } = useWallet()
+  const { address, isConnected, connectWallet, disconnectWallet } = useWallet()
+  const connect = connectWallet
+  const disconnect = disconnectWallet
   const [isLoading, setIsLoading] = useState(false)
 
   const handleConnect = async () => {

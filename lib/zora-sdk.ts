@@ -542,7 +542,7 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
     console.log("[v0] Waiting for transaction confirmation...")
 
     // Wait for transaction receipt
-    const receipt = await walletClient.waitForTransactionReceipt?.({ hash })
+    const receipt = await (walletClient as any).waitForTransactionReceipt?.({ hash })
 
     console.log("[v0] Transaction confirmed:", receipt)
 
