@@ -105,34 +105,32 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased bg-background min-h-screen overflow-x-hidden`}>
-        <div className="min-h-screen bg-background flex flex-col w-full">
-          <ErrorBoundary>
-            <Providers>
-              <KeyboardShortcuts />
-              <StickyHeader />
-              <main className="flex-1 pt-0 pb-20 md:pb-0 overflow-y-auto w-full">
-                <Suspense
-                  fallback={
-                    <div className="flex items-center justify-center min-h-screen bg-black">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
-                        <p className="text-white text-sm">Loading...</p>
-                      </div>
+        <ErrorBoundary>
+          <Providers>
+            <KeyboardShortcuts />
+            <StickyHeader />
+            <main className="w-full pb-20 md:pb-0">
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center min-h-screen bg-black">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
+                      <p className="text-white text-sm">Loading...</p>
                     </div>
-                  }
-                >
-                  {children}
-                </Suspense>
-              </main>
-              <ToastNotifications />
-              <Toaster />
-              <BuyNotifications />
-              <MobileNavigation />
-              <MaintenanceModal />
-              {/* <BackgroundMusicPlayer /> */}
-            </Providers>
-          </ErrorBoundary>
-        </div>
+                  </div>
+                }
+              >
+                {children}
+              </Suspense>
+            </main>
+            <ToastNotifications />
+            <Toaster />
+            <BuyNotifications />
+            <MobileNavigation />
+            <MaintenanceModal />
+            {/* <BackgroundMusicPlayer /> */}
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   )
