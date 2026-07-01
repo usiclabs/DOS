@@ -36,10 +36,10 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const receipt = await window.ethereum.request({
+        const receipt = await window.ethereum!.request({
           method: "eth_getTransactionReceipt",
           params: [txHash],
-        })
+        }) as { status: string } | null
 
         if (receipt) {
           console.log("[v0] Transaction receipt received:", receipt)
@@ -76,10 +76,10 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
       try {
         console.log(`[v0] Sending transaction (attempt ${attempt}/${maxRetries})`)
 
-        const hash = await window.ethereum.request({
+        const hash = await window.ethereum!.request({
           method: "eth_sendTransaction",
           params: [txParams],
-        })
+        }) as string
 
         return hash
       } catch (error: any) {
@@ -196,21 +196,21 @@ export default function WagmiSwapHooks({ quote, address, onSwapUpdate }: WagmiSw
       console.log("[v0] Transaction sent successfully:", hash)
       console.log("[v0] View on Basescan: https://basescan.org/tx/" + hash)
 
-      setTxHash(hash)
+      setTxHash(hash as string | undefined)
 
       onSwapUpdate({
         isExecuting: true,
-        txHash: hash,
+        txHash: hash as string,
       })
 
-      const result = await waitForTransactionReceipt(hash)
+      const result = await waitForTransactionReceipt(hash as string)
 
       if (result.success) {
         console.log("[v0] Swap completed successfully!")
         setIsExecuting(false)
         onSwapUpdate({
           isExecuting: false,
-          txHash: hash,
+          txHash: hash as string,
           isConfirmed: true,
         })
       } else {

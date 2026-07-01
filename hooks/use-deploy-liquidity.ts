@@ -56,7 +56,7 @@ export function useDeployLiquidity() {
       console.log("[v0] Checking allowance for token:", tokenAddress)
 
       // Check current allowance
-      const allowance = (await window.ethereum.request({
+      const allowance = (await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -108,7 +108,7 @@ export function useDeployLiquidity() {
 
     while (attempts < maxAttempts) {
       try {
-        const receipt = (await window.ethereum.request({
+        const receipt = (await window.ethereum!.request({
           method: "eth_getTransactionReceipt",
           params: [hash],
         })) as any
@@ -136,7 +136,7 @@ export function useDeployLiquidity() {
   // Get token decimals
   const getTokenDecimals = useCallback(async (tokenAddress: string): Promise<number> => {
     try {
-      const decimalsHex = (await window.ethereum.request({
+      const decimalsHex = (await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -161,7 +161,7 @@ export function useDeployLiquidity() {
   // Get current pool state
   const getPoolState = useCallback(async (poolAddress: string) => {
     try {
-      const slot0Data = (await window.ethereum.request({
+      const slot0Data = (await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -176,7 +176,7 @@ export function useDeployLiquidity() {
         ],
       })) as string
 
-      const tickSpacingData = (await window.ethereum.request({
+      const tickSpacingData = (await window.ethereum!.request({
         method: "eth_call",
         params: [
           {

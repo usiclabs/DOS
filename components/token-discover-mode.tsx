@@ -529,7 +529,7 @@ export function TokenDiscoverMode() {
           txParams.gas = `0x${BigInt(transaction.gasLimit).toString(16)}`
         }
 
-        const txHash = await window.ethereum.request({
+        const txHash = await window.ethereum!.request({
           method: "eth_sendTransaction",
           params: [txParams],
         })

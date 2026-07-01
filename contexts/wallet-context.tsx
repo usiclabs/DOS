@@ -29,7 +29,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const fetchBalance = useCallback(async (addr: Address) => {
     try {
       console.log("[v0] Fetching balance via Alchemy for:", addr)
-      const balanceWei = await publicClient.getBalance({ address: addr })
+      const balanceWei = await publicClient!.getBalance({ address: addr })
       const balanceEth = formatEther(balanceWei)
       setBalance(balanceEth)
       console.log("[v0] Balance fetched via Alchemy:", balanceEth, "ETH")
@@ -68,7 +68,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined" || !window.ethereum) return
 
-    const handleAccountsChanged = (accounts: string[]) => {
+    const handleAccountsChanged = (...args: unknown[]) => {
+      const accounts = args[0] as string[]
       console.log("[v0] WalletProvider: Accounts changed event fired, accounts:", accounts.length)
       if (accounts.length > 0) {
         const addr = accounts[0] as Address
@@ -84,7 +85,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const handleChainChanged = (chainId: string) => {
+    const handleChainChanged = (...args: unknown[]) => {
+      const chainId = args[0] as string
       console.log("[v0] WalletProvider: Chain changed to:", chainId)
       // Verify we're on Base (0x2105)
       if (chainId !== "0x2105") {
@@ -97,8 +99,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     // Add event listeners with proper error handling
     const addListeners = () => {
       try {
-        window.ethereum.on("accountsChanged", handleAccountsChanged)
-        window.ethereum.on("chainChanged", handleChainChanged)
+        window.ethereum!.on?.("accountsChanged", handleAccountsChanged)
+        window.ethereum!.on?.("chainChanged", handleChainChanged)
         console.log("[v0] WalletProvider: Event listeners registered")
       } catch (error) {
         console.error("[v0] WalletProvider: Error registering event listeners:", error)

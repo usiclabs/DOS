@@ -74,10 +74,8 @@ export function WalletConnectModal({ isOpen, onClose, onConnect }: WalletConnect
 
     setIsConnecting(walletId)
     try {
-      const success = await onConnect(walletId)
-      if (success) {
-        onClose()
-      }
+      await onConnect(walletId)
+      onClose()
     } catch (error) {
       console.error("Failed to connect wallet:", error)
     } finally {

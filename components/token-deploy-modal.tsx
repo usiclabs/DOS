@@ -13,7 +13,7 @@ import { useWallet } from "@/hooks/use-wallet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { motion, AnimatePresence } from "framer-motion"
 import { useIsMobile } from "@/hooks/use-mobile"
-import type { Address } from "wagmi"
+import type { Address } from "viem"
 
 interface TokenDeployModalProps {
   open: boolean

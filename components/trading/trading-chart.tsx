@@ -14,7 +14,7 @@ interface TradingChartProps {
 export function TradingChart({ pair }: TradingChartProps) {
   const [timeframe, setTimeframe] = useState("1H")
   const [chartType, setChartType] = useState("candlestick")
-  const [priceData, setPriceData] = useState([])
+  const [priceData, setPriceData] = useState<{ time: string; price: number; volume: number; high: number; low: number; open: number; close: number }[]>([])
 
   const { data: tickerData, error, fetchTicker } = useTickerStore()
 
@@ -26,7 +26,7 @@ export function TradingChart({ pair }: TradingChartProps) {
     if (!tickerData?.priceUsd) return
 
     const generateRealisticData = () => {
-      const data = []
+      const data: { time: string; price: number; volume: number; high: number; low: number; open: number; close: number }[] = []
       const basePrice = tickerData.priceUsd
       const change24h = tickerData.change24hPct / 100
 
@@ -46,7 +46,7 @@ export function TradingChart({ pair }: TradingChartProps) {
           volume: (tickerData.volume24hUsd * (0.8 + Math.random() * 0.4)) / 100, // Distribute volume
           high: currentPrice + Math.random() * 0.01 * basePrice,
           low: currentPrice - Math.random() * 0.01 * basePrice,
-          open: i > 0 ? data[i - 1].price : currentPrice,
+          open: i > 0 ? (data[i - 1] as { price: number }).price : currentPrice,
           close: currentPrice,
         })
       }
@@ -65,8 +65,8 @@ export function TradingChart({ pair }: TradingChartProps) {
 
   const timeframes = ["1M", "5M", "15M", "1H", "4H", "1D", "1W"]
 
-  const high24h = tickerData?.high24h || (priceData.length > 0 ? Math.max(...priceData.map((d: any) => d.high)) : 0)
-  const low24h = tickerData?.low24h || (priceData.length > 0 ? Math.min(...priceData.map((d: any) => d.low)) : 0)
+  const high24h = (priceData.length > 0 ? Math.max(...priceData.map((d) => d.high)) : 0)
+  const low24h = (priceData.length > 0 ? Math.min(...priceData.map((d) => d.low)) : 0)
 
   const formatNumber = (num: number) => {
     if (num >= 1e9) return `${(num / 1e9).toFixed(1)}B`

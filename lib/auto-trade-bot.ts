@@ -379,7 +379,7 @@ export class AutoTradeBot {
         tokenIn: signal.action === "buy" ? WETH_TOKEN : DEUS_TOKEN,
         tokenOut: signal.action === "buy" ? DEUS_TOKEN : WETH_TOKEN,
         amountIn: signal.suggestedAmount.toString(),
-        type: signal.action,
+        type: signal.action as "buy" | "sell",
       })
 
       if (swapResult.success) {

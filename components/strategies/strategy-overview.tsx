@@ -28,7 +28,7 @@ interface StrategyCategory {
 }
 
 export function StrategyOverview() {
-  const [performanceData, setPerformanceData] = useState([])
+  const [performanceData, setPerformanceData] = useState<{ date: string; totalValue: number; yield: number; fees: number }[]>([])
   const [categoryData, setCategoryData] = useState<StrategyCategory[]>([])
   const [timeframe, setTimeframe] = useState("30d")
 
