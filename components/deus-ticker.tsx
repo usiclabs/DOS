@@ -134,7 +134,7 @@ export function DeusTicker() {
 
   if (!tickerData || tickerData.priceUsd === 0) {
     return (
-      <div className="fixed top-20 left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-y border-white/20 shadow-[0_1px_0_0_rgba(255,255,255,0.1),0_-1px_0_0_rgba(255,255,255,0.1),0_4px_20px_rgba(0,0,0,0.5)] py-2">
+      <div className="fixed top-20 left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-y border-white/20 shadow-[0_1px_0_0_rgba(255,255,255,0.1),0_-1px_0_0_rgba(255,255,255,0.1),0_4px_20px_rgba(0,0,0,0.5)] py-2 pointer-events-none">
         <div className="flex items-center justify-center px-4 py-2">
           <div className="flex items-center space-x-2 text-sm text-gray-400">
             {getStatusIcon()}
@@ -201,7 +201,7 @@ export function DeusTicker() {
 
   return (
     <>
-      <div className="fixed top-20 left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-y border-white/20 shadow-[0_1px_0_0_rgba(255,255,255,0.1),0_-1px_0_0_rgba(255,255,255,0.1),0_4px_20px_rgba(0,0,0,0.5)] py-2 overflow-hidden">
+      <div className="fixed top-20 left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-y border-white/20 shadow-[0_1px_0_0_rgba(255,255,255,0.1),0_-1px_0_0_rgba(255,255,255,0.1),0_4px_20px_rgba(0,0,0,0.5)] py-2 overflow-hidden pointer-events-none">
         <div className="flex items-center justify-between px-4 mb-1">
           <div className="flex items-center space-x-2 text-xs">
             {getStatusIcon()}
@@ -211,7 +211,7 @@ export function DeusTicker() {
             variant="ghost"
             size="sm"
             onClick={() => setShowDetails(!showDetails)}
-            className="text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-colors"
+            className="text-xs text-gray-300 hover:text-white hover:bg-white/10 transition-colors pointer-events-auto"
             aria-label={showDetails ? "Hide ticker details" : "View ticker details"}
           >
             {showDetails ? "Hide Details" : "View Details"}
@@ -251,7 +251,7 @@ export function DeusTicker() {
             animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed top-[calc(5rem+3rem)] left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-b border-white/20 overflow-hidden"
+            className="fixed top-[calc(5rem+3rem)] left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-b border-white/20 overflow-hidden pointer-events-auto"
           >
             <div className="p-4">
               <div className="container mx-auto">
@@ -261,7 +261,7 @@ export function DeusTicker() {
                     variant="outline"
                     size="sm"
                     onClick={handleCopyAddress}
-                    className="flex items-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white transition-all duration-200"
+                    className="flex items-center gap-2 bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20 text-white transition-all duration-200 pointer-events-auto"
                   >
                     {isCopied ? (
                       <>
@@ -311,7 +311,7 @@ export function DeusTicker() {
                         <button
                           key={index}
                           onClick={() => handlePairClick(pair)}
-                          className="bg-white/5 border border-white/10 p-3 rounded backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all duration-200 active:scale-95 text-left cursor-pointer"
+                          className="bg-white/5 border border-white/10 p-3 rounded backdrop-blur-sm hover:bg-white/10 hover:border-white/20 transition-all duration-200 active:scale-95 text-left cursor-pointer pointer-events-auto"
                         >
                           <div className="font-medium text-white">
                             {pair.base}/{pair.quote}
