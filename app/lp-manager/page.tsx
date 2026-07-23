@@ -17,7 +17,8 @@ import { Separator } from "@/components/ui/separator"
 import { useWallet } from "@/hooks/use-wallet"
 import { useToast } from "@/hooks/use-toast"
 import { managePosition, collectFees } from "@/lib/transactions"
-import { RefreshCw, ExternalLink, Plus, Minus, AlertCircle, ChevronRight, Zap, Loader2, Wallet } from "lucide-react"
+import { RefreshCw, ExternalLink, Plus, Minus, AlertCircle, ChevronRight, Zap, Loader2, Wallet, ArrowLeftRight } from "lucide-react"
+import { SUPPORTED_CHAINS } from "@/lib/constants"
 
 import { LPPositionChart } from "@/components/lp-position-chart"
 import { ImpermanentLossCalculator } from "@/components/impermanent-loss-calculator"
@@ -803,14 +804,23 @@ function MobilePositionCard({
 }
 
 export default function LPManagerPage() {
-  const { connectWallet, address } = useWallet()
+  const { connectWallet, address, activeChain, switchChain } = useWallet()
   const { toast } = useToast()
 
-  const { data, error, mutate } = useSWR(address ? `/api/lp-manager/${address}` : null, fetcher, {
-    refreshInterval: 60000, // Refresh every 60 seconds instead of 30
-    revalidateOnFocus: false, // Disabled to prevent unnecessary refreshes on tab focus
-    dedupingInterval: 30000, // Dedupe requests within 30 seconds
-  })
+  // Derive the active chain key from the activeChain config
+  const activeChainKey = Object.keys(SUPPORTED_CHAINS).find(
+    (k) => SUPPORTED_CHAINS[k].id === activeChain.id,
+  ) ?? "base"
+
+  const { data, error, mutate } = useSWR(
+    address ? `/api/lp-manager/${address}?chain=${activeChainKey}` : null,
+    fetcher,
+    {
+      refreshInterval: 60000,
+      revalidateOnFocus: false,
+      dedupingInterval: 30000,
+    },
+  )
 
   if (!address) {
     return (
@@ -1013,15 +1023,34 @@ export default function LPManagerPage() {
     <div className="bg-background min-h-screen">
       <StickyHeader />
       <div className="pt-24 px-4 md:px-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
           <div className="flex items-center space-x-3">
             <Wallet className="h-6 w-6 text-primary" />
             <h1 className="text-2xl font-bold text-white">LP Manager</h1>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="text-sm text-muted-foreground hidden sm:block">
-              {address?.slice(0, 6)}...{address?.slice(-4)}
+
+          {/* Chain selector */}
+          <div className="flex items-center gap-2">
+            <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1 rounded-lg border border-border/50 bg-card p-1">
+              {Object.entries(SUPPORTED_CHAINS).map(([key, chain]) => (
+                <button
+                  key={key}
+                  onClick={() => switchChain(key)}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
+                    key === activeChainKey
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  {chain.name}
+                </button>
+              ))}
             </div>
+          </div>
+
+          <div className="text-sm text-muted-foreground hidden sm:block">
+            {address?.slice(0, 6)}...{address?.slice(-4)}
           </div>
         </div>
       </div>
@@ -1030,7 +1059,7 @@ export default function LPManagerPage() {
         <div className="flex justify-between items-center">
           <DeusTicker />
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={() => mutate()}>
+            <Button variant="outline" size="sm" onClick={() => mutate()}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
@@ -1039,6 +1068,13 @@ export default function LPManagerPage() {
 
         <div className="bg-card border border-white/5 rounded-lg shadow-lg">
           <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Portfolio Overview</span>
+              <Badge variant="outline" className="text-xs border-primary/30 text-primary gap-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />
+                {activeChain.name}
+              </Badge>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">Total Value</div>

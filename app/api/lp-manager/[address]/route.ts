@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { fetchV3Positions, type LPPosition } from "@/lib/lp-positions"
+import { SUPPORTED_CHAINS } from "@/lib/constants"
 
 interface LPManagerResponse {
   positions: LPPosition[]
@@ -7,15 +8,10 @@ interface LPManagerResponse {
   totalPnl: number
   totalFeesEarned: number
   positionCount: number
+  chain: { id: number; name: string; shortName: string; key: string }
 }
 
-export const revalidate = 60 // Cache for 60 seconds
-
-// Now using shared utilities from lib/lp-positions.ts
-
-async function fetchV2Positions(address: string): Promise<LPPosition[]> {
-  return []
-}
+export const revalidate = 60
 
 export async function GET(
   request: NextRequest,
@@ -29,17 +25,18 @@ export async function GET(
       return NextResponse.json({ error: "Invalid Ethereum address format" }, { status: 400 })
     }
 
-    console.log("[v0] LP Manager API called for address:", address)
+    const chainKey = request.nextUrl.searchParams.get("chain") ?? "base"
+    const chain = SUPPORTED_CHAINS[chainKey] ?? SUPPORTED_CHAINS.base
+
+    console.log(`[v0] LP Manager API: address=${address} chain=${chain.name}`)
 
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("Request timeout")), 25000),
     )
 
-    const fetchPromise = Promise.all([fetchV2Positions(address), fetchV3Positions(address)])
+    const v3Positions = await Promise.race([fetchV3Positions(address, chain), timeoutPromise])
 
-    const [v2Positions, v3Positions] = await Promise.race([fetchPromise, timeoutPromise])
-
-    const allPositions = [...v2Positions, ...v3Positions]
+    const allPositions: LPPosition[] = [...v3Positions]
 
     const totalValue = allPositions.reduce((sum, p) => sum + p.totalValue, 0)
     const totalPnl = allPositions.reduce((sum, p) => sum + p.netPnl, 0)
@@ -51,17 +48,20 @@ export async function GET(
       totalPnl,
       totalFeesEarned,
       positionCount: allPositions.length,
+      chain: {
+        id: chain.id,
+        name: chain.name,
+        shortName: chain.shortName,
+        key: chainKey,
+      },
     }
 
     return NextResponse.json(response, {
-      headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120",
-      },
+      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" },
     })
   } catch (error) {
     console.error("[v0] LP Manager API error:", error)
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
-
     const status = errorMessage === "Request timeout" ? 504 : 500
 
     return NextResponse.json(
@@ -73,6 +73,7 @@ export async function GET(
         totalPnl: 0,
         totalFeesEarned: 0,
         positionCount: 0,
+        chain: { id: 8453, name: "Base", shortName: "Base", key: "base" },
       },
       { status },
     )
