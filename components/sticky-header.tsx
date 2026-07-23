@@ -13,6 +13,7 @@ import { useWallet } from "@/hooks/use-wallet"
 import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { SUPPORTED_CHAINS } from "@/lib/constants"
 
 const navItems = [
   { href: "/", label: "Dashboard" },
@@ -53,7 +54,7 @@ export function StickyHeader() {
   const [isScrolled, setIsScrolled] = useState(false)
   const pathname = usePathname()
 
-  const { isConnected, address, balance, network, walletType, connectWallet, disconnectWallet } = useWallet()
+  const { isConnected, address, balance, network, walletType, connectWallet, disconnectWallet, switchChain, activeChain } = useWallet()
 
   useEffect(() => {
     let ticking = false
@@ -132,7 +133,9 @@ export function StickyHeader() {
                   balance={balance}
                   onConnect={handleWalletConnect}
                   onDisconnect={disconnectWallet}
-                  network="Base"
+                  onSwitchChain={switchChain}
+                  network={activeChain.name}
+                  activeChainKey={Object.keys(SUPPORTED_CHAINS).find(k => SUPPORTED_CHAINS[k].id === activeChain.id) ?? "base"}
                   variant="dropdown"
                   size="md"
                   className="hidden md:flex"
@@ -193,7 +196,9 @@ export function StickyHeader() {
                         balance={balance}
                         onConnect={handleWalletConnect}
                         onDisconnect={disconnectWallet}
-                        network="Base"
+                        onSwitchChain={switchChain}
+                        network={activeChain.name}
+                        activeChainKey={Object.keys(SUPPORTED_CHAINS).find(k => SUPPORTED_CHAINS[k].id === activeChain.id) ?? "base"}
                         variant="dropdown"
                         size="md"
                         className="w-full"
