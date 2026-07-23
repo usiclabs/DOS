@@ -137,6 +137,7 @@ const TableRowSkeleton = () => (
 )
 
 export function PoolsTable() {
+  const [activeChain, setActiveChain] = useState<"base" | "robinhood">("base")
   const [sortBy, setSortBy] = useState("netApy")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [deusOnly, setDeusOnly] = useState(false)
@@ -176,7 +177,8 @@ export function PoolsTable() {
     limit: "20",
     sortBy,
     sortOrder,
-    ...(deusOnly && { deusOnly: "true" }),
+    chain: activeChain,
+    ...(deusOnly && activeChain === "base" && { deusOnly: "true" }),
     ...(priorityDexOnly && { priorityDexOnly: "true" }),
     ...(minTvl && { minTvl }),
     ...(minVolume && { minVolume }),
@@ -363,7 +365,7 @@ export function PoolsTable() {
                     </motion.div>
                   )}
                 </h3>
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
                   <Badge
                     variant={pool.isDeusPool ? "default" : isPriority ? "default" : "secondary"}
                     className={`${
@@ -379,6 +381,11 @@ export function PoolsTable() {
                   <Badge variant="outline" className="text-xs">
                     {pool.feeTier}
                   </Badge>
+                  {pool.chainId === "robinhood" && (
+                    <Badge className="text-xs bg-[#00C805]/20 text-[#00C805] border border-[#00C805]/30">
+                      RHC
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
@@ -581,7 +588,7 @@ export function PoolsTable() {
                         </motion.div>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                       <Badge
                         variant={pool.isDeusPool ? "default" : isPriority ? "default" : "secondary"}
                         className={`${
@@ -593,6 +600,11 @@ export function PoolsTable() {
                         {pool.isDeusPool ? "DEUS" : pool.dexId}
                       </Badge>
                       <span className="text-xs text-muted-foreground">{pool.feeTier}</span>
+                      {pool.chainId === "robinhood" && (
+                        <Badge className="text-xs bg-[#00C805]/20 text-[#00C805] border border-[#00C805]/30">
+                          RHC
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1054,6 +1066,62 @@ export function PoolsTable() {
 
   return (
     <div className="space-y-4">
+      {/* Chain toggle — prominently placed above the toolbar */}
+      <div className="flex items-center gap-2 p-1 rounded-xl bg-white/5 border border-white/10 w-fit">
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => {
+            setActiveChain("base")
+            setDeusOnly(false)
+            setZoraCreators(false)
+            setPage(1)
+          }}
+          className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+            activeChain === "base"
+              ? "bg-[#0052FF] text-white shadow-lg shadow-[#0052FF]/30"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+          }`}
+        >
+          {activeChain === "base" && (
+            <motion.div
+              layoutId="chain-active-bg"
+              className="absolute inset-0 rounded-lg bg-[#0052FF]"
+              style={{ zIndex: -1 }}
+            />
+          )}
+          <svg width="16" height="16" viewBox="0 0 111 111" fill="none" aria-hidden="true">
+            <circle cx="55.5" cy="55.5" r="55.5" fill={activeChain === "base" ? "white" : "#0052FF"} fillOpacity={activeChain === "base" ? 0.15 : 1} />
+            <path
+              d="M55.5 17C34.237 17 17 34.237 17 55.5S34.237 94 55.5 94 94 76.763 94 55.5 76.763 17 55.5 17Zm0 11.75a26.75 26.75 0 1 1 0 53.5 26.75 26.75 0 0 1 0-53.5Z"
+              fill={activeChain === "base" ? "white" : "white"}
+              fillOpacity={0.9}
+            />
+          </svg>
+          Base
+        </motion.button>
+
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={() => {
+            setActiveChain("robinhood")
+            setDeusOnly(false)
+            setZoraCreators(false)
+            setPage(1)
+          }}
+          className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+            activeChain === "robinhood"
+              ? "bg-[#00C805] text-white shadow-lg shadow-[#00C805]/30"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+          }`}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="12" fill={activeChain === "robinhood" ? "white" : "#00C805"} fillOpacity={activeChain === "robinhood" ? 0.15 : 1} />
+            <path d="M8 7h4.5a2.5 2.5 0 0 1 0 5H8V7Zm0 5h4.5l3 5H13l-2.5-4H8v4H6V7h2v5Z" fill="white" />
+          </svg>
+          Robinhood Chain
+        </motion.button>
+      </div>
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Sheet
@@ -1549,12 +1617,27 @@ export function PoolsTable() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
         >
-          <Card className="glass-card border-white/10 shadow-xl">
+          <Card className={`glass-card shadow-xl transition-all duration-300 ${activeChain === "robinhood" ? "border-[#00C805]/20" : "border-white/10"}`}>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base sm:text-lg">Liquidity Pools</CardTitle>
-              <CardDescription className="text-xs sm:text-sm">
-                {data ? `${data.totalCount} pools found` : "Loading pools..."}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    Liquidity Pools
+                    <Badge
+                      className={`text-xs font-medium ${
+                        activeChain === "robinhood"
+                          ? "bg-[#00C805]/20 text-[#00C805] border border-[#00C805]/30"
+                          : "bg-[#0052FF]/20 text-[#0052FF] border border-[#0052FF]/30"
+                      }`}
+                    >
+                      {activeChain === "robinhood" ? "Robinhood Chain" : "Base"}
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm mt-1">
+                    {data ? `${data.totalCount} pools found` : "Loading pools..."}
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {isLoading ? (
