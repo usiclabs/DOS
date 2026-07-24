@@ -201,7 +201,7 @@ export function DeusTicker() {
 
   return (
     <>
-      <div className="fixed top-20 left-0 right-0 z-40 w-full bg-black/30 backdrop-blur-xl border-y border-white/20 shadow-[0_1px_0_0_rgba(255,255,255,0.1),0_-1px_0_0_rgba(255,255,255,0.1),0_4px_20px_rgba(0,0,0,0.5)] py-2 overflow-hidden pointer-events-none">
+      <div className="fixed top-20 left-0 right-0 z-40 w-full bg-black/25 backdrop-blur-lg border-y border-white/8 shadow-[0_2px_16px_rgba(0,0,0,0.2)] py-2 overflow-hidden pointer-events-none">
         <div className="flex items-center justify-between px-4 mb-1">
           <div className="flex items-center space-x-2 text-xs">
             {getStatusIcon()}

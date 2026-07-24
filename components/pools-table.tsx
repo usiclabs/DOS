@@ -382,7 +382,7 @@ export function PoolsTable() {
                     {pool.feeTier}
                   </Badge>
                   {pool.chainId === "robinhood" && (
-                    <Badge className="text-xs bg-[#00C805]/20 text-[#00C805] border border-[#00C805]/30">
+                    <Badge className="text-xs bg-[#50c896]/15 text-emerald-100 border border-[#50c896]/30">
                       RHC
                     </Badge>
                   )}
@@ -601,7 +601,7 @@ export function PoolsTable() {
                       </Badge>
                       <span className="text-xs text-muted-foreground">{pool.feeTier}</span>
                       {pool.chainId === "robinhood" && (
-                        <Badge className="text-xs bg-[#00C805]/20 text-[#00C805] border border-[#00C805]/30">
+                        <Badge className="text-xs bg-[#50c896]/15 text-emerald-100 border border-[#50c896]/30">
                           RHC
                         </Badge>
                       )}
@@ -1067,7 +1067,7 @@ export function PoolsTable() {
   return (
     <div className="space-y-4">
       {/* Chain toggle — prominently placed above the toolbar */}
-      <div className="flex items-center gap-2 p-1 rounded-xl bg-white/5 border border-white/10 w-fit">
+      <div className="flex items-center gap-2 p-1 rounded-[0.625rem] bg-white/3 border border-white/8 w-fit">
         <motion.button
           whileTap={{ scale: 0.97 }}
           onClick={() => {
@@ -1076,10 +1076,10 @@ export function PoolsTable() {
             setZoraCreators(false)
             setPage(1)
           }}
-          className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+          className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-300 ${
             activeChain === "base"
-              ? "bg-[#0052FF] text-white shadow-lg shadow-[#0052FF]/30"
-              : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+              ? "bg-[#0052FF] text-white shadow-md shadow-[#0052FF]/25"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/6"
           }`}
         >
           {activeChain === "base" && (
@@ -1108,14 +1108,14 @@ export function PoolsTable() {
             setZoraCreators(false)
             setPage(1)
           }}
-          className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-300 ${
+          className={`relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold transition-all duration-300 ${
             activeChain === "robinhood"
-              ? "bg-[#00C805] text-white shadow-lg shadow-[#00C805]/30"
-              : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+              ? "bg-[#50c896] text-white shadow-md shadow-[#50c896]/25"
+              : "text-muted-foreground hover:text-foreground hover:bg-white/6"
           }`}
         >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <circle cx="12" cy="12" r="12" fill={activeChain === "robinhood" ? "white" : "#00C805"} fillOpacity={activeChain === "robinhood" ? 0.15 : 1} />
+            <circle cx="12" cy="12" r="12" fill={activeChain === "robinhood" ? "white" : "#50c896"} fillOpacity={activeChain === "robinhood" ? 0.15 : 1} />
             <path d="M8 7h4.5a2.5 2.5 0 0 1 0 5H8V7Zm0 5h4.5l3 5H13l-2.5-4H8v4H6V7h2v5Z" fill="white" />
           </svg>
           Robinhood Chain
@@ -1626,8 +1626,8 @@ export function PoolsTable() {
                     <Badge
                       className={`text-xs font-medium ${
                         activeChain === "robinhood"
-                          ? "bg-[#00C805]/20 text-[#00C805] border border-[#00C805]/30"
-                          : "bg-[#0052FF]/20 text-[#0052FF] border border-[#0052FF]/30"
+                          ? "bg-[#50c896]/15 text-emerald-100 border border-[#50c896]/30"
+                          : "bg-[#0052FF]/15 text-blue-100 border border-[#0052FF]/30"
                       }`}
                     >
                       {activeChain === "robinhood" ? "Robinhood Chain" : "Base"}

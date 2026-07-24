@@ -10,22 +10,22 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 active:scale-95 transition-transform',
+          'bg-primary text-primary-foreground shadow-sm hover:bg-primary/85 active:scale-95 transition-all',
         destructive:
-          'bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 active:scale-95 transition-transform',
+          'bg-destructive text-white shadow-sm hover:bg-destructive/85 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60 active:scale-95 transition-all',
         outline:
-          'border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 active:scale-95 transition-transform',
+          'border bg-background shadow-sm hover:bg-accent/10 hover:text-accent-foreground hover:border-accent dark:bg-input/20 dark:border-input/50 dark:hover:bg-input/40 active:scale-95 transition-all',
         secondary:
-          'bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80 active:scale-95 transition-transform',
+          'bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/75 active:scale-95 transition-all',
         ghost:
-          'hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50 active:scale-95 transition-transform',
+          'hover:bg-accent/15 hover:text-accent-foreground dark:hover:bg-accent/20 active:scale-95 transition-all',
         link: 'text-primary underline-offset-4 hover:underline',
         glass:
-          'relative bg-white/10 text-white backdrop-blur-md border border-white/20 hover:bg-white/20 hover:border-white/30 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300',
+          'relative bg-white/6 text-white backdrop-blur-md border border-white/12 hover:bg-white/10 hover:border-white/20 shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-300',
         "glass-primary":
-          'relative bg-[rgba(235,90,60,0.15)] text-white backdrop-blur-md border border-[rgba(235,90,60,0.3)] hover:bg-[rgba(235,90,60,0.25)] hover:border-[rgba(235,90,60,0.5)] shadow-lg hover:shadow-[0_12px_40px_rgba(235,90,60,0.3)] hover:scale-105 active:scale-95 transition-all duration-300',
+          'relative bg-[rgba(80,200,150,0.12)] text-white backdrop-blur-md border border-[rgba(80,200,150,0.25)] hover:bg-[rgba(80,200,150,0.18)] hover:border-[rgba(80,200,150,0.4)] shadow-md hover:shadow-[0_8px_24px_rgba(80,200,150,0.2)] hover:scale-105 active:scale-95 transition-all duration-300',
         "glass-gold":
-          'relative bg-[rgba(218,165,32,0.15)] text-white backdrop-blur-md border border-[rgba(218,165,32,0.3)] hover:bg-[rgba(218,165,32,0.25)] hover:border-[rgba(218,165,32,0.5)] shadow-lg hover:shadow-[0_12px_40px_rgba(218,165,32,0.3)] hover:scale-105 active:scale-95 transition-all duration-300',
+          'relative bg-[rgba(230,160,50,0.12)] text-white backdrop-blur-md border border-[rgba(230,160,50,0.25)] hover:bg-[rgba(230,160,50,0.18)] hover:border-[rgba(230,160,50,0.4)] shadow-md hover:shadow-[0_8px_24px_rgba(230,160,50,0.2)] hover:scale-105 active:scale-95 transition-all duration-300',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
