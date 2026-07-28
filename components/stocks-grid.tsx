@@ -11,6 +11,7 @@ import { TrendingUp, TrendingDown, Search, SlidersHorizontal, ArrowRight } from 
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { StocksDepositModal } from "./stocks-deposit-modal"
 
 interface Stock {
   id: string
@@ -42,6 +43,8 @@ export function StocksGrid({
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("apy")
   const [filterRisk, setFilterRisk] = useState("all")
+  const [depositStock, setDepositStock] = useState<Stock | null>(null)
+  const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
   const isMobile = useIsMobile()
 
   const filteredStocks = stocks
@@ -244,7 +247,14 @@ export function StocksGrid({
                     </div>
 
                     {/* Provide Liquidity Button */}
-                    <Button className="w-full bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setDepositStock(stock)
+                        setIsDepositModalOpen(true)
+                      }}
+                      className="w-full bg-accent hover:bg-accent/90 text-white"
+                    >
                       Provide Liquidity
                       <ArrowRight className="h-4 w-4 ml-2" />
                     </Button>
@@ -264,6 +274,16 @@ export function StocksGrid({
       <div className="text-center text-sm text-muted-foreground">
         Showing {filteredStocks.length} of {stocks.length} stocks
       </div>
+
+      {/* Deposit Modal */}
+      <StocksDepositModal
+        stock={depositStock}
+        isOpen={isDepositModalOpen}
+        onClose={() => {
+          setIsDepositModalOpen(false)
+          setDepositStock(null)
+        }}
+      />
     </div>
   )
 }
