@@ -14,6 +14,8 @@ import { useToast } from "@/hooks/use-toast"
 import { useWallet } from "@/contexts/wallet-context"
 import { ethers } from "ethers"
 import confetti from "canvas-confetti"
+import { ERC20_ABI } from "@/lib/token-factory-abi"
+import { formatEther, parseEther, encodeFunctionData } from "viem"
 
 interface Stock {
   id?: string
@@ -40,28 +42,74 @@ const USDG_ADDRESS = "0x50c5725949A6F0c72E6C4a641F14122319E53200"
 
 export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModalProps) {
   const { toast } = useToast()
-  const { isConnected, connectWallet } = useWallet()
+  const { isConnected, connectWallet, address, balance: ethBalance } = useWallet()
   const [depositAmount, setDepositAmount] = useState("")
   const [selectedToken, setSelectedToken] = useState<"ETH" | "USDG">("ETH")
   const [step, setStep] = useState<"input" | "preview" | "confirming" | "success">("input")
   const [isProcessing, setIsProcessing] = useState(false)
   const [txHash, setTxHash] = useState<string | null>(null)
-  const [tokenBalance, setTokenBalance] = useState<string | null>(null)
+  const [ethTokenBalance, setEthTokenBalance] = useState<string>("0")
+  const [usdgTokenBalance, setUsdgTokenBalance] = useState<string>("0")
   const [estimatedShares, setEstimatedShares] = useState<string | null>(null)
   const [gasEstimate, setGasEstimate] = useState<string | null>(null)
+  const [isLoadingBalance, setIsLoadingBalance] = useState(false)
 
+  // Fetch token balances when modal opens or wallet changes
   useEffect(() => {
-    if (!isOpen || !stock) {
+    if (!isOpen || !address || !isConnected) {
       setStep("input")
       setDepositAmount("")
       setSelectedToken("ETH")
       setIsProcessing(false)
       setTxHash(null)
-      setTokenBalance(null)
       setEstimatedShares(null)
       setGasEstimate(null)
+      return
     }
-  }, [isOpen, stock])
+
+    const fetchBalances = async () => {
+      setIsLoadingBalance(true)
+      try {
+        // Set ETH balance from wallet context
+        setEthTokenBalance(ethBalance)
+
+        // Fetch USDG balance
+        if (window.ethereum && address) {
+          console.log("[v0] Fetching USDG balance for:", address)
+          const usdgResult = await window.ethereum.request({
+            method: "eth_call",
+            params: [
+              {
+                to: USDG_ADDRESS,
+                data: encodeFunctionData({
+                  abi: ERC20_ABI,
+                  functionName: "balanceOf",
+                  args: [address],
+                }),
+              },
+              "latest",
+            ],
+          })
+
+          const usdgBalanceBigInt = BigInt(usdgResult as string)
+          const usdgBalanceFormatted = formatEther(usdgBalanceBigInt)
+          setUsdgTokenBalance(usdgBalanceFormatted)
+          console.log("[v0] USDG balance:", usdgBalanceFormatted)
+        }
+      } catch (error) {
+        console.error("[v0] Error fetching balances:", error)
+        toast({
+          title: "Error",
+          description: "Failed to fetch token balances",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoadingBalance(false)
+      }
+    }
+
+    fetchBalances()
+  }, [isOpen, address, isConnected, ethBalance, toast])
 
   const handlePreview = () => {
     if (!depositAmount || parseFloat(depositAmount) <= 0) {
@@ -232,12 +280,27 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
                       size="sm"
                       variant="ghost"
                       className="absolute right-1 top-1/2 -translate-y-1/2 text-xs"
-                      onClick={() => setDepositAmount("1.0")}
+                      onClick={() => {
+                        const balance = selectedToken === "ETH" ? ethTokenBalance : usdgTokenBalance
+                        setDepositAmount(parseFloat(balance).toFixed(6))
+                      }}
+                      disabled={!isConnected || isLoadingBalance}
                     >
                       Max
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-2">Balance: 5.234 {selectedToken}</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {isLoadingBalance ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Loading balance...
+                      </span>
+                    ) : (
+                      <span>
+                        Balance: {selectedToken === "ETH" ? parseFloat(ethTokenBalance).toFixed(4) : parseFloat(usdgTokenBalance).toFixed(4)} {selectedToken}
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 {/* Info Box */}
