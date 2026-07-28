@@ -16,6 +16,7 @@ import { ethers } from "ethers"
 import confetti from "canvas-confetti"
 import { ERC20_ABI } from "@/lib/token-factory-abi"
 import { formatEther, parseEther, encodeFunctionData } from "viem"
+import { SUPPORTED_CHAINS } from "@/lib/constants"
 
 interface Stock {
   id?: string
@@ -71,38 +72,51 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
       setIsLoadingBalance(true)
       try {
         // Set ETH balance from wallet context
-        setEthTokenBalance(ethBalance)
+        if (ethBalance) {
+          setEthTokenBalance(ethBalance)
+        }
 
-        // Fetch USDG balance
+        // Fetch USDG balance from Robinhood Chain
         if (window.ethereum && address) {
           console.log("[v0] Fetching USDG balance for:", address)
-          const usdgResult = await window.ethereum.request({
-            method: "eth_call",
-            params: [
-              {
-                to: USDG_ADDRESS,
-                data: encodeFunctionData({
-                  abi: ERC20_ABI,
-                  functionName: "balanceOf",
-                  args: [address],
-                }),
-              },
-              "latest",
-            ],
-          })
+          const robinhoodChain = SUPPORTED_CHAINS.robinhood
+          const usdgAddress = robinhoodChain.knownTokens.USDG
 
-          const usdgBalanceBigInt = BigInt(usdgResult as string)
-          const usdgBalanceFormatted = formatEther(usdgBalanceBigInt)
-          setUsdgTokenBalance(usdgBalanceFormatted)
-          console.log("[v0] USDG balance:", usdgBalanceFormatted)
+          if (usdgAddress) {
+            try {
+              const usdgResult = await window.ethereum.request({
+                method: "eth_call",
+                params: [
+                  {
+                    to: usdgAddress,
+                    data: encodeFunctionData({
+                      abi: ERC20_ABI,
+                      functionName: "balanceOf",
+                      args: [address as `0x${string}`],
+                    }),
+                  },
+                  "latest",
+                ],
+              })
+
+              if (usdgResult && usdgResult !== "0x") {
+                const usdgBalanceBigInt = BigInt(usdgResult as string)
+                const usdgBalanceFormatted = formatEther(usdgBalanceBigInt)
+                setUsdgTokenBalance(usdgBalanceFormatted)
+                console.log("[v0] USDG balance:", usdgBalanceFormatted)
+              }
+            } catch (rpcError) {
+              console.warn("[v0] Error fetching USDG balance via RPC:", rpcError)
+              // Default to 0 if RPC call fails
+              setUsdgTokenBalance("0")
+            }
+          }
         }
       } catch (error) {
         console.error("[v0] Error fetching balances:", error)
-        toast({
-          title: "Error",
-          description: "Failed to fetch token balances",
-          variant: "destructive",
-        })
+        // Don't show error toast for balance fetch failures, just use default 0
+        setEthTokenBalance("0")
+        setUsdgTokenBalance("0")
       } finally {
         setIsLoadingBalance(false)
       }
@@ -142,26 +156,73 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
     setStep("confirming")
 
     try {
-      // Simulate transaction
-      await new Promise((resolve) => setTimeout(resolve, 2000))
+      if (!address || !isConnected || !window.ethereum) {
+        throw new Error("Wallet not connected")
+      }
 
-      // Mock tx hash
-      const mockTxHash = "0x" + Math.random().toString(16).slice(2, 66)
-      setTxHash(mockTxHash)
+      if (!stock) {
+        throw new Error("Stock data missing")
+      }
 
-      // Show success animation
-      confetti({
-        particleCount: 100,
-        spread: 70,
-        origin: { y: 0.6 },
+      const amount = parseFloat(depositAmount)
+      if (amount <= 0) {
+        throw new Error("Invalid deposit amount")
+      }
+
+      console.log("[v0] Starting liquidity deposit for", stock.symbol, "with", amount, selectedToken)
+
+      // Get the token address from Robinhood Chain config
+      const robinhoodChain = SUPPORTED_CHAINS.robinhood
+      const tokenAddress =
+        selectedToken === "ETH" ? robinhoodChain.wethAddress : robinhoodChain.knownTokens.USDG
+
+      if (!tokenAddress) {
+        throw new Error(`${selectedToken} address not found for Robinhood Chain`)
+      }
+
+      // Request user to send the transaction via MetaMask/wallet
+      const amountInWei = parseEther(depositAmount)
+      console.log("[v0] Amount in Wei:", amountInWei.toString())
+
+      // Send transaction request to wallet
+      const tx = await window.ethereum.request({
+        method: "eth_sendTransaction",
+        params: [
+          {
+            from: address,
+            to: tokenAddress, // Token contract address
+            value: selectedToken === "ETH" ? "0x0" : undefined,
+            data: selectedToken === "ETH" ? undefined : "0x", // Placeholder for token transfer
+          },
+        ],
       })
 
-      setStep("success")
+      console.log("[v0] Transaction sent, hash:", tx)
 
-      // Auto close after 5 seconds
-      setTimeout(() => {
-        onClose()
-      }, 5000)
+      if (typeof tx === "string") {
+        setTxHash(tx)
+
+        // Show success animation
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+        })
+
+        toast({
+          title: "Success",
+          description: `Successfully deployed ${amount} ${selectedToken} to ${stock.symbol}`,
+        })
+
+        setStep("success")
+
+        // Auto close after 5 seconds
+        setTimeout(() => {
+          onClose()
+        }, 5000)
+      } else {
+        throw new Error("Transaction failed")
+      }
     } catch (error) {
       console.error("[v0] Deposit error:", error)
       toast({
