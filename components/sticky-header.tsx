@@ -18,6 +18,7 @@ import { SUPPORTED_CHAINS } from "@/lib/constants"
 const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/pools", label: "Pools" },
+  { href: "/stocks", label: "Stocks" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/lp-manager", label: "LP Manager" },
   // { href: "/creators", label: "Creators" }, // Temporarily hidden
