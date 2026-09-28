@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
       if (poolHint) {
         // Check if the pool uses ZORA or USDC as the quote token
-        const poolData = await fetch(`https://api.dexscreener.com/latest/dex/pairs/base/${poolHint}`).then((r) =>
+        const poolData = await fetch(`https://api.dexscreener.com/latest/dex/pairs/robinhood/${poolHint}`).then((r) =>
           r.json(),
         )
         if (poolData?.pair) {
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     if (poolHint && poolHint !== "0x0000000000000000000000000000000000000000") {
       try {
         console.log("[v0] Fetching pool data from Dexscreener for hint:", poolHint)
-        const poolData = await fetch(`https://api.dexscreener.com/latest/dex/pairs/base/${poolHint}`).then((r) =>
+        const poolData = await fetch(`https://api.dexscreener.com/latest/dex/pairs/robinhood/${poolHint}`).then((r) =>
           r.json(),
         )
 
