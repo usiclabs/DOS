@@ -12,10 +12,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { ArrowRight, Wallet, CheckCircle2, Loader2, Info, ExternalLink, TrendingUp } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useWallet } from "@/contexts/wallet-context"
-import { ethers } from "ethers"
-import confetti from "canvas-confetti"
 import { ERC20_ABI } from "@/lib/token-factory-abi"
-import { formatEther, parseEther, encodeFunctionData } from "viem"
+import { formatEther, encodeFunctionData } from "viem"
 import { SUPPORTED_CHAINS } from "@/lib/constants"
 
 interface Stock {
@@ -30,6 +28,8 @@ interface Stock {
   liquidity?: number
   risk?: "low" | "medium" | "high"
   sector?: string
+  tokenAddress?: string
+  poolAddress?: string
 }
 
 interface StocksDepositModalProps {
@@ -37,9 +37,6 @@ interface StocksDepositModalProps {
   isOpen: boolean
   onClose: () => void
 }
-
-const WETH_ADDRESS = "0x4200000000000000000000000000000000000006"
-const USDG_ADDRESS = "0x50c5725949A6F0c72E6C4a641F14122319E53200"
 
 export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModalProps) {
   const { toast } = useToast()
@@ -52,7 +49,6 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
   const [ethTokenBalance, setEthTokenBalance] = useState<string>("0")
   const [usdgTokenBalance, setUsdgTokenBalance] = useState<string>("0")
   const [estimatedShares, setEstimatedShares] = useState<string | null>(null)
-  const [gasEstimate, setGasEstimate] = useState<string | null>(null)
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
 
   // Fetch token balances when modal opens or wallet changes
@@ -64,7 +60,6 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
       setIsProcessing(false)
       setTxHash(null)
       setEstimatedShares(null)
-      setGasEstimate(null)
       return
     }
 
@@ -135,13 +130,29 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
       return
     }
 
-    // Calculate estimated shares (mock calculation)
+    const selectedBalance = selectedToken === "ETH" ? ethTokenBalance : usdgTokenBalance
+    if (parseFloat(depositAmount) > parseFloat(selectedBalance)) {
+      toast({
+        title: "Insufficient balance",
+        description: `You have ${parseFloat(selectedBalance).toFixed(6)} ${selectedToken} available.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!stock?.tokenAddress) {
+      toast({
+        title: "Stock pool unavailable",
+        description: "This stock is not connected to a verified Robinhood Chain liquidity pool yet.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Calculate estimated shares from the selected deposit amount and live stock price
     const amount = parseFloat(depositAmount)
     const shares = (amount / (stock?.price || 100)).toFixed(6)
     setEstimatedShares(shares)
-
-    // Mock gas estimate
-    setGasEstimate("0.002")
 
     setStep("preview")
   }
@@ -171,58 +182,19 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
 
       console.log("[v0] Starting liquidity deposit for", stock.symbol, "with", amount, selectedToken)
 
-      // Get the token address from Robinhood Chain config
-      const robinhoodChain = SUPPORTED_CHAINS.robinhood
-      const tokenAddress =
-        selectedToken === "ETH" ? robinhoodChain.wethAddress : robinhoodChain.knownTokens.USDG
-
-      if (!tokenAddress) {
-        throw new Error(`${selectedToken} address not found for Robinhood Chain`)
+      const chain = SUPPORTED_CHAINS.robinhood
+      const chainId = await window.ethereum.request({ method: "eth_chainId" })
+      if (String(chainId).toLowerCase() !== chain.hexId.toLowerCase()) {
+        throw new Error(`Switch your wallet to ${chain.name} before depositing.`)
       }
 
-      // Request user to send the transaction via MetaMask/wallet
-      const amountInWei = parseEther(depositAmount)
-      console.log("[v0] Amount in Wei:", amountInWei.toString())
-
-      // Send transaction request to wallet
-      const tx = await window.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [
-          {
-            from: address,
-            to: tokenAddress, // Token contract address
-            value: selectedToken === "ETH" ? "0x0" : undefined,
-            data: selectedToken === "ETH" ? undefined : "0x", // Placeholder for token transfer
-          },
-        ],
-      })
-
-      console.log("[v0] Transaction sent, hash:", tx)
-
-      if (typeof tx === "string") {
-        setTxHash(tx)
-
-        // Show success animation
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-        })
-
-        toast({
-          title: "Success",
-          description: `Successfully deployed ${amount} ${selectedToken} to ${stock.symbol}`,
-        })
-
-        setStep("success")
-
-        // Auto close after 5 seconds
-        setTimeout(() => {
-          onClose()
-        }, 5000)
-      } else {
-        throw new Error("Transaction failed")
+      if (!stock.tokenAddress || !stock.poolAddress) {
+        throw new Error("This stock does not have a verified liquidity pool configured yet.")
       }
+
+      // Never send a transfer directly to a token contract. A real deposit must
+      // call the configured position manager/router with validated pool data.
+      throw new Error("Liquidity deployment is temporarily unavailable until this stock's verified pool is enabled.")
     } catch (error) {
       console.error("[v0] Deposit error:", error)
       toast({
@@ -369,7 +341,7 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
                   <CardContent className="pt-4 flex gap-3">
                     <Info className="h-5 w-5 text-accent flex-shrink-0 mt-0.5" />
                     <div className="text-sm text-foreground/80">
-                      <p>Deposits are managed through Uniswap V3 concentrated liquidity positions.</p>
+                      <p>Deposits are enabled only for stocks with a verified Robinhood Chain pool and contract configuration.</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -413,7 +385,7 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
                     <Separator className="bg-white/5" />
                     <div className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Gas Fee</span>
-                      <span className="font-semibold">~{gasEstimate} ETH</span>
+                      <span className="font-semibold">Wallet estimate</span>
                     </div>
                   </CardContent>
                 </Card>
