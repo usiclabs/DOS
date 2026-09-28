@@ -41,7 +41,13 @@ export async function GET(request: Request) {
     }
 
     if (minNetApy > 0) {
-      pools = pools.filter((pool) => pool.netApy >= minNetApy)
+      const highApyPools = pools.filter((pool) => pool.netApy >= minNetApy)
+      // Keep Robinhood discovery useful when a provider omits fee tiers and
+      // the derived APY is temporarily zero: rank liquid pools instead of
+      // showing an empty state while preserving the high-APY preference.
+      pools = highApyPools.length > 0
+        ? highApyPools
+        : pools.filter((pool) => pool.liquidity >= 1000).sort((a, b) => b.netApy - a.netApy)
     }
 
     if (poolType && poolType !== "all") {
