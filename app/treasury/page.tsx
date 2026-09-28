@@ -101,7 +101,7 @@ export default function TreasuryPage() {
           <DeusTicker />
         </ErrorBoundary>
 
-        <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black p-6">
+        <div className="min-h-screen bg-background p-4 sm:p-6">
           <div className="max-w-7xl mx-auto">
             <LoadingSkeleton />
           </div>
@@ -118,7 +118,7 @@ export default function TreasuryPage() {
           <DeusTicker />
         </ErrorBoundary>
 
-        <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black p-6">
+        <div className="min-h-screen bg-background p-4 sm:p-6">
           <div className="max-w-7xl mx-auto">
             <ErrorState title="Treasury Unavailable" message={error} onRetry={() => window.location.reload()} />
           </div>
@@ -134,29 +134,7 @@ export default function TreasuryPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-black via-orange-950/10 to-black p-4 md:p-6">
-        {/* Floating gradient orbs */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <motion.div
-            className="absolute top-1/4 left-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl"
-            animate={{
-              x: [0, 100, 0],
-              y: [0, -50, 0],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{ duration: 20, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-red-500/10 rounded-full blur-3xl"
-            animate={{
-              x: [0, -100, 0],
-              y: [0, 50, 0],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{ duration: 25, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
-          />
-        </div>
-
+      <div className="relative min-h-screen overflow-hidden bg-background p-4 md:p-6">
         <div className="max-w-7xl mx-auto space-y-6 md:space-y-8 relative z-10">
           <motion.div
             initial="hidden"
@@ -173,23 +151,23 @@ export default function TreasuryPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <Sparkles className="w-6 h-6 text-orange-400" />
-                  <span className="text-orange-400 font-semibold">Treasury Overview</span>
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+                  <span className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Protocol treasury / live reserves</span>
                 </motion.div>
-                <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-white via-orange-200 to-orange-400 bg-clip-text text-transparent">
+                <h1 className="mb-4 text-4xl font-semibold tracking-tight text-foreground md:text-6xl">
                   DEUS Treasury
                 </h1>
                 <p className="text-gray-300 text-base md:text-lg leading-relaxed max-w-2xl">
-                  Real-time holdings and total value of the DEUS treasury wallet on Base chain
+                  Real-time holdings and reserve value for the DEUS treasury wallet on Robinhood Chain
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="outline" className="glass-card border-green-500/30 text-green-300 px-4 py-2">
+                <Badge variant="outline" className="border-primary/30 bg-primary/10 px-4 py-2 text-primary">
                   <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
                   Live Data
                 </Badge>
-                <Badge variant="outline" className="glass-card border-orange-500/30 text-orange-300 px-4 py-2">
-                  Base Chain
+                <Badge variant="outline" className="border-border bg-secondary/60 px-4 py-2 text-foreground">
+                  Robinhood Chain
                 </Badge>
               </div>
             </div>
@@ -203,8 +181,8 @@ export default function TreasuryPage() {
             className="grid grid-cols-1 md:grid-cols-3 gap-4"
           >
             <motion.div whileHover={{ scale: 1.02, y: -4 }} transition={{ duration: 0.2 }}>
-              <Card className="glass-card backdrop-blur-xl border-green-500/20 hover:border-green-500/40 transition-all duration-300 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <Card className="glass-card relative overflow-hidden border-primary/25 bg-card/80 transition-all duration-200 hover:border-primary/45 hover:bg-card/95 group">
+                <div className="absolute inset-0 bg-primary/[0.035] opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center text-gray-300">
                     <motion.div
@@ -275,17 +253,17 @@ export default function TreasuryPage() {
           </motion.div>
 
           <motion.div initial="hidden" animate="visible" variants={fadeInUp} transition={{ duration: 0.6, delay: 0.3 }}>
-            <Card className="glass-card backdrop-blur-xl border-white/10 hover:border-white/20 transition-all duration-300">
+            <Card className="glass-card border-border/80 bg-card/80 transition-colors duration-200 hover:border-primary/30">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-xl md:text-2xl font-bold text-white flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground md:text-2xl">
                       <Sparkles className="w-5 h-5 text-orange-400" />
                       Token Holdings
                     </CardTitle>
                     <p className="text-sm text-gray-400 mt-1">All tokens held by the treasury wallet</p>
                   </div>
-                  <Badge className="bg-orange-500/20 text-orange-300 border-orange-500/30 px-3 py-1">
+                  <Badge className="border-primary/25 bg-primary/10 px-3 py-1 text-primary">
                     {data?.holdings.length || 0} Tokens
                   </Badge>
                 </div>
@@ -295,7 +273,7 @@ export default function TreasuryPage() {
                 <div className="hidden md:block overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-accent/20 hover:bg-transparent">
+                      <TableRow className="border-border/70 hover:bg-transparent">
                         <TableHead className="text-gray-300 font-semibold">Token</TableHead>
                         <TableHead className="text-gray-300 font-semibold">Symbol</TableHead>
                         <TableHead className="text-gray-300 text-right font-semibold">Balance</TableHead>
@@ -310,7 +288,7 @@ export default function TreasuryPage() {
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className="border-accent/20 hover:bg-white/5 transition-colors group"
+                          className="border-border/60 transition-colors hover:bg-secondary/40 group"
                         >
                           <TableCell className="font-medium text-white">{holding.name}</TableCell>
                           <TableCell>
@@ -348,7 +326,7 @@ export default function TreasuryPage() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.05 }}
                       whileHover={{ scale: 1.02 }}
-                      className="glass-card p-4 rounded-lg border-white/5 hover:border-orange-500/30 transition-all"
+                      className="glass-card rounded-xl border-border/70 bg-secondary/30 p-4 transition-colors hover:border-primary/35"
                     >
                       <div className="flex items-start justify-between mb-3">
                         <div>
@@ -396,7 +374,7 @@ export default function TreasuryPage() {
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.6, delay: 0.4 }}
-            className="glass-card p-4 rounded-xl backdrop-blur-xl border-white/10"
+            className="glass-card rounded-xl border-border/70 bg-card/60 p-4"
           >
             <div className="flex items-center justify-between text-sm text-gray-400 flex-wrap gap-2">
               <div className="flex items-center space-x-2">

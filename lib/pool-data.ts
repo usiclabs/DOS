@@ -40,6 +40,7 @@ const DEUS_CONTRACT = "0xECE5d962d17901ef200Da050C7c74AB45C96Db07"
 
 // Well-known Robinhood Chain (chainId 4663) pool pair addresses on Uniswap V3
 // These are high-volume pools on the chain. We query DexScreener by chain slug.
+const ROBINHOOD_CHAIN_SLUGS = new Set(["robinhood", "robinhood-chain", "4663"])
 const ROBINHOOD_CHAIN_SLUG = "robinhood"
 
 function mapPairToPoolData(pair: any, chainOverride?: string): PoolData {
@@ -97,7 +98,7 @@ function mapPairToPoolData(pair: any, chainOverride?: string): PoolData {
     feeApr,
     netApy,
     feeTier: pair.feeTier || "0.30%",
-    poolType: pair.dexId?.includes("uniswap-v3") ? "v3" : isDeusPool ? "xlp" : "v2",
+    poolType: pair.dexId?.includes("uniswap-v4") ? "v3" : pair.dexId?.includes("uniswap-v3") ? "v3" : isDeusPool ? "xlp" : "v2",
     isDeusPool,
     volatility,
     lastUpdated: new Date().toISOString(),
@@ -114,23 +115,20 @@ function mapPairToPoolData(pair: any, chainOverride?: string): PoolData {
 export async function fetchRobinhoodPools(): Promise<PoolData[]> {
   try {
     // Search DexScreener for high-volume pools on Robinhood Chain
-    const [ethResponse, usdgResponse] = await Promise.all([
-      fetch(`${DEXSCREENER_SEARCH_URL}?q=WETH`, {
-        headers: { "User-Agent": "D.O.S./1.0" },
-        next: { revalidate: 60 },
-      }),
-      fetch(`${DEXSCREENER_SEARCH_URL}?q=USDG`, {
-        headers: { "User-Agent": "D.O.S./1.0" },
-        next: { revalidate: 60 },
-      }),
-    ])
+    const searchTerms = ["WETH", "ETH", "USDG", "robinhood"]
+    const responses = await Promise.all(
+      searchTerms.map((term) =>
+        fetch(`${DEXSCREENER_SEARCH_URL}?q=${encodeURIComponent(term)}`, {
+          headers: { "User-Agent": "D.O.S./1.0" },
+          next: { revalidate: 60 },
+        }),
+      ),
+    )
+    const searchResults = await Promise.all(
+      responses.map((response) => (response.ok ? response.json() : { pairs: [] })),
+    )
 
-    const [ethData, usdgData] = await Promise.all([
-      ethResponse.ok ? ethResponse.json() : { pairs: [] },
-      usdgResponse.ok ? usdgResponse.json() : { pairs: [] },
-    ])
-
-    const allPairs = [...(ethData.pairs || []), ...(usdgData.pairs || [])]
+    const allPairs = searchResults.flatMap((result) => result.pairs || [])
 
     // Deduplicate
     const uniquePairs = allPairs.filter(
@@ -139,7 +137,7 @@ export async function fetchRobinhoodPools(): Promise<PoolData[]> {
 
     // Filter to Robinhood Chain only (chainId === "robinhood")
     const rhcPairs = uniquePairs
-      .filter((pair: any) => pair.chainId === ROBINHOOD_CHAIN_SLUG)
+      .filter((pair: any) => ROBINHOOD_CHAIN_SLUGS.has(String(pair.chainId).toLowerCase()))
       .filter((pair: any) => (pair.liquidity?.usd || 0) > 1000) // Min $1k TVL
       .sort((a: any, b: any) => (b.volume?.h24 || 0) - (a.volume?.h24 || 0))
       .slice(0, 50)

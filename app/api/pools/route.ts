@@ -19,10 +19,11 @@ export async function GET(request: Request) {
     const sortOrder = searchParams.get("sortOrder") || "desc"
     const filterDeusOnly = searchParams.get("deusOnly") === "true"
     const minTvl = Number.parseFloat(searchParams.get("minTvl") || "0")
-    const minVolume = Number.parseFloat(searchParams.get("minVolume") || "0")
-    const poolType = searchParams.get("poolType")
+  const minVolume = Number.parseFloat(searchParams.get("minVolume") || "0")
+  const minNetApy = Number.parseFloat(searchParams.get("minNetApy") || "0")
+  const poolType = searchParams.get("poolType")
     const priorityDexOnly = searchParams.get("priorityDexOnly") === "true"
-    const chain = searchParams.get("chain") ?? "base"
+    const chain = searchParams.get("chain") ?? "robinhood"
 
     let pools = chain === "robinhood" ? await fetchRobinhoodPools() : await fetchDexscreenerPools()
 
@@ -37,6 +38,16 @@ export async function GET(request: Request) {
 
     if (minVolume > 0) {
       pools = pools.filter((pool) => pool.volume24h >= minVolume)
+    }
+
+    if (minNetApy > 0) {
+      const highApyPools = pools.filter((pool) => pool.netApy >= minNetApy)
+      // Keep Robinhood discovery useful when a provider omits fee tiers and
+      // the derived APY is temporarily zero: rank liquid pools instead of
+      // showing an empty state while preserving the high-APY preference.
+      pools = highApyPools.length > 0
+        ? highApyPools
+        : pools.filter((pool) => pool.liquidity >= 1000).sort((a, b) => b.netApy - a.netApy)
     }
 
     if (poolType && poolType !== "all") {

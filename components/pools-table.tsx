@@ -137,7 +137,7 @@ const TableRowSkeleton = () => (
 )
 
 export function PoolsTable() {
-  const [activeChain, setActiveChain] = useState<"base" | "robinhood">("base")
+  const [activeChain, setActiveChain] = useState<"base" | "robinhood">("robinhood")
   const [sortBy, setSortBy] = useState("netApy")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [deusOnly, setDeusOnly] = useState(false)
@@ -182,6 +182,7 @@ export function PoolsTable() {
     ...(priorityDexOnly && { priorityDexOnly: "true" }),
     ...(minTvl && { minTvl }),
     ...(minVolume && { minVolume }),
+    minNetApy: "10",
     ...(poolType !== "all" && { poolType }),
   })
 
@@ -244,16 +245,14 @@ export function PoolsTable() {
   }
 
   const handleDeploy = (pool: any, pairingToken?: string) => {
-    let detectedPairingToken: "DEUS" | "ETH" | "USDC" | "ZORA" | undefined = undefined
+    let detectedPairingToken: "ETH" | "USDG" | undefined = undefined
 
-    if (pairingToken) {
-      detectedPairingToken = pairingToken as "DEUS" | "ETH" | "USDC" | "ZORA"
+    if (pairingToken === "ETH" || pairingToken === "USDG") {
+      detectedPairingToken = pairingToken
     } else if (pool.quoteToken?.symbol) {
       const quoteSymbol = pool.quoteToken.symbol.toUpperCase()
-      if (quoteSymbol === "DEUS") detectedPairingToken = "DEUS"
-      else if (quoteSymbol === "USDC") detectedPairingToken = "USDC"
-      else if (quoteSymbol === "ZORA") detectedPairingToken = "ZORA"
-      else if (quoteSymbol === "WETH" || quoteSymbol === "ETH") detectedPairingToken = "ETH"
+if (quoteSymbol === "USDG") detectedPairingToken = "USDG"
+        else if (quoteSymbol === "WETH" || quoteSymbol === "ETH") detectedPairingToken = "ETH"
     }
 
     setSelectedPool(pool)
@@ -290,9 +289,7 @@ export function PoolsTable() {
 
     const pairingOptions = [
       { value: "ETH", label: "ETH", color: "from-blue-500 to-cyan-500" },
-      { value: "DEUS", label: "DEUS", color: "from-orange-500 to-red-500" },
-      { value: "USDC", label: "USDC", color: "from-green-500 to-emerald-500" },
-      { value: "ZORA", label: "ZORA", color: "from-purple-500 to-pink-500" },
+      { value: "USDG", label: "USDG", color: "from-emerald-500 to-teal-400" },
     ]
 
     return (
@@ -313,8 +310,8 @@ export function PoolsTable() {
         }}
         className={`glass-card rounded-2xl border overflow-hidden relative group cursor-pointer ${
           isPriority
-            ? "border-accent/40 shadow-xl shadow-accent/20 bg-gradient-to-br from-accent/10 via-accent/5 to-transparent hover:shadow-2xl hover:shadow-accent/30"
-            : "border-white/10 hover:border-accent/30 shadow-lg hover:shadow-2xl hover:shadow-white/10"
+            ? "border-primary/40 bg-card/90 shadow-[0_18px_48px_rgba(0,0,0,0.3)] hover:border-primary/60"
+            : "border-border/80 bg-card/75 shadow-[0_14px_38px_rgba(0,0,0,0.2)] hover:border-primary/40"
         }`}
         onClick={() => handleDeploy(pool, selectedPairing)}
       >
@@ -392,7 +389,7 @@ export function PoolsTable() {
           </div>
 
           {/* Main APY Display */}
-          <div className="mb-4 text-center py-6 px-4 rounded-xl bg-gradient-to-br from-green-500/10 to-emerald-500/10 border border-green-500/20 hover:border-green-500/40 transition-all duration-300">
+          <div className="mb-4 rounded-xl border border-primary/25 bg-primary/[0.06] px-4 py-5 text-center transition-colors duration-200 hover:border-primary/40">
             <div className="text-sm text-green-400 mb-2 flex items-center justify-center gap-2">
               <Sparkles className="h-4 w-4" />
               Net APY
@@ -411,7 +408,7 @@ export function PoolsTable() {
           </div>
 
           {/* Metrics Grid */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="mb-4 grid grid-cols-3 gap-2">
             <div className="p-3 rounded-lg bg-white/5 border border-white/10 hover:border-accent/30 transition-colors">
               <div className="text-xs text-gray-400 mb-1 flex items-center gap-1">
                 <TrendingUp className="h-3 w-3" />
@@ -430,7 +427,7 @@ export function PoolsTable() {
           </div>
 
           {/* Stats Row */}
-          <div className="flex items-center justify-between mb-4 text-sm">
+          <div className="mb-4 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
             <div className="flex items-center gap-2">
               <span className="text-gray-400">Volatility:</span>
               <Badge
@@ -458,7 +455,7 @@ export function PoolsTable() {
 
           <div className="mb-3">
             <div className="text-xs text-gray-400 mb-2 text-center">Select Pairing Asset</div>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {pairingOptions.map((option) => (
                 <motion.button
                   key={option.value}
@@ -526,9 +523,7 @@ export function PoolsTable() {
 
     const pairingOptions = [
       { value: "ETH", label: "ETH", color: "from-blue-500 to-cyan-500" },
-      { value: "DEUS", label: "DEUS", color: "from-orange-500 to-red-500" },
-      { value: "USDC", label: "USDC", color: "from-green-500 to-emerald-500" },
-      { value: "ZORA", label: "ZORA", color: "from-purple-500 to-pink-500" },
+      { value: "USDG", label: "USDG", color: "from-emerald-500 to-teal-400" },
     ]
 
     return (
@@ -655,15 +650,17 @@ export function PoolsTable() {
           </motion.div>
         </SheetTrigger>
 
-        <SheetContent side="bottom" className="h-[85vh] backdrop-blur-2xl bg-black/80 border-t border-white/10">
-          <SheetHeader>
-            <SheetTitle className="text-xl">
-              {pool.baseToken.symbol}/{pool.quoteToken.symbol}
+        <SheetContent side="bottom" className="h-[92vh] overflow-y-auto border-t border-border/80 bg-background/95 backdrop-blur-2xl sm:h-auto sm:max-h-[92vh] sm:max-w-[860px] sm:rounded-t-xl">
+          <SheetHeader className="border-b border-border/70 pb-4">
+            <SheetTitle className="text-xl font-semibold tracking-tight">
+              Provide Liquidity · {pool.baseToken.symbol}/{pool.quoteToken.symbol}
             </SheetTitle>
+            <p className="text-sm text-muted-foreground">Review pool health, yield, and pairing options before deploying capital.</p>
           </SheetHeader>
 
-          <div className="mt-6 space-y-6 overflow-y-auto h-[calc(85vh-120px)] pb-6">
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="space-y-6 pb-6 pt-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border-primary/25 bg-primary/10 text-primary" variant="outline">Robinhood Chain</Badge>
               <Badge variant={pool.isDeusPool ? "default" : "secondary"}>
                 {pool.isDeusPool ? "DEUS Pool" : pool.dexId}
               </Badge>
@@ -708,8 +705,9 @@ export function PoolsTable() {
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-accent/20">
-                  <CardContent className="pt-4">
+                <Card className="border-border/80 bg-card/70">
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">Fee earnings</CardTitle><CardDescription>Estimated fee capture for this pool</CardDescription></CardHeader>
+                  <CardContent className="pt-2">
                     <div className="text-xs text-white/90 mb-1">Fee APR</div>
                     <div className="text-2xl font-bold text-white">{safeToFixed(pool.feeApr, 2)}%</div>
                     <div className="text-xs text-gray-100 mt-1">Fee Earnings</div>
@@ -775,9 +773,9 @@ export function PoolsTable() {
                 </CardContent>
               </Card>
 
-              <Card className="glass-card border-yellow-500/20">
+              <Card className="border-border/80 bg-card/70">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2 text-yellow-400">
+                  <CardTitle className="flex items-center gap-2 text-sm text-foreground">
                     <AlertTriangle className="h-4 w-4" />
                     Risk Assessment
                   </CardTitle>
@@ -806,9 +804,10 @@ export function PoolsTable() {
               </Card>
             </div>
 
-            <Card className="glass-card border-accent/20">
+            <Card className="border-primary/25 bg-primary/[0.04]">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Select Pairing Asset</CardTitle>
+                <CardDescription>Choose the asset to pair with your liquidity position.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
@@ -821,8 +820,8 @@ export function PoolsTable() {
                       }}
                       className={`py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
                         selectedPairing === option.value
-                          ? `bg-gradient-to-r ${option.color} text-white shadow-lg`
-                          : "bg-white/5 text-gray-400 border border-white/10"
+                          ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+                          : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
                       }`}
                     >
                       {option.label}
@@ -834,7 +833,7 @@ export function PoolsTable() {
 
             <Button
               size="lg"
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+              className="w-full bg-primary text-primary-foreground shadow-[0_10px_28px_rgba(0,0,0,0.2)] hover:bg-primary/90"
               onClick={() => {
                 setIsSheetOpen(false)
                 handleDeploy(pool, selectedPairing)
