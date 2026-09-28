@@ -34,7 +34,7 @@ export default function PoolsPage() {
   const [selectedPool, setSelectedPool] = useState<any | null>(null)
   const [isDeployModalOpen, setIsDeployModalOpen] = useState(false)
 
-  const { data: poolStats } = useSWR("/api/pools?limit=100", fetcher, {
+  const { data: poolStats } = useSWR("/api/pools?limit=100&chain=robinhood&minNetApy=10&sortBy=netApy&sortOrder=desc", fetcher, {
     refreshInterval: 300000,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -42,7 +42,7 @@ export default function PoolsPage() {
     keepPreviousData: true,
   })
 
-  const { data: deusPoolStats } = useSWR("/api/pools?deusOnly=true&limit=100", fetcher, {
+  const { data: deusPoolStats } = useSWR("/api/pools?deusOnly=true&limit=100&chain=robinhood&minNetApy=10&sortBy=netApy&sortOrder=desc", fetcher, {
     refreshInterval: 300000,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -50,7 +50,7 @@ export default function PoolsPage() {
     keepPreviousData: true,
   })
 
-  const { data: creatorCoins } = useSWR("/api/zora/creators?filter=trending&limit=2", fetcher, {
+  const { data: creatorCoins } = useSWR(null, fetcher, {
     refreshInterval: 300000,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
@@ -188,7 +188,7 @@ export default function PoolsPage() {
               Pool Discovery
             </h1>
             <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
-              Scan verified liquidity opportunities, compare live pool health, and move from signal to position with confidence.
+              Scan Robinhood Chain pools ranked by net APY, compare live pool health, and move from signal to position with confidence.
             </p>
           </motion.div>
 
@@ -214,7 +214,7 @@ export default function PoolsPage() {
                 icon: TrendingUp,
                 value: `${avgApy}%`,
                 label: "Average APY",
-                sublabel: "Across all pools",
+                sublabel: "Robinhood Chain · 10%+ net APY",
                 color: "green",
               },
               {

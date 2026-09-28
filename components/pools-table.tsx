@@ -137,7 +137,7 @@ const TableRowSkeleton = () => (
 )
 
 export function PoolsTable() {
-  const [activeChain, setActiveChain] = useState<"base" | "robinhood">("base")
+  const [activeChain, setActiveChain] = useState<"base" | "robinhood">("robinhood")
   const [sortBy, setSortBy] = useState("netApy")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [deusOnly, setDeusOnly] = useState(false)
@@ -182,6 +182,7 @@ export function PoolsTable() {
     ...(priorityDexOnly && { priorityDexOnly: "true" }),
     ...(minTvl && { minTvl }),
     ...(minVolume && { minVolume }),
+    minNetApy: "10",
     ...(poolType !== "all" && { poolType }),
   })
 
