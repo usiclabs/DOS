@@ -190,7 +190,7 @@ function TokenBalanceCard({
   const totalValue = ethValue + totalTokenValue
 
   return (
-    <Card className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_32px_rgba(255,107,53,0.2)] transition-all duration-500 group">
+    <Card className="relative overflow-hidden border-border/80 bg-card/80 shadow-[0_14px_42px_rgba(0,0,0,0.2)] transition-shadow duration-200 hover:shadow-[0_18px_52px_rgba(0,0,0,0.3)] group">
       <motion.div
         className="absolute -top-20 -right-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl"
         animate={{
@@ -573,7 +573,7 @@ export default function PortfolioPage() {
             transition={{ duration: 0.6 }}
             className="w-full max-w-xl"
           >
-            <Card className="glass-card relative overflow-hidden border-2 border-primary/20 shadow-2xl shadow-primary/10">
+            <Card className="relative overflow-hidden border-border/80 bg-card/85 shadow-[0_24px_80px_rgba(0,0,0,0.34)]">
               <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 {[...Array(30)].map((_, i) => (
                   <motion.div
@@ -662,15 +662,7 @@ export default function PortfolioPage() {
 
                 <div className="relative mb-4">
                   <motion.h2
-                    className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
-                    animate={{
-                      backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                    }}
-                    transition={{
-                      duration: 5,
-                      repeat: Number.POSITIVE_INFINITY,
-                      ease: "linear",
-                    }}
+                    className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl"
                   >
                     Portfolio Management
                   </motion.h2>
@@ -694,13 +686,13 @@ export default function PortfolioPage() {
                   transition={{ delay: 0.2 }}
                   className="text-gray-300 text-lg mb-6 max-w-md mx-auto leading-relaxed"
                 >
-                  Connect your wallet to view your liquidity positions and track performance across the DEUS ecosystem
+                  Connect a wallet to see your Robinhood Chain positions, balances, earned fees, and performance in one place.
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
                   <Button
                     onClick={() => connectWallet("metamask")}
-                    className="btn-premium relative px-8 py-4 text-base rounded-2xl font-medium overflow-hidden group"
+                    className="relative overflow-hidden rounded-xl border border-primary/30 bg-primary px-8 py-4 text-base font-medium text-primary-foreground shadow-[0_10px_30px_rgba(0,0,0,0.24)] transition-colors hover:bg-primary/90 group"
                     size="lg"
                   >
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
@@ -713,7 +705,7 @@ export default function PortfolioPage() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.5 }}
-                  className="mt-6 inline-flex items-center gap-3 px-6 py-3 rounded-full bg-primary/10 border border-primary/30 backdrop-blur-sm shadow-lg shadow-primary/10"
+                  className="mt-6 inline-flex items-center gap-3 rounded-lg border border-border bg-secondary/50 px-4 py-3"
                 >
                   <motion.span
                     animate={{
@@ -763,7 +755,7 @@ export default function PortfolioPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-gradient-to-br from-black via-primary/5 to-black p-3 sm:p-6 relative overflow-hidden">
+      <div className="relative min-h-screen overflow-hidden bg-background p-3 sm:p-6">
         <motion.div
           className="absolute top-20 left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl"
           animate={{
@@ -800,15 +792,7 @@ export default function PortfolioPage() {
           >
             <div className="w-full sm:w-auto">
               <motion.h1
-                className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-3 bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent bg-[length:200%_100%]"
-                animate={{
-                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-                }}
-                transition={{
-                  duration: 5,
-                  repeat: Number.POSITIVE_INFINITY,
-                  ease: "linear",
-                }}
+                className="mb-3 text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl"
               >
                 Portfolio
               </motion.h1>
@@ -831,7 +815,7 @@ export default function PortfolioPage() {
                 size="sm"
                 onClick={handleManualRefresh}
                 disabled={isLoading}
-                className="relative overflow-hidden bg-gradient-to-r from-white/5 to-white/10 border-white/20 hover:border-primary/50 transition-all duration-300 flex-1 sm:flex-none group"
+                className="relative overflow-hidden border-border bg-secondary/60 transition-all duration-200 hover:border-primary/50 hover:bg-secondary flex-1 sm:flex-none group"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
                 <RefreshCw className={`h-4 w-4 sm:mr-2 relative z-10 ${isLoading ? "animate-spin" : ""}`} />
@@ -841,7 +825,7 @@ export default function PortfolioPage() {
                 variant="outline"
                 size="sm"
                 onClick={disconnectWallet}
-                className="bg-gradient-to-r from-red-500/10 to-red-500/5 border-red-500/30 hover:border-red-500/50 text-red-300 transition-all duration-300 flex-1 sm:flex-none"
+                className="border-destructive/30 bg-destructive/10 text-destructive hover:border-destructive/60 hover:bg-destructive/15 transition-all duration-200 flex-1 sm:flex-none"
               >
                 <span className="text-xs sm:text-sm">Disconnect</span>
               </Button>
@@ -856,8 +840,8 @@ export default function PortfolioPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               className="mb-8"
             >
-              <div className="glass-card p-4 rounded-xl">
-                <div className="flex items-center justify-between">
+              <div className="glass-card rounded-xl border-border/70 bg-card/70 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex items-center space-x-4">
                     <div className="flex items-center space-x-2">
                       <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse shadow-lg shadow-green-400/50"></div>
@@ -879,8 +863,7 @@ export default function PortfolioPage() {
                   </div>
                   <div className="mt-3 pt-3 border-t border-white/5">
                     <p className="text-xs text-gray-400">
-                      <span className="text-accent-light font-medium">Data Source:</span> Fetched directly from Base
-                      blockchain via BlastAPI • No mock or cached data • Updates every 60 seconds
+                      <span className="text-accent-light font-medium">Data Source:</span> Fetched directly from Robinhood Chain via the configured data provider • No mock or cached data • Updates every 60 seconds
                     </p>
                   </div>
                 </div>
@@ -926,7 +909,7 @@ export default function PortfolioPage() {
           ) : data ? (
             <>
               <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-                <Card className="relative overflow-hidden bg-gradient-to-br from-primary/20 via-card/80 to-card/40 border border-primary/30 backdrop-blur-xl shadow-[0_8px_32px_rgba(255,107,53,0.3)]">
+                <Card className="relative overflow-hidden border-primary/30 bg-card/90 shadow-[0_18px_60px_rgba(0,0,0,0.26)]">
                   <motion.div
                     className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/0"
                     animate={{
@@ -1002,7 +985,7 @@ export default function PortfolioPage() {
                 </motion.div>
 
                 <motion.div variants={fadeInUp} className="lg:col-span-1">
-                  <Card className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_32px_rgba(34,197,94,0.2)] transition-all duration-500 h-full">
+                  <Card className="relative h-full overflow-hidden border-border/80 bg-card/80 shadow-[0_14px_42px_rgba(0,0,0,0.2)] transition-shadow duration-200 hover:shadow-[0_18px_52px_rgba(0,0,0,0.3)]">
                     <motion.div
                       className="absolute -top-20 -right-20 w-40 h-40 bg-green-500/20 rounded-full blur-3xl"
                       animate={{
@@ -1061,7 +1044,7 @@ export default function PortfolioPage() {
                 </motion.div>
 
                 <motion.div variants={fadeInUp} className="lg:col-span-1">
-                  <Card className="relative overflow-hidden bg-gradient-to-br from-card/80 to-card/40 border border-white/10 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_32px_rgba(168,85,247,0.2)] transition-all duration-500 h-full">
+                  <Card className="relative h-full overflow-hidden border-border/80 bg-card/80 shadow-[0_14px_42px_rgba(0,0,0,0.2)] transition-shadow duration-200 hover:shadow-[0_18px_52px_rgba(0,0,0,0.3)]">
                     <motion.div
                       className="absolute -top-20 -left-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl"
                       animate={{
