@@ -650,15 +650,15 @@ function PoolDetailsDrawer({
               <AreaChart data={chartData} margin={{ top: 8, right: 4, left: -26, bottom: 0 }}>
                 <defs>
                   <linearGradient id="poolPriceFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.08)" />
                 <XAxis dataKey="label" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value).toFixed(2)}`} />
                 <Tooltip contentStyle={{ background: "#101014", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontSize: 11 }} formatter={(value: number, name: string) => [name === "price" ? `$${value}` : formatCurrency(value), name === "price" ? "Price" : "Volume"]} />
-                <Area type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#poolPriceFill)" />
+                <Area type="monotone" dataKey="price" stroke="var(--primary)" strokeWidth={2} fill="url(#poolPriceFill)" />
               </AreaChart>
             </ResponsiveContainer>
           </div>

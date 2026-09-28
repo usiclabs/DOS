@@ -77,6 +77,12 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
     : []
   const rangeWidth = range[1] - range[0]
   const activeLiquidity = Math.max(8, Math.min(100, 100 - Math.abs(100 - (range[0] + range[1]) / 2) * 0.7))
+  const formatCompactMetric = (value: string | number | null | undefined) => {
+    if (value === null || value === undefined || value === "") return "—"
+    const numericValue = Number(value)
+    if (!Number.isFinite(numericValue)) return "—"
+    return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(numericValue)
+  }
 
   // Fetch token balances when modal opens or wallet changes
   useEffect(() => {
@@ -356,12 +362,12 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
                     <CardContent className="h-52 pt-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} margin={{ top: 8, right: 4, left: -28, bottom: 0 }}>
-                          <defs><linearGradient id="stockPriceFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient></defs>
+                          <defs><linearGradient id="stockPriceFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} /><stop offset="100%" stopColor="var(--primary)" stopOpacity={0} /></linearGradient></defs>
                           <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.08)" />
                           <XAxis dataKey="label" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} />
                           <YAxis tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
                           <Tooltip contentStyle={{ background: "#101014", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontSize: 11 }} formatter={(value: number) => [`$${value}`, "Price"]} />
-                          <Area type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#stockPriceFill)" />
+                          <Area type="monotone" dataKey="price" stroke="var(--primary)" strokeWidth={2} fill="url(#stockPriceFill)" />
                         </AreaChart>
                       </ResponsiveContainer>
                     </CardContent>
@@ -372,7 +378,7 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
                       <div><span className="text-muted-foreground">TVL</span><strong className="mt-1 block text-white">${(stock.tvl ?? 0).toLocaleString()}</strong></div>
                       <div><span className="text-muted-foreground">24h volume</span><strong className="mt-1 block text-white">${(stock.volume24h ?? 0).toLocaleString()}</strong></div>
                       <div><span className="text-muted-foreground">Fee tier</span><strong className="mt-1 block text-white">{stock.poolFees?.[selectedToken] ?? "—"}</strong></div>
-                      <div><span className="text-muted-foreground">Liquidity</span><strong className="mt-1 block text-white">{stock.poolLiquidity ? `${Number(stock.poolLiquidity).toLocaleString()}` : "—"}</strong></div>
+                      <div><span className="text-muted-foreground">Liquidity</span><strong className="mt-1 block truncate text-white" title={stock.poolLiquidity ?? undefined}>{formatCompactMetric(stock.poolLiquidity)}</strong></div>
                       <div className="col-span-2 border-t border-white/10 pt-3"><span className="text-muted-foreground">Pool address</span><strong className="mt-1 block truncate font-mono text-[10px] text-white">{stock.poolAddress ?? "Pool unavailable"}</strong></div>
                     </CardContent>
                   </Card>
