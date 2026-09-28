@@ -257,9 +257,8 @@ export default function SwapPage() {
               const isSelected = currentToken?.address === token.address
               const colorMap: Record<string, string> = {
                 ETH: "from-blue-500/20 to-blue-600/10 border-blue-500/30 hover:border-blue-500/50",
-                DEUS: "from-primary/20 to-primary/10 border-primary/30 hover:border-primary/50",
-                USDC: "from-green-500/20 to-green-600/10 border-green-500/30 hover:border-green-500/50",
-                ZORA: "from-purple-500/20 to-purple-600/10 border-purple-500/30 hover:border-purple-500/50",
+                WETH: "from-sky-500/20 to-cyan-600/10 border-cyan-500/30 hover:border-cyan-500/50",
+                USDG: "from-primary/20 to-primary/10 border-primary/30 hover:border-primary/50",
               }
               const colorClass =
                 colorMap[token.symbol] || "from-white/10 to-white/5 border-white/10 hover:border-white/20"
