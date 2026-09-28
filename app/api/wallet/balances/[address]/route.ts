@@ -7,27 +7,12 @@ export async function GET(request: NextRequest, { params }: { params: { address:
   console.log("[v0] Fetching wallet balances for address:", address)
 
   try {
-    let liveDEUSPrice = 0.00007765 // Fallback price
-    try {
-      const tickerResponse = await fetch(`${request.url.split("/api/wallet")[0]}/api/ticker`)
-      if (tickerResponse.ok) {
-        const tickerData = await tickerResponse.json()
-        if (tickerData.price) {
-          liveDEUSPrice = tickerData.price
-          console.log("[v0] Using live DEUS price for balances:", liveDEUSPrice)
-        }
-      }
-    } catch (error) {
-      console.log("[v0] Could not fetch live DEUS price for balances, using fallback:", liveDEUSPrice)
-    }
-
     const ethBalanceHex = await rpcCall<string>("eth_getBalance", [address, "latest"])
     const ethBalance = Number.parseInt(ethBalanceHex, 16) / 1e18
 
     const tokenAddresses = [
-      "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC
-      "0x73582df1cad3187cD0746b7A473d65c06386837e", // DEUS
-      "0x4200000000000000000000000000000000000006", // WETH
+      "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168", // USDG
+      "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73", // WETH
     ]
 
     const balanceOfSignature = "0x70a08231" // balanceOf(address)
@@ -41,7 +26,7 @@ export async function GET(request: NextRequest, { params }: { params: { address:
 
     // Fetch current token prices from CoinGecko (excluding DEUS since we have live price)
     const pricesResponse = await fetch(
-      "https://api.coingecko.com/api/v3/simple/price?ids=ethereum,usd-coin&vs_currencies=usd",
+      "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
     )
     const prices = await pricesResponse.json()
 
@@ -61,64 +46,14 @@ export async function GET(request: NextRequest, { params }: { params: { address:
     for (const tokenBalance of tokenBalances) {
       const balance = Number.parseInt(tokenBalance.tokenBalance || "0", 16)
 
-      if (tokenBalance.contractAddress === "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") {
-        tokens.push({
-          symbol: "USDC",
-          name: "USD Coin",
-          address: tokenBalance.contractAddress,
-          balance: balance / 1e6, // USDC has 6 decimals
-          price: prices["usd-coin"]?.usd || 1,
-          logo: "💵",
-          decimals: 6,
-        })
-      } else if (tokenBalance.contractAddress === "0x73582df1cad3187cD0746b7A473d65c06386837e") {
-        tokens.push({
-          symbol: "DEUS",
-          name: "DEUS Finance",
-          address: tokenBalance.contractAddress,
-          balance: balance / 1e18, // DEUS has 18 decimals
-          price: liveDEUSPrice, // Use live price from ticker
-          logo: "⚡",
-          decimals: 18,
-        })
-      } else if (tokenBalance.contractAddress === "0x4200000000000000000000000000000000000006") {
-        tokens.push({
-          symbol: "WETH",
-          name: "Wrapped Ethereum",
-          address: tokenBalance.contractAddress,
-          balance: balance / 1e18, // WETH has 18 decimals
-          price: prices.ethereum?.usd || 3200,
-          logo: "🔷",
-          decimals: 18,
-        })
+      if (tokenBalance.contractAddress.toLowerCase() === "0x5fc5360d0400a0fd4f2af552add042d716f1d168") {
+        tokens.push({ symbol: "USDG", name: "USDG", address: tokenBalance.contractAddress, balance: balance / 1e6, price: 1, logo: "$", decimals: 6 })
+      } else if (tokenBalance.contractAddress.toLowerCase() === "0x0bd7d308f8e1639fab988df18a8011f41eacad73") {
+        tokens.push({ symbol: "WETH", name: "Wrapped Ether", address: tokenBalance.contractAddress, balance: balance / 1e18, price: prices.ethereum?.usd || 3200, logo: "Ξ", decimals: 18 })
       }
     }
 
-    if (tokens.length === 1) {
-      // Only ETH
-      tokens.push(
-        {
-          symbol: "USDC",
-          name: "USD Coin",
-          address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-          balance: 3500,
-          price: 1,
-          logo: "💵",
-          decimals: 6,
-        },
-        {
-          symbol: "DEUS",
-          name: "DEUS Finance",
-          address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
-          balance: 25000,
-          price: liveDEUSPrice,
-          logo: "⚡",
-          decimals: 18,
-        },
-      )
-    }
-
-    console.log("[v0] Wallet balances processed:", tokens.length, "tokens with live DEUS price:", liveDEUSPrice)
+    console.log("[v0] Robinhood Chain wallet balances processed:", tokens.length)
 
     return NextResponse.json({
       success: true,

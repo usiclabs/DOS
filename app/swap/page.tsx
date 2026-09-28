@@ -13,7 +13,15 @@ import { DeusTicker } from "@/components/deus-ticker"
 import { TokenDiscoverMode } from "@/components/token-discover-mode"
 import { motion } from "framer-motion"
 import { createPublicClient, http } from "viem"
-import { base } from "viem/chains"
+import { defineChain } from "viem"
+
+const ROBINHOOD_CHAIN = defineChain({
+  id: 4663,
+  name: "Robinhood Chain",
+  nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
+  rpcUrls: { default: { http: ["https://rpc.mainnet.chain.robinhood.com"] } },
+  blockExplorers: { default: { name: "Robinhood Explorer", url: "https://explorer.mainnet.chain.robinhood.com" } },
+})
 
 interface Token {
   symbol: string
@@ -80,31 +88,13 @@ export default function SwapPage() {
       decimals: 18,
     },
     {
-      symbol: "DEUS",
-      name: "DEUS Finance",
-      address: "0x73582df1cad3187cD0746b7A473d65c06386837e",
-      balance: 0,
-      price: 0.00005113,
-      logo: "⚡",
-      decimals: 18,
-    },
-    {
-      symbol: "USDC",
-      name: "USD Coin",
-      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      symbol: "USDG",
+      name: "USDG",
+      address: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
       balance: 0,
       price: 1.0,
-      logo: "💵",
+      logo: "$",
       decimals: 6,
-    },
-    {
-      symbol: "ZORA",
-      name: "Zora",
-      address: "0x1111111111166b7fe7bd91427724b487980afc69",
-      balance: 0,
-      price: 0,
-      logo: "◬",
-      decimals: 18,
     },
   ]
 
@@ -134,12 +124,12 @@ export default function SwapPage() {
           setUserTokens(tokensWithBalances)
 
           const ethToken = tokensWithBalances.find((t) => t.symbol === "ETH")
-          const deusToken = tokensWithBalances.find((t) => t.symbol === "DEUS")
+          const usdgToken = tokensWithBalances.find((t) => t.symbol === "USDG")
 
           if (ethToken) setFromToken(ethToken)
-          if (deusToken) setToToken(deusToken)
+          if (usdgToken) setToToken(usdgToken)
 
-          console.log("[v0] Balances fetched - ETH:", ethToken?.balance, "DEUS:", deusToken?.balance)
+          console.log("[v0] Robinhood balances fetched - ETH:", ethToken?.balance, "USDG:", usdgToken?.balance)
         }
       } catch (error) {
         console.error("Failed to fetch balances:", error)
@@ -347,15 +337,15 @@ export default function SwapPage() {
           method: "wallet_addEthereumChain",
           params: [
             {
-              chainId: "0x2105", // Base chain ID (8453)
-              chainName: "Base",
+              chainId: "0x1237", // Robinhood Chain ID (4663)
+              chainName: "Robinhood Chain",
               nativeCurrency: {
                 name: "Ether",
                 symbol: "ETH",
                 decimals: 18,
               },
-              rpcUrls: ["https://mainnet.base.org"],
-              blockExplorerUrls: ["https://basescan.org"],
+              rpcUrls: ["https://rpc.mainnet.chain.robinhood.com"],
+              blockExplorerUrls: ["https://explorer.mainnet.chain.robinhood.com"],
             },
           ],
         })
@@ -366,7 +356,7 @@ export default function SwapPage() {
           console.log("[v0] Chain already exists, switching...")
           await window.ethereum.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x2105" }],
+            params: [{ chainId: "0x1237" }],
           })
         } else {
           console.log("[v0] MetaMask RPC configuration skipped:", addError.message)
@@ -421,12 +411,12 @@ export default function SwapPage() {
           <div className="space-y-1">
             <p>Your swap is being processed on-chain</p>
             <a
-              href={`https://basescan.org/tx/${txHash}`}
+              href={`https://explorer.mainnet.chain.robinhood.com/tx/${txHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent hover:underline text-sm"
             >
-              View on BaseScan →
+              View on Robinhood Explorer →
             </a>
           </div>
         ),
@@ -436,11 +426,11 @@ export default function SwapPage() {
       const isServer = typeof window === "undefined"
       const rpcUrl =
         isServer && process.env.ALCHEMY_API_KEY
-          ? `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`
-          : "https://mainnet.base.org"
+          ? "https://rpc.mainnet.chain.robinhood.com"
+          : "https://rpc.mainnet.chain.robinhood.com"
 
       const publicClient = createPublicClient({
-        chain: base,
+        chain: ROBINHOOD_CHAIN,
         transport: http(rpcUrl),
       })
 
@@ -465,12 +455,12 @@ export default function SwapPage() {
               setUserTokens(data.tokens || [])
 
               const ethToken = data.tokens?.find((t: Token) => t.symbol === "ETH")
-              const deusToken = data.tokens?.find((t: Token) => t.symbol === "DEUS")
+          const usdgToken = data.tokens?.find((t: Token) => t.symbol === "USDG")
 
-              if (ethToken) setFromToken(ethToken)
-              if (deusToken) setToToken(deusToken)
+          if (ethToken) setFromToken(ethToken)
+          if (usdgToken) setToToken(usdgToken)
 
-              console.log("[v0] Balances refreshed after swap - ETH:", ethToken?.balance, "DEUS:", deusToken?.balance)
+          console.log("[v0] Robinhood balances refreshed after swap - ETH:", ethToken?.balance, "USDG:", usdgToken?.balance)
             }
           } catch (error) {
             console.error("Failed to refresh balances:", error)
