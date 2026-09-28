@@ -200,42 +200,48 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    try {
-      await window.ethereum.request({
+    const switchToChain = () =>
+      window.ethereum!.request({
         method: "wallet_switchEthereumChain",
         params: [{ chainId: chain.hexId }],
       })
-      setActiveChain(chain)
-      setChainId(chain.id)
-      toast.success(`Switched to ${chain.name}`)
+
+    try {
+      await switchToChain()
     } catch (switchError: any) {
-      if (switchError.code === 4902) {
-        // Chain not added yet — add it
-        try {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [
-              {
-                chainId: chain.hexId,
-                chainName: chain.name,
-                nativeCurrency: chain.nativeCurrency,
-                rpcUrls: chain.rpcUrls,
-                blockExplorerUrls: [chain.blockExplorerUrl],
-              },
-            ],
-          })
-          setActiveChain(chain)
-          setChainId(chain.id)
-          toast.success(`${chain.name} added and selected`)
-        } catch (addError) {
-          console.error("[v0] WalletProvider: Error adding chain:", addError)
-          toast.error(`Failed to add ${chain.name}`)
+      if (switchError?.code !== 4902) {
+        if (switchError?.code === 4001) toast.error("Network switch was cancelled")
+        else {
+          console.error("[v0] WalletProvider: Error switching chain:", switchError)
+          toast.error(`Failed to switch to ${chain.name}`)
         }
-      } else {
-        console.error("[v0] WalletProvider: Error switching chain:", switchError)
-        toast.error(`Failed to switch to ${chain.name}`)
+        return
+      }
+
+      try {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [{
+            chainId: chain.hexId,
+            chainName: chain.name,
+            nativeCurrency: chain.nativeCurrency,
+            rpcUrls: chain.rpcUrls,
+            blockExplorerUrls: [chain.blockExplorerUrl],
+          }],
+        })
+        // Some wallets add the chain without selecting it; explicitly switch again.
+        await switchToChain()
+      } catch (addError: any) {
+        console.error("[v0] WalletProvider: Error adding chain:", addError)
+        if (addError?.code === 4001) toast.error("Adding the network was cancelled")
+        else toast.error(`Failed to add ${chain.name}`)
+        return
       }
     }
+
+    setActiveChain(chain)
+    setChainId(chain.id)
+    toast.success(`Switched to ${chain.name}`)
   }, [])
 
   // Disconnect wallet
