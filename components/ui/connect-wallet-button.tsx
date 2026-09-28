@@ -139,13 +139,15 @@ export function ConnectWalletButton({
               <Button
                 variant="outline"
                 size="sm"
-                className="glass-card border-accent/30 text-accent hover:bg-accent/10 bg-transparent gap-1.5 px-3"
+                type="button"
+                aria-label={`Switch network, currently ${activeChainConfig.name}`}
+                className="glass-card relative z-10 border-accent/30 bg-transparent px-3 text-accent hover:bg-accent/10 gap-1.5 pointer-events-auto touch-manipulation"
               >
                 <span className="text-xs font-medium">{activeChainConfig.shortName}</span>
                 <ChevronDown className="h-3 w-3 opacity-70" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="glass-card w-48">
+            <DropdownMenuContent align="end" sideOffset={8} className="glass-card z-[100] w-48 pointer-events-auto">
               <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
                 <ArrowLeftRight className="h-3 w-3" />
                 Switch Network
@@ -154,7 +156,10 @@ export function ConnectWalletButton({
               {Object.entries(SUPPORTED_CHAINS).map(([key, chain]) => (
                 <DropdownMenuItem
                   key={key}
-                  onClick={() => void handleSwitchChain(key)}
+                  onSelect={(event) => {
+                    event.preventDefault()
+                    void handleSwitchChain(key)
+                  }}
                   className={cn(
                     "cursor-pointer text-xs gap-2",
                     key === activeChainKey && "text-accent font-medium",
