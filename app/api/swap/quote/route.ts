@@ -9,9 +9,7 @@ import {
 } from "@/lib/uniswap-v3-swap"
 import { parseUnits, formatUnits } from "viem"
 import { getZoraTradeQuote, type TradeParameters } from "@/lib/zora-trade"
-import { DEUS_TOKEN_ADDRESS } from "@/lib/constants"
-
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+const USDG_TOKEN_ADDRESS = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"
 
 export async function POST(request: NextRequest) {
   try {
@@ -218,27 +216,27 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("[v0] ⚠️ No direct ETH pool found")
-    console.log("[v0] 🔍 Step 2: Checking for multi-hop route through DEUS...")
+    console.log("[v0] 🔍 Step 2: Checking for multi-hop route through USDG...")
 
-    const wethToDeusPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, DEUS_TOKEN_ADDRESS)
-    if (wethToDeusPool) {
-      const deusToTokenPool = await detectPoolFeeTier(DEUS_TOKEN_ADDRESS, toToken)
-      if (!deusToTokenPool) {
+    const wethToUsdgPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, USDG_TOKEN_ADDRESS)
+    if (wethToUsdgPool) {
+      const usdgToTokenPool = await detectPoolFeeTier(USDG_TOKEN_ADDRESS, toToken)
+      if (!usdgToTokenPool) {
         // Try reversed direction
-        const tokenToDeusPool = await detectPoolFeeTier(toToken, DEUS_TOKEN_ADDRESS)
-        if (tokenToDeusPool) {
+        const tokenToUsdgPool = await detectPoolFeeTier(toToken, USDG_TOKEN_ADDRESS)
+        if (tokenToUsdgPool) {
           console.log("[v0] Found multi-hop route through DEUS (reversed):", {
-            wethToDeus: { fee: wethToDeusPool.fee, pool: wethToDeusPool.poolAddress },
-            tokenToDeus: { fee: tokenToDeusPool.fee, pool: tokenToDeusPool.poolAddress },
+            wethToDeus: { fee: wethToUsdgPool.fee, pool: wethToUsdgPool.poolAddress },
+            tokenToDeus: { fee: tokenToUsdgPool.fee, pool: tokenToUsdgPool.poolAddress },
           })
 
           const multiHopQuote = await getMultiHopSwapQuote(
             UNISWAP_V3_ADDRESSES.WETH,
-            DEUS_TOKEN_ADDRESS,
+            USDG_TOKEN_ADDRESS,
             toToken,
             amountInWei,
-            wethToDeusPool.fee,
-            tokenToDeusPool.fee,
+            wethToUsdgPool.fee,
+            tokenToUsdgPool.fee,
           )
 
           if (multiHopQuote) {
@@ -262,7 +260,7 @@ export async function POST(request: NextRequest) {
               toAmount,
               rate,
               priceImpact: 2,
-              fee: (wethToDeusPool.fee + tokenToDeusPool.fee) / 10000,
+              fee: (wethToUsdgPool.fee + tokenToUsdgPool.fee) / 10000,
               route: `ETH → DEUS → TOKEN (Multi-Hop)`,
               estimatedGas: Number(multiHopQuote.gasEstimate) * 0.000000001,
               validUntil: Date.now() + 120000,
@@ -271,13 +269,13 @@ export async function POST(request: NextRequest) {
               minAmountOut: toAmount * 0.995,
               uniswapV3Data: {
                 tokenIn: UNISWAP_V3_ADDRESSES.WETH,
-                intermediateToken: DEUS_TOKEN_ADDRESS,
+                intermediateToken: USDG_TOKEN_ADDRESS,
                 tokenOut: toToken,
-                fee1: wethToDeusPool.fee,
-                fee2: tokenToDeusPool.fee,
+                fee1: wethToUsdgPool.fee,
+                fee2: tokenToUsdgPool.fee,
                 amountIn: amountInWei,
                 amountOutMinimum: ((BigInt(multiHopQuote.amountOut) * BigInt(995)) / BigInt(1000)).toString(),
-                poolAddress: tokenToDeusPool.poolAddress,
+                poolAddress: tokenToUsdgPool.poolAddress,
                 isMultiHop: true,
               },
             }
@@ -286,19 +284,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(quoteResponse)
           }
         }
-      } else if (deusToTokenPool) {
+      } else if (usdgToTokenPool) {
         console.log("[v0] Found multi-hop route through DEUS:", {
-          wethToDeus: { fee: wethToDeusPool.fee, pool: wethToDeusPool.poolAddress },
-          deusToToken: { fee: deusToTokenPool.fee, pool: deusToTokenPool.poolAddress },
+          wethToDeus: { fee: wethToUsdgPool.fee, pool: wethToUsdgPool.poolAddress },
+          deusToToken: { fee: usdgToTokenPool.fee, pool: usdgToTokenPool.poolAddress },
         })
 
         const multiHopQuote = await getMultiHopSwapQuote(
           UNISWAP_V3_ADDRESSES.WETH,
-          DEUS_TOKEN_ADDRESS,
+          USDG_TOKEN_ADDRESS,
           toToken,
           amountInWei,
-          wethToDeusPool.fee,
-          deusToTokenPool.fee,
+          wethToUsdgPool.fee,
+          usdgToTokenPool.fee,
         )
 
         if (multiHopQuote) {
@@ -322,7 +320,7 @@ export async function POST(request: NextRequest) {
             toAmount,
             rate,
             priceImpact: 2,
-            fee: (wethToDeusPool.fee + deusToTokenPool.fee) / 10000,
+            fee: (wethToUsdgPool.fee + usdgToTokenPool.fee) / 10000,
             route: `ETH → DEUS → TOKEN (Multi-Hop)`,
             estimatedGas: Number(multiHopQuote.gasEstimate) * 0.000000001,
             validUntil: Date.now() + 120000,
@@ -331,13 +329,13 @@ export async function POST(request: NextRequest) {
             minAmountOut: toAmount * 0.995,
             uniswapV3Data: {
               tokenIn: UNISWAP_V3_ADDRESSES.WETH,
-              intermediateToken: DEUS_TOKEN_ADDRESS,
+              intermediateToken: USDG_TOKEN_ADDRESS,
               tokenOut: toToken,
-              fee1: wethToDeusPool.fee,
-              fee2: deusToTokenPool.fee,
+              fee1: wethToUsdgPool.fee,
+              fee2: usdgToTokenPool.fee,
               amountIn: amountInWei,
               amountOutMinimum: ((BigInt(multiHopQuote.amountOut) * BigInt(995)) / BigInt(1000)).toString(),
-              poolAddress: deusToTokenPool.poolAddress,
+              poolAddress: usdgToTokenPool.poolAddress,
               isMultiHop: true,
             },
           }
@@ -350,9 +348,9 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] No DEUS route found, checking for multi-hop route through USDC...")
 
-    const wethToUsdcPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, USDC_ADDRESS)
+    const wethToUsdcPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, USDG_TOKEN_ADDRESS)
     if (wethToUsdcPool) {
-      const usdcToTokenPool = await detectPoolFeeTier(USDC_ADDRESS, toToken)
+      const usdcToTokenPool = await detectPoolFeeTier(USDG_TOKEN_ADDRESS, toToken)
       if (usdcToTokenPool) {
         console.log("[v0] Found multi-hop route through USDC:", {
           wethToUsdc: { fee: wethToUsdcPool.fee, pool: wethToUsdcPool.poolAddress },
@@ -361,7 +359,7 @@ export async function POST(request: NextRequest) {
 
         const multiHopQuote = await getMultiHopSwapQuote(
           UNISWAP_V3_ADDRESSES.WETH,
-          USDC_ADDRESS,
+          USDG_TOKEN_ADDRESS,
           toToken,
           amountInWei,
           wethToUsdcPool.fee,
@@ -398,7 +396,7 @@ export async function POST(request: NextRequest) {
             minAmountOut: toAmount * 0.995,
             uniswapV3Data: {
               tokenIn: UNISWAP_V3_ADDRESSES.WETH,
-              intermediateToken: USDC_ADDRESS,
+              intermediateToken: USDG_TOKEN_ADDRESS,
               tokenOut: toToken,
               fee1: wethToUsdcPool.fee,
               fee2: usdcToTokenPool.fee,

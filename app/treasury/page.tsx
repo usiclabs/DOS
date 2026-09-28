@@ -217,12 +217,12 @@ export default function TreasuryPage() {
                     {formatAddress(data?.address || "")}
                   </div>
                   <a
-                    href={`https://basescan.org/address/${data?.address}`}
+                    href={`https://explorer.mainnet.chain.robinhood.com/address/${data?.address}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-sm text-gray-400 hover:text-orange-300 flex items-center mt-2 transition-colors group"
                   >
-                    View on Basescan{" "}
+                    View on Robinhood Explorer{" "}
                     <ExternalLink className="h-3 w-3 ml-1 group-hover:translate-x-1 transition-transform" />
                   </a>
                 </CardContent>
@@ -302,7 +302,7 @@ export default function TreasuryPage() {
                           </TableCell>
                           <TableCell className="text-center">
                             <a
-                              href={`https://basescan.org/token/${holding.address}`}
+                              href={`https://explorer.mainnet.chain.robinhood.com/token/${holding.address}`}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-gray-400 hover:text-white transition-colors inline-flex items-center font-mono text-sm group"
@@ -352,7 +352,7 @@ export default function TreasuryPage() {
 
                         <div className="pt-2 border-t border-white/5">
                           <a
-                            href={`https://basescan.org/token/${holding.address}`}
+                            href={`https://explorer.mainnet.chain.robinhood.com/token/${holding.address}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-gray-400 hover:text-white transition-colors inline-flex items-center text-xs font-mono"
