@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -44,6 +44,8 @@ interface StocksGridProps {
   isLoading?: boolean
   selectedStock?: Stock | null
   onSelectStock?: (stock: Stock) => void
+  autoOpenAsset?: string | null
+  onAutoOpenComplete?: () => void
 }
 
 export function StocksGrid({
@@ -51,6 +53,8 @@ export function StocksGrid({
   isLoading = false,
   selectedStock,
   onSelectStock,
+  autoOpenAsset,
+  onAutoOpenComplete,
 }: StocksGridProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("apy")
@@ -58,6 +62,16 @@ export function StocksGrid({
   const [depositStock, setDepositStock] = useState<Stock | null>(null)
   const [isDepositModalOpen, setIsDepositModalOpen] = useState(false)
   const isMobile = useIsMobile()
+
+  useEffect(() => {
+    if (!autoOpenAsset || !stocks.length) return
+    const stock = stocks.find((item) => item.symbol.toUpperCase() === autoOpenAsset.toUpperCase())
+    if (!stock) return
+    setDepositStock(stock)
+    setIsDepositModalOpen(true)
+    onSelectStock?.(stock)
+    onAutoOpenComplete?.()
+  }, [autoOpenAsset, stocks, onAutoOpenComplete, onSelectStock])
 
   const filteredStocks = stocks
     .filter((stock) => {

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { motion } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -28,7 +29,10 @@ const staggerContainer = {
 }
 
 export default function StocksPage() {
+  const searchParams = useSearchParams()
+  const requestedAsset = searchParams.get("asset")?.toUpperCase() ?? null
   const [selectedStock, setSelectedStock] = useState<any | null>(null)
+  const [autoOpenAsset, setAutoOpenAsset] = useState<string | null>(requestedAsset)
 
   const { data: stocksData, isLoading: stocksLoading } = useSWR("/api/stocks?limit=50", fetcher, {
     refreshInterval: 300000,
@@ -37,6 +41,12 @@ export default function StocksPage() {
     dedupingInterval: 60000,
     keepPreviousData: true,
   })
+
+  useEffect(() => {
+    if (!requestedAsset || !stocksData?.stocks?.length) return
+    const stock = stocksData.stocks.find((item: any) => item.symbol.toUpperCase() === requestedAsset)
+    if (stock) setSelectedStock(stock)
+  }, [requestedAsset, stocksData?.stocks])
 
   return (
     <div className="min-h-screen bg-background">
@@ -132,6 +142,8 @@ export default function StocksPage() {
                 isLoading={stocksLoading}
                 selectedStock={selectedStock}
                 onSelectStock={setSelectedStock}
+                autoOpenAsset={autoOpenAsset}
+                onAutoOpenComplete={() => setAutoOpenAsset(null)}
               />
             </motion.div>
           </motion.div>
