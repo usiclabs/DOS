@@ -171,20 +171,24 @@ export default function PoolsPage() {
         <DeusTicker />
       </ErrorBoundary>
 
-      <div className="min-h-screen bg-gradient-to-br from-black via-red-950/20 to-black p-3 sm:p-6">
+      <div className="relative min-h-screen overflow-hidden bg-background p-3 sm:p-6">
         <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8 pb-20 md:pb-8 scroll-smooth">
           <motion.div
             initial="hidden"
             animate="visible"
             variants={fadeInUp}
             transition={{ duration: 0.5 }}
-            className="mb-6 sm:mb-8"
+            className="mb-7 border-b border-border/60 pb-7 sm:mb-9 sm:pb-9"
           >
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-2 sm:mb-3 bg-gradient-to-r from-white via-orange-200 to-red-400 bg-clip-text text-transparent">
+            <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+              Robinhood Chain / Liquidity intelligence
+            </div>
+            <h1 className="mb-2 text-3xl font-semibold tracking-tight text-foreground sm:text-4xl md:text-5xl">
               Pool Discovery
             </h1>
-            <p className="text-gray-300 text-sm sm:text-base md:text-lg leading-relaxed">
-              Discover and analyze the most profitable liquidity pools on Base chain
+            <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base md:text-lg">
+              Scan verified liquidity opportunities, compare live pool health, and move from signal to position with confidence.
             </p>
           </motion.div>
 
@@ -217,7 +221,7 @@ export default function PoolsPage() {
                 icon: BarChart3,
                 value: formatCurrency(totalTvl),
                 label: "Total TVL",
-                sublabel: "Base chain pools",
+                sublabel: "Robinhood Chain pools",
                 color: "white",
               },
               { icon: Zap, value: deusPoolCount, label: "DEUS Pools", sublabel: "Active pairs", color: "orange" },
@@ -232,10 +236,10 @@ export default function PoolsPage() {
               <motion.div
                 key={index}
                 variants={fadeInUp}
-                whileHover={{ scale: 1.05, y: -8 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                whileHover={{ y: -3 }}
+                transition={{ duration: 0.2 }}
               >
-                <Card className="glass-card backdrop-blur-xl hover:bg-white/5 transition-all duration-500 border-white/10 hover:border-accent/30 hover:shadow-2xl hover:shadow-accent/10">
+                <Card className="glass-card border-border/80 bg-card/75 transition-all duration-200 hover:border-primary/40 hover:bg-card/90 hover:shadow-[0_16px_42px_rgba(0,0,0,0.28)]">
                   <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
                     <CardTitle className="text-xs sm:text-sm font-medium flex items-center text-gray-300">
                       <stat.icon className={`h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-${stat.color}-400`} />
