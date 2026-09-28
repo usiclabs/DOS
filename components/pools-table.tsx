@@ -650,15 +650,17 @@ if (quoteSymbol === "USDG") detectedPairingToken = "USDG"
           </motion.div>
         </SheetTrigger>
 
-        <SheetContent side="bottom" className="h-[85vh] backdrop-blur-2xl bg-black/80 border-t border-white/10">
-          <SheetHeader>
-            <SheetTitle className="text-xl">
-              {pool.baseToken.symbol}/{pool.quoteToken.symbol}
+        <SheetContent side="bottom" className="h-[92vh] overflow-y-auto border-t border-border/80 bg-background/95 backdrop-blur-2xl sm:h-auto sm:max-h-[92vh] sm:max-w-[860px] sm:rounded-t-xl">
+          <SheetHeader className="border-b border-border/70 pb-4">
+            <SheetTitle className="text-xl font-semibold tracking-tight">
+              Provide Liquidity · {pool.baseToken.symbol}/{pool.quoteToken.symbol}
             </SheetTitle>
+            <p className="text-sm text-muted-foreground">Review pool health, yield, and pairing options before deploying capital.</p>
           </SheetHeader>
 
-          <div className="mt-6 space-y-6 overflow-y-auto h-[calc(85vh-120px)] pb-6">
-            <div className="flex items-center gap-2 flex-wrap">
+          <div className="space-y-6 pb-6 pt-5">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="border-primary/25 bg-primary/10 text-primary" variant="outline">Robinhood Chain</Badge>
               <Badge variant={pool.isDeusPool ? "default" : "secondary"}>
                 {pool.isDeusPool ? "DEUS Pool" : pool.dexId}
               </Badge>
@@ -703,8 +705,9 @@ if (quoteSymbol === "USDG") detectedPairingToken = "USDG"
                   </CardContent>
                 </Card>
 
-                <Card className="glass-card border-accent/20">
-                  <CardContent className="pt-4">
+                <Card className="border-border/80 bg-card/70">
+                  <CardHeader className="pb-2"><CardTitle className="text-sm">Fee earnings</CardTitle><CardDescription>Estimated fee capture for this pool</CardDescription></CardHeader>
+                  <CardContent className="pt-2">
                     <div className="text-xs text-white/90 mb-1">Fee APR</div>
                     <div className="text-2xl font-bold text-white">{safeToFixed(pool.feeApr, 2)}%</div>
                     <div className="text-xs text-gray-100 mt-1">Fee Earnings</div>
@@ -770,9 +773,9 @@ if (quoteSymbol === "USDG") detectedPairingToken = "USDG"
                 </CardContent>
               </Card>
 
-              <Card className="glass-card border-yellow-500/20">
+              <Card className="border-border/80 bg-card/70">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm flex items-center gap-2 text-yellow-400">
+                  <CardTitle className="flex items-center gap-2 text-sm text-foreground">
                     <AlertTriangle className="h-4 w-4" />
                     Risk Assessment
                   </CardTitle>
@@ -801,9 +804,10 @@ if (quoteSymbol === "USDG") detectedPairingToken = "USDG"
               </Card>
             </div>
 
-            <Card className="glass-card border-accent/20">
+            <Card className="border-primary/25 bg-primary/[0.04]">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm">Select Pairing Asset</CardTitle>
+                <CardDescription>Choose the asset to pair with your liquidity position.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-2">
@@ -816,8 +820,8 @@ if (quoteSymbol === "USDG") detectedPairingToken = "USDG"
                       }}
                       className={`py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
                         selectedPairing === option.value
-                          ? `bg-gradient-to-r ${option.color} text-white shadow-lg`
-                          : "bg-white/5 text-gray-400 border border-white/10"
+                          ? "border-primary bg-primary text-primary-foreground shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+                          : "border-border bg-secondary/50 text-muted-foreground hover:border-primary/40 hover:text-foreground"
                       }`}
                     >
                       {option.label}
@@ -829,7 +833,7 @@ if (quoteSymbol === "USDG") detectedPairingToken = "USDG"
 
             <Button
               size="lg"
-              className="w-full bg-accent text-accent-foreground hover:bg-accent/90"
+              className="w-full bg-primary text-primary-foreground shadow-[0_10px_28px_rgba(0,0,0,0.2)] hover:bg-primary/90"
               onClick={() => {
                 setIsSheetOpen(false)
                 handleDeploy(pool, selectedPairing)
