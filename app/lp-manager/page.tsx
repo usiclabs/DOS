@@ -1026,7 +1026,10 @@ export default function LPManagerPage() {
         <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
           <div className="flex items-center space-x-3">
             <Wallet className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold text-white">LP Manager</h1>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-white">LP Manager</h1>
+              <p className="mt-1 text-xs text-muted-foreground">Monitor positions, fees, ranges, and wallet actions.</p>
+            </div>
           </div>
 
           {/* Chain selector */}

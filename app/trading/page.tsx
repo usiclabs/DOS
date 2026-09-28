@@ -94,10 +94,11 @@ export default function TradingPage() {
         {/* Trading Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-              Advanced Trading Terminal
-            </h1>
-            <p className="text-gray-400 mt-1">Professional-grade DeFi trading with advanced tools</p>
+  <h1 className="text-3xl font-bold tracking-tight text-white">
+  Trading Terminal
+  </h1>
+  <p className="text-gray-400 mt-1">Review markets and prepare orders across supported networks.</p>
+  <p className="mt-2 max-w-xl text-xs leading-relaxed text-amber-200/80">Live execution is gated until an approved Robinhood Chain swap or order protocol is configured.</p>
             {isConnected && (
               <p className="text-sm text-accent-light mt-2 font-mono">
                 Connected: {address?.slice(0, 6)}...{address?.slice(-4)}

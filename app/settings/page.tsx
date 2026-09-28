@@ -71,8 +71,8 @@ export default function SettingsPage() {
           {/* Header */}
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-4xl font-bold text-white mb-2">Settings & Preferences</h1>
-              <p className="text-gray-400">Customize your D.O.S. experience</p>
+              <h1 className="text-4xl font-bold tracking-tight text-white mb-2">Settings & Preferences</h1>
+              <p className="text-gray-400">Configure display, trading safeguards, notifications, and privacy controls.</p>
             </div>
             {hasChanges && (
               <motion.div

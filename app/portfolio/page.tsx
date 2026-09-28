@@ -812,9 +812,9 @@ export default function PortfolioPage() {
               >
                 Portfolio
               </motion.h1>
-              <p className="text-gray-300 text-base lg:text-lg leading-relaxed">
-                Track your holdings and performance across the DEUS ecosystem
-              </p>
+  <p className="text-gray-300 text-base lg:text-lg leading-relaxed">
+  Track verified positions, wallet balances, fees, and performance across supported networks.
+  </p>
               {address && (
                 <motion.p
                   initial={{ opacity: 0 }}
