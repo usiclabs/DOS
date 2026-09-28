@@ -80,7 +80,7 @@ export function useDeployToken() {
 
       // Check DEUS balance
       console.log("[v0] Checking DEUS balance...")
-      const deusBalanceResult = await window.ethereum.request({
+      const deusBalanceResult = await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -106,7 +106,7 @@ export function useDeployToken() {
 
       // Check ETH balance for gas
       console.log("[v0] Checking ETH balance for gas...")
-      const ethBalanceResult = await window.ethereum.request({
+      const ethBalanceResult = await window.ethereum!.request({
         method: "eth_getBalance",
         params: [address, "latest"],
       })
@@ -131,7 +131,7 @@ export function useDeployToken() {
 
       try {
         console.log("[v0] Attempting gas estimation...")
-        const estimatedGas = await window.ethereum.request({
+        const estimatedGas = await window.ethereum!.request({
           method: "eth_estimateGas",
           params: [
             {
@@ -151,7 +151,7 @@ export function useDeployToken() {
       console.log("[v0] Final gas limit:", gasLimit.toString())
 
       console.log("[v0] Sending token deployment transaction...")
-      const deployTx = await window.ethereum.request({
+      const deployTx = await window.ethereum!.request({
         method: "eth_sendTransaction",
         params: [
           {
@@ -167,15 +167,15 @@ export function useDeployToken() {
 
       // Wait for deployment
       console.log("[v0] Waiting for deployment confirmation...")
-      let receipt = null
+      let receipt: { status: string; contractAddress?: string } | null = null
       let attempts = 0
       while (!receipt && attempts < 60) {
         // 2 minutes max
         await new Promise((resolve) => setTimeout(resolve, 2000))
-        receipt = await window.ethereum.request({
+        receipt = await window.ethereum!.request({
           method: "eth_getTransactionReceipt",
           params: [deployTx],
-        })
+        }) as any
         attempts++
         if (attempts % 5 === 0) {
           console.log("[v0] Still waiting for deployment... attempt", attempts)
@@ -210,7 +210,7 @@ export function useDeployToken() {
       const isNewTokenToken0 = token0 === newTokenAddress
 
       // Check if pool already exists
-      const existingPoolResult = await window.ethereum.request({
+      const existingPoolResult = await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -240,7 +240,7 @@ export function useDeployToken() {
       if (poolExists) {
         console.log("[v0] Checking if pool is initialized...")
         try {
-          const slot0Result = await window.ethereum.request({
+          const slot0Result = await window.ethereum!.request({
             method: "eth_call",
             params: [
               {
@@ -281,7 +281,7 @@ export function useDeployToken() {
           args: [token0, token1, 10000], // 1% fee tier
         })
 
-        const createPoolTx = await window.ethereum.request({
+        const createPoolTx = await window.ethereum!.request({
           method: "eth_sendTransaction",
           params: [
             {
@@ -296,13 +296,13 @@ export function useDeployToken() {
         setFailedTxHash(createPoolTx as string)
 
         // Wait for pool creation
-        let poolReceipt = null
+        let poolReceipt: { status: string } | null = null
         while (!poolReceipt) {
           await new Promise((resolve) => setTimeout(resolve, 2000))
-          poolReceipt = await window.ethereum.request({
+          poolReceipt = await window.ethereum!.request({
             method: "eth_getTransactionReceipt",
             params: [createPoolTx],
-          })
+          }) as any
         }
 
         if (poolReceipt.status !== "0x1") {
@@ -310,7 +310,7 @@ export function useDeployToken() {
         }
 
         // Get pool address from factory
-        const poolAddressResult = await window.ethereum.request({
+        const poolAddressResult = await window.ethereum!.request({
           method: "eth_call",
           params: [
             {
@@ -362,7 +362,7 @@ export function useDeployToken() {
           args: [sqrtPriceX96],
         })
 
-        const initTx = await window.ethereum.request({
+        const initTx = await window.ethereum!.request({
           method: "eth_sendTransaction",
           params: [
             {
@@ -377,13 +377,13 @@ export function useDeployToken() {
         setFailedTxHash(initTx as string)
 
         // Wait for initialization
-        let initReceipt = null
+        let initReceipt: { status: string } | null = null
         while (!initReceipt) {
           await new Promise((resolve) => setTimeout(resolve, 2000))
-          initReceipt = await window.ethereum.request({
+          initReceipt = await window.ethereum!.request({
             method: "eth_getTransactionReceipt",
             params: [initTx],
-          })
+          }) as any
         }
 
         if (initReceipt.status !== "0x1") {
@@ -455,7 +455,7 @@ export function useDeployToken() {
 
       // Check token balance
       console.log("[v0] Checking token balance...")
-      const tokenBalanceResult = await window.ethereum.request({
+      const tokenBalanceResult = await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -481,7 +481,7 @@ export function useDeployToken() {
 
       // Check DEUS balance
       console.log("[v0] Checking DEUS balance...")
-      const deusBalanceResult = await window.ethereum.request({
+      const deusBalanceResult = await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -507,7 +507,7 @@ export function useDeployToken() {
 
       // Check ETH balance for gas
       console.log("[v0] Checking ETH balance for gas...")
-      const ethBalanceResult = await window.ethereum.request({
+      const ethBalanceResult = await window.ethereum!.request({
         method: "eth_getBalance",
         params: [address, "latest"],
       })
@@ -529,7 +529,7 @@ export function useDeployToken() {
       const isNewTokenToken0 = token0 === params.tokenAddress
 
       // Check if pool already exists
-      const existingPoolResult = await window.ethereum.request({
+      const existingPoolResult = await window.ethereum!.request({
         method: "eth_call",
         params: [
           {
@@ -558,7 +558,7 @@ export function useDeployToken() {
       if (poolExists) {
         console.log("[v0] Checking if pool is initialized...")
         try {
-          const slot0Result = await window.ethereum.request({
+          const slot0Result = await window.ethereum!.request({
             method: "eth_call",
             params: [
               {
@@ -599,7 +599,7 @@ export function useDeployToken() {
           args: [token0, token1, 10000], // 1% fee tier
         })
 
-        const createPoolTx = await window.ethereum.request({
+        const createPoolTx = await window.ethereum!.request({
           method: "eth_sendTransaction",
           params: [
             {
@@ -614,13 +614,13 @@ export function useDeployToken() {
         setFailedTxHash(createPoolTx as string)
 
         // Wait for pool creation
-        let poolReceipt = null
+        let poolReceipt: { status: string } | null = null
         while (!poolReceipt) {
           await new Promise((resolve) => setTimeout(resolve, 2000))
-          poolReceipt = await window.ethereum.request({
+          poolReceipt = await window.ethereum!.request({
             method: "eth_getTransactionReceipt",
             params: [createPoolTx],
-          })
+          }) as any
         }
 
         if (poolReceipt.status !== "0x1") {
@@ -628,7 +628,7 @@ export function useDeployToken() {
         }
 
         // Get pool address from factory
-        const poolAddressResult = await window.ethereum.request({
+        const poolAddressResult = await window.ethereum!.request({
           method: "eth_call",
           params: [
             {
@@ -680,7 +680,7 @@ export function useDeployToken() {
           args: [sqrtPriceX96],
         })
 
-        const initTx = await window.ethereum.request({
+        const initTx = await window.ethereum!.request({
           method: "eth_sendTransaction",
           params: [
             {
@@ -695,13 +695,13 @@ export function useDeployToken() {
         setFailedTxHash(initTx as string)
 
         // Wait for initialization
-        let initReceipt = null
+        let initReceipt: { status: string } | null = null
         while (!initReceipt) {
           await new Promise((resolve) => setTimeout(resolve, 2000))
-          initReceipt = await window.ethereum.request({
+          initReceipt = await window.ethereum!.request({
             method: "eth_getTransactionReceipt",
             params: [initTx],
-          })
+          }) as any
         }
 
         if (initReceipt.status !== "0x1") {
@@ -722,7 +722,7 @@ export function useDeployToken() {
         args: [NONFUNGIBLE_POSITION_MANAGER_ADDRESS, tokenAmountWei],
       })
 
-      const approveTokenTx = await window.ethereum.request({
+      const approveTokenTx = await window.ethereum!.request({
         method: "eth_sendTransaction",
         params: [
           {
@@ -737,13 +737,13 @@ export function useDeployToken() {
       setFailedTxHash(approveTokenTx as string)
 
       // Wait for approval
-      let approveTokenReceipt = null
+      let approveTokenReceipt: { status: string } | null = null
       while (!approveTokenReceipt) {
         await new Promise((resolve) => setTimeout(resolve, 2000))
-        approveTokenReceipt = await window.ethereum.request({
+        approveTokenReceipt = await window.ethereum!.request({
           method: "eth_getTransactionReceipt",
           params: [approveTokenTx],
-        })
+        }) as any
       }
 
       if (approveTokenReceipt.status !== "0x1") {
@@ -762,7 +762,7 @@ export function useDeployToken() {
         args: [NONFUNGIBLE_POSITION_MANAGER_ADDRESS, deusAmountWei],
       })
 
-      const approveDeusTx = await window.ethereum.request({
+      const approveDeusTx = await window.ethereum!.request({
         method: "eth_sendTransaction",
         params: [
           {
@@ -777,13 +777,13 @@ export function useDeployToken() {
       setFailedTxHash(approveDeusTx as string)
 
       // Wait for approval
-      let approveDeusReceipt = null
+      let approveDeusReceipt: { status: string } | null = null
       while (!approveDeusReceipt) {
         await new Promise((resolve) => setTimeout(resolve, 2000))
-        approveDeusReceipt = await window.ethereum.request({
+        approveDeusReceipt = await window.ethereum!.request({
           method: "eth_getTransactionReceipt",
           params: [approveDeusTx],
-        })
+        }) as any
       }
 
       if (approveDeusReceipt.status !== "0x1") {
@@ -829,7 +829,7 @@ export function useDeployToken() {
         ],
       })
 
-      const mintTx = await window.ethereum.request({
+      const mintTx = await window.ethereum!.request({
         method: "eth_sendTransaction",
         params: [
           {
@@ -841,17 +841,17 @@ export function useDeployToken() {
       })
 
       console.log("[v0] Liquidity mint tx:", mintTx)
-      setTxHash(mintTx)
+      setTxHash(mintTx as string | null)
       setFailedTxHash(mintTx as string)
 
       // Wait for mint
-      let mintReceipt = null
+      let mintReceipt: { status: string } | null = null
       while (!mintReceipt) {
         await new Promise((resolve) => setTimeout(resolve, 2000))
-        mintReceipt = await window.ethereum.request({
+        mintReceipt = await window.ethereum!.request({
           method: "eth_getTransactionReceipt",
           params: [mintTx],
-        })
+        }) as { status: string } | null
       }
 
       if (mintReceipt.status !== "0x1") {

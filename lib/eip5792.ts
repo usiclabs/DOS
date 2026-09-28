@@ -74,7 +74,8 @@ export async function sendCalls(params: SendCallsParams): Promise<string> {
     })
 
     console.log("[v0] Batch calls submitted:", result)
-    return result.id || result
+    const r = result as any
+    return r.id || r
   } catch (error: any) {
     console.error("[v0] Failed to send batch calls:", error)
     throw error
@@ -90,13 +91,13 @@ export async function getCallsStatus(bundleId: string): Promise<CallsStatus> {
   }
 
   try {
-    const status = await window.ethereum.request({
+    const status = await window.ethereum!.request({
       method: "wallet_getCallsStatus",
       params: [bundleId],
     })
 
     console.log("[v0] Batch calls status:", status)
-    return status
+    return status as CallsStatus
   } catch (error: any) {
     console.error("[v0] Failed to get calls status:", error)
     throw error

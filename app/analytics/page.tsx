@@ -291,10 +291,10 @@ export default function AnalyticsPage() {
                     <Sparkles className="w-6 h-6 text-white" />
                   </motion.div>
                   <div>
-                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-white via-orange-200 to-orange-400 bg-clip-text text-transparent leading-tight">
-                      DEUS Analytics
+                    <h1 className="text-3xl font-bold tracking-tight text-white md:text-5xl lg:text-6xl">
+                      Network Analytics
                     </h1>
-                    <p className="text-gray-400 text-sm md:text-base mt-1">Real-time ecosystem insights</p>
+                    <p className="mt-1 text-sm text-muted-foreground md:text-base">Real-time liquidity, volume, fees, and pool performance.</p>
                   </div>
                 </div>
                 <p className="text-gray-300 text-sm md:text-lg leading-relaxed max-w-2xl">

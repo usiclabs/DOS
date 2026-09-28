@@ -58,39 +58,9 @@ export function useTrading() {
         throw new Error("Stop orders require a valid stop price")
       }
 
-      // For market orders, we'll use the swap functionality
-      if (params.orderType === "market") {
-        toast({
-          title: "Executing market order",
-          description: `${params.side === "buy" ? "Buying" : "Selling"} ${params.amount} ${params.pair.split("/")[0]}`,
-        })
-
-        // In a real implementation, this would call the swap API
-        // For now, we'll simulate the trade
-        await new Promise((resolve) => setTimeout(resolve, 2000))
-
-        toast({
-          title: "Trade executed successfully",
-          description: `Market ${params.side} order completed`,
-        })
-
-        return {
-          success: true,
-          txHash: "0x" + Math.random().toString(16).substring(2, 66),
-        }
-      }
-
-      // For limit and stop orders, we would need to interact with a limit order protocol
-      // This is a placeholder for future implementation
-      toast({
-        title: "Order placed",
-        description: `${params.orderType} ${params.side} order for ${params.amount} ${params.pair.split("/")[0]} has been placed`,
-      })
-
-      return {
-        success: true,
-        txHash: "0x" + Math.random().toString(16).substring(2, 66),
-      }
+      throw new Error(
+        "Trading is unavailable until an approved Robinhood Chain swap or order protocol is configured for this pair.",
+      )
     } catch (err: any) {
       console.error("[v0] Trade execution error:", err)
 

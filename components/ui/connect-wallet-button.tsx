@@ -3,57 +3,31 @@
 import { useState, useCallback } from "react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Wallet, Loader2, ChevronDown } from "lucide-react"
+import { Wallet, Loader2, ChevronDown, ArrowLeftRight } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+import { SUPPORTED_CHAINS } from "@/lib/constants"
 
 interface ConnectWalletButtonProps {
-  /**
-   * Callback when wallet connect button is clicked
-   */
   onConnect: (walletType: string) => Promise<void>
-  /**
-   * Callback when wallet disconnect button is clicked
-   */
   onDisconnect?: () => void
-  /**
-   * Whether wallet is currently connected
-   */
+  onSwitchChain?: (chainKey: string) => Promise<void>
   isConnected?: boolean
-  /**
-   * Wallet address (if connected)
-   */
   address?: string | null
-  /**
-   * Wallet balance (if connected)
-   */
   balance?: string
-  /**
-   * Whether connection is in progress
-   */
   isConnecting?: boolean
-  /**
-   * Button size variant
-   */
   size?: "sm" | "md" | "lg"
-  /**
-   * Custom className for the button
-   */
   className?: string
-  /**
-   * Whether to show as inline button or dropdown
-   */
   variant?: "button" | "dropdown"
-  /**
-   * Network display
-   */
   network?: string
+  activeChainKey?: string
 }
 
 const formatAddress = (addr: string | undefined | null) => {
@@ -64,6 +38,7 @@ const formatAddress = (addr: string | undefined | null) => {
 export function ConnectWalletButton({
   onConnect,
   onDisconnect,
+  onSwitchChain,
   isConnected = false,
   address,
   balance = "0",
@@ -72,6 +47,7 @@ export function ConnectWalletButton({
   className,
   variant = "dropdown",
   network = "Base",
+  activeChainKey = "base",
 }: ConnectWalletButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
 
@@ -134,6 +110,9 @@ export function ConnectWalletButton({
     )
   }
 
+  const activeChainConfig = SUPPORTED_CHAINS[activeChainKey] ?? SUPPORTED_CHAINS.base
+  const explorerUrl = `${activeChainConfig.blockExplorerUrl}/address/${address}`
+
   // Connected state - show dropdown
   return (
     <motion.div
@@ -143,15 +122,46 @@ export function ConnectWalletButton({
     >
       {variant === "dropdown" ? (
         <div className="flex items-center gap-2">
-          {network && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="glass-card border-accent/30 text-accent hover:bg-accent/10 bg-transparent"
-            >
-              {network}
-            </Button>
-          )}
+          {/* Chain selector */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="glass-card border-accent/30 text-accent hover:bg-accent/10 bg-transparent gap-1.5 px-3"
+              >
+                <span className="text-xs font-medium">{activeChainConfig.shortName}</span>
+                <ChevronDown className="h-3 w-3 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="glass-card w-48">
+              <DropdownMenuLabel className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <ArrowLeftRight className="h-3 w-3" />
+                Switch Network
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {Object.entries(SUPPORTED_CHAINS).map(([key, chain]) => (
+                <DropdownMenuItem
+                  key={key}
+                  onClick={() => onSwitchChain?.(key)}
+                  className={cn(
+                    "cursor-pointer text-xs gap-2",
+                    key === activeChainKey && "text-accent font-medium",
+                  )}
+                >
+                  {key === activeChainKey && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-green-400" />
+                  )}
+                  {key !== activeChainKey && (
+                    <div className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                  )}
+                  {chain.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Wallet dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -170,12 +180,12 @@ export function ConnectWalletButton({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="glass-card w-56">
               {balance && (
-                <>
-                  <div className="px-3 py-2 border-b border-border/50">
-                    <p className="text-xs text-muted-foreground">Balance</p>
-                    <p className="text-sm font-semibold text-white">{balance} ETH</p>
-                  </div>
-                </>
+                <div className="px-3 py-2 border-b border-border/50">
+                  <p className="text-xs text-muted-foreground">Balance</p>
+                  <p className="text-sm font-semibold text-white">
+                    {parseFloat(balance).toFixed(4)} {activeChainConfig.nativeCurrency.symbol}
+                  </p>
+                </div>
               )}
               <DropdownMenuItem
                 onClick={() => navigator.clipboard.writeText(address || "")}
@@ -184,10 +194,10 @@ export function ConnectWalletButton({
                 Copy Address
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => window.open(`https://basescan.org/address/${address}`, "_blank")}
+                onClick={() => window.open(explorerUrl, "_blank")}
                 className="cursor-pointer text-xs"
               >
-                View on BaseScan
+                View on Explorer
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleDisconnect} className="cursor-pointer text-xs text-destructive">

@@ -242,13 +242,14 @@ export async function getCoinDetails(coinAddress: string, chainId = 8453) {
   try {
     const result = await getCoin({
       address: coinAddress,
-      chainId,
+      chain: chainId,
     })
 
     console.log("[v0] getCoin result structure:", JSON.stringify(result, null, 2))
 
     // The Zora SDK returns data in result.data.zora20Token structure
-    const coin = result?.data?.zora20Token || result?.data?.coin || result?.coin || result?.data || result
+    const anyResult = result as any
+    const coin = anyResult?.data?.zora20Token || anyResult?.data?.coin || anyResult?.coin || anyResult?.data || anyResult
 
     if (!coin || !coin.address) {
       console.error("[v0] No valid coin data found in response")
@@ -541,7 +542,7 @@ export async function deployCoin(params: CreateCoinParams): Promise<CoinDeployme
     console.log("[v0] Waiting for transaction confirmation...")
 
     // Wait for transaction receipt
-    const receipt = await walletClient.waitForTransactionReceipt?.({ hash })
+    const receipt = await (walletClient as any).waitForTransactionReceipt?.({ hash })
 
     console.log("[v0] Transaction confirmed:", receipt)
 

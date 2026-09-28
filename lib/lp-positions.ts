@@ -1,4 +1,5 @@
 import { rpcCall } from "@/lib/rpc-config"
+import { SUPPORTED_CHAINS, type ChainConfig } from "@/lib/constants"
 
 export interface LPPosition {
   id: string
@@ -40,21 +41,40 @@ export interface LPPosition {
 }
 
 const DEUS_TOKEN_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837e"
-const UNISWAP_V3_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1"
-const UNISWAP_V3_FACTORY = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD"
 
+// Per-chain known token metadata (keyed by lowercased address)
+const CHAIN_TOKEN_METADATA: Record<number, Record<string, { symbol: string; name: string; decimals: number }>> = {
+  // Base (8453)
+  8453: {
+    "0x4200000000000000000000000000000000000006": { symbol: "WETH", name: "Wrapped Ether", decimals: 18 },
+    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": { symbol: "USDC", name: "USD Coin", decimals: 6 },
+    "0x50c5725949a6f0c72e6c4a641f24049a917db0cb": { symbol: "DAI", name: "Dai Stablecoin", decimals: 18 },
+    [DEUS_TOKEN_ADDRESS.toLowerCase()]: { symbol: "DEUS", name: "DEUS Finance", decimals: 18 },
+  },
+  // Robinhood Chain (4663)
+  4663: {
+    "0x0bd7d308f8e1639fab988df18a8011f41eacad73": { symbol: "WETH", name: "Wrapped Ether", decimals: 18 },
+    "0x5fc5360d0400a0fd4f2af552add042d716f1d168": { symbol: "USDG", name: "USD Gold", decimals: 6 },
+  },
+}
+
+// Legacy flat map kept for non-chain-aware paths
 const TOKEN_METADATA: Record<string, { symbol: string; name: string; decimals: number }> = {
-  "0x4200000000000000000000000000000000000006": { symbol: "WETH", name: "Wrapped Ether", decimals: 18 },
-  "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": { symbol: "USDC", name: "USD Coin", decimals: 6 },
-  "0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb": { symbol: "DAI", name: "Dai Stablecoin", decimals: 18 },
-  [DEUS_TOKEN_ADDRESS]: { symbol: "DEUS", name: "DEUS Finance", decimals: 18 },
+  ...CHAIN_TOKEN_METADATA[8453],
 }
 
 const tokenMetadataCache = new Map<string, { symbol: string; name: string; decimals: number }>()
 const tokenPriceCache = new Map<string, { price: number; timestamp: number }>()
-const PRICE_CACHE_DURATION = 600000 // Increased from 5 minutes to 10 minutes
+const PRICE_CACHE_DURATION = 600000
 
-async function batchRpcCalls(calls: Array<{ to: string; data: string }>): Promise<string[]> {
+// chain-keyed metadata cache to avoid cross-chain pollution
+const chainTokenMetadataCache = new Map<string, { symbol: string; name: string; decimals: number }>()
+
+function chainCacheKey(chainId: number, address: string) {
+  return `${chainId}:${address.toLowerCase()}`
+}
+
+async function batchRpcCalls(calls: Array<{ to: string; data: string }>, rpcUrl?: string): Promise<string[]> {
   try {
     // Process calls in smaller chunks to avoid rate limiting
     const chunkSize = 10 // Increased from 5 to 10 to reduce number of batches
@@ -65,7 +85,7 @@ async function batchRpcCalls(calls: Array<{ to: string; data: string }>): Promis
 
       const chunkResults = await Promise.all(
         chunk.map((call) =>
-          rpcCall("eth_call", [call, "latest"]).catch((error) => {
+          rpcCall("eth_call", [call, "latest"], rpcUrl).catch((error) => {
             console.error("[v0] Batch call failed:", error)
             return "0x"
           }),
@@ -86,24 +106,30 @@ async function batchRpcCalls(calls: Array<{ to: string; data: string }>): Promis
   }
 }
 
-async function getTokenMetadata(tokenAddress: string): Promise<{ symbol: string; name: string; decimals: number }> {
+async function getTokenMetadata(
+  tokenAddress: string,
+  chainId = 8453,
+  rpcUrl?: string,
+): Promise<{ symbol: string; name: string; decimals: number }> {
   try {
     const lowerAddress = tokenAddress.toLowerCase()
+    const cacheKey = chainCacheKey(chainId, lowerAddress)
 
-    if (tokenMetadataCache.has(lowerAddress)) {
-      return tokenMetadataCache.get(lowerAddress)!
+    if (chainTokenMetadataCache.has(cacheKey)) {
+      return chainTokenMetadataCache.get(cacheKey)!
     }
 
-    if (TOKEN_METADATA[lowerAddress]) {
-      tokenMetadataCache.set(lowerAddress, TOKEN_METADATA[lowerAddress])
-      return TOKEN_METADATA[lowerAddress]
+    const chainMeta = CHAIN_TOKEN_METADATA[chainId] ?? {}
+    if (chainMeta[lowerAddress]) {
+      chainTokenMetadataCache.set(cacheKey, chainMeta[lowerAddress])
+      return chainMeta[lowerAddress]
     }
 
     const results = await batchRpcCalls([
       { to: tokenAddress, data: "0x95d89b41" }, // symbol()
       { to: tokenAddress, data: "0x06fdde03" }, // name()
       { to: tokenAddress, data: "0x313ce567" }, // decimals()
-    ])
+    ], rpcUrl)
 
     const [symbolResult, nameResult, decimalsResult] = results
 
@@ -112,7 +138,7 @@ async function getTokenMetadata(tokenAddress: string): Promise<{ symbol: string;
     const decimals = decimalsResult !== "0x" ? Number.parseInt(decimalsResult, 16) : 18
 
     const metadata = { symbol, name, decimals }
-    tokenMetadataCache.set(lowerAddress, metadata)
+    chainTokenMetadataCache.set(cacheKey, metadata)
 
     return metadata
   } catch (error) {
@@ -132,7 +158,13 @@ function parseString(hex: string): string {
   }
 }
 
-async function getTokenPrice(tokenAddress: string): Promise<number> {
+// Dexscreener chain slug by chain ID
+const DEXSCREENER_CHAIN_SLUG: Record<number, string> = {
+  8453: "base",
+  4663: "robinhood",
+}
+
+async function getTokenPrice(tokenAddress: string, chainId = 8453): Promise<number> {
   try {
     const lowerAddress = tokenAddress.toLowerCase()
 
@@ -140,50 +172,50 @@ async function getTokenPrice(tokenAddress: string): Promise<number> {
       return 0.00007765
     }
 
+    // Known stablecoin / ETH prices
     const defaultPrices: Record<string, number> = {
+      // Base
       "0x4200000000000000000000000000000000000006": 3200, // WETH
       "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": 1.0, // USDC
       "0x50c5725949a6f0c72e6c4a641f24049a917db0cb": 1.0, // DAI
+      // Robinhood Chain
+      "0x0bd7d308f8e1639fab988df18a8011f41eacad73": 3200, // WETH (RHC)
+      "0x5fc5360d0400a0fd4f2af552add042d716f1d168": 1.0, // USDG (RHC)
     }
 
-    if (defaultPrices[lowerAddress]) {
+    if (defaultPrices[lowerAddress] !== undefined) {
       return defaultPrices[lowerAddress]
     }
 
-    const cached = tokenPriceCache.get(lowerAddress)
+    const priceCacheKey = `${chainId}:${lowerAddress}`
+    const cached = tokenPriceCache.get(priceCacheKey)
     if (cached && Date.now() - cached.timestamp < PRICE_CACHE_DURATION) {
       return cached.price
     }
 
     try {
+      const chainSlug = DEXSCREENER_CHAIN_SLUG[chainId] ?? "base"
       const response = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${tokenAddress}`)
-      if (!response.ok) {
-        throw new Error(`Dexscreener API error: ${response.status}`)
-      }
+      if (!response.ok) throw new Error(`Dexscreener API error: ${response.status}`)
 
       const data = await response.json()
 
       if (data.pairs && data.pairs.length > 0) {
-        const basePairs = data.pairs.filter((pair: any) => pair.chainId === "base")
-        if (basePairs.length > 0) {
-          const bestPair = basePairs.reduce((best: any, current: any) => {
-            const bestLiquidity = best.liquidity?.usd || 0
-            const currentLiquidity = current.liquidity?.usd || 0
-            return currentLiquidity > bestLiquidity ? current : best
-          })
+        const chainPairs = data.pairs.filter((pair: any) => pair.chainId === chainSlug)
+        const pairsToSearch = chainPairs.length > 0 ? chainPairs : data.pairs
+        const bestPair = pairsToSearch.reduce((best: any, current: any) => {
+          return (current.liquidity?.usd || 0) > (best.liquidity?.usd || 0) ? current : best
+        })
 
-          const price = Number.parseFloat(bestPair.priceUsd) || 0
-          tokenPriceCache.set(lowerAddress, { price, timestamp: Date.now() })
-          console.log(`[v0] Fetched price for ${tokenAddress}: $${price}`)
-          return price
-        }
+        const price = Number.parseFloat(bestPair.priceUsd) || 0
+        tokenPriceCache.set(priceCacheKey, { price, timestamp: Date.now() })
+        return price
       }
 
-      console.log(`[v0] No price found for token ${tokenAddress}`)
-      tokenPriceCache.set(lowerAddress, { price: 0, timestamp: Date.now() })
+      tokenPriceCache.set(priceCacheKey, { price: 0, timestamp: Date.now() })
       return 0
     } catch (error) {
-      console.error(`[v0] Error fetching price from Dexscreener for ${tokenAddress}:`, error)
+      console.error(`[v0] Error fetching price for ${tokenAddress}:`, error)
       return 0
     }
   } catch (error) {
@@ -264,6 +296,7 @@ async function calculateUncollectedFees(
   tickLower: number,
   tickUpper: number,
   liquidity: bigint,
+  rpcUrl?: string,
 ): Promise<{ fees0: bigint; fees1: bigint }> {
   try {
     // Get pool's current fee growth global values
@@ -273,7 +306,7 @@ async function calculateUncollectedFees(
         data: "0xf3058399", // feeGrowthGlobal0X128()
       },
       "latest",
-    ])
+    ], rpcUrl)
 
     const feeGrowthGlobal1X128Data = await rpcCall("eth_call", [
       {
@@ -281,7 +314,7 @@ async function calculateUncollectedFees(
         data: "0x46141319", // feeGrowthGlobal1X128()
       },
       "latest",
-    ])
+    ], rpcUrl)
 
     const feeGrowthGlobal0X128 = BigInt(feeGrowthGlobal0X128Data)
     const feeGrowthGlobal1X128 = BigInt(feeGrowthGlobal1X128Data)
@@ -293,7 +326,7 @@ async function calculateUncollectedFees(
         data: `0xf30dba93${tickLower < 0 ? (tickLower + 0x1000000).toString(16).padStart(64, "0") : tickLower.toString(16).padStart(64, "0")}`,
       },
       "latest",
-    ])
+    ], rpcUrl)
 
     const tickUpperData = await rpcCall("eth_call", [
       {
@@ -301,7 +334,7 @@ async function calculateUncollectedFees(
         data: `0xf30dba93${tickUpper < 0 ? (tickUpper + 0x1000000).toString(16).padStart(64, "0") : tickUpper.toString(16).padStart(64, "0")}`,
       },
       "latest",
-    ])
+    ], rpcUrl)
 
     // Parse tick data to get feeGrowthOutside values
     const tickLowerClean = tickLowerData.slice(2)
@@ -332,15 +365,23 @@ async function calculateUncollectedFees(
   }
 }
 
-export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
+export async function fetchV3Positions(
+  address: string,
+  chain: ChainConfig = SUPPORTED_CHAINS.base,
+): Promise<LPPosition[]> {
+  const rpcUrl = chain.rpcUrls[0]
+  const POSITION_MANAGER = chain.uniswapV3PositionManager
+  const FACTORY = chain.uniswapV3Factory
+  const chainId = chain.id
+
   try {
     const balanceData = await rpcCall("eth_call", [
       {
-        to: UNISWAP_V3_POSITION_MANAGER,
+        to: POSITION_MANAGER,
         data: `0x70a08231${address.slice(2).padStart(64, "0")}`,
       },
       "latest",
-    ])
+    ], rpcUrl)
 
     const balance = Number.parseInt(balanceData, 16)
 
@@ -362,14 +403,14 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
       const tokenIdCalls = []
       for (let i = batchStart; i < batchEnd; i++) {
         tokenIdCalls.push({
-          to: UNISWAP_V3_POSITION_MANAGER,
+          to: POSITION_MANAGER,
           data: `0x2f745c59${address.slice(2).padStart(64, "0")}${i.toString(16).padStart(64, "0")}`,
         })
       }
 
-      const tokenIdResults = await batchRpcCalls(tokenIdCalls)
+      const tokenIdResults = await batchRpcCalls(tokenIdCalls, rpcUrl)
 
-      await new Promise((resolve) => setTimeout(resolve, 50)) // Reduced delay from 100ms to 50ms between RPC call groups
+      await new Promise((resolve) => setTimeout(resolve, 50))
 
       const positionDataCalls = []
       const tokenIds = []
@@ -377,12 +418,12 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
         const tokenId = Number.parseInt(tokenIdResults[i], 16)
         tokenIds.push(tokenId)
         positionDataCalls.push({
-          to: UNISWAP_V3_POSITION_MANAGER,
+          to: POSITION_MANAGER,
           data: `0x99fbab88${tokenId.toString(16).padStart(64, "0")}`,
         })
       }
 
-      const positionDataResults = await batchRpcCalls(positionDataCalls)
+      const positionDataResults = await batchRpcCalls(positionDataCalls, rpcUrl)
 
       await new Promise((resolve) => setTimeout(resolve, 50)) // Reduced delay from 100ms to 50ms between RPC call groups
 
@@ -458,13 +499,13 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
       }
 
       const poolAddressCalls = validPositions.map((pos) => ({
-        to: UNISWAP_V3_FACTORY,
+        to: FACTORY,
         data: `0x1698ee82${pos.token0.slice(2).padStart(64, "0")}${pos.token1.slice(2).padStart(64, "0")}${pos.fee.toString(16).padStart(64, "0")}`,
       }))
 
-      const poolAddressResults = await batchRpcCalls(poolAddressCalls)
+      const poolAddressResults = await batchRpcCalls(poolAddressCalls, rpcUrl)
 
-      await new Promise((resolve) => setTimeout(resolve, 50)) // Reduced delay from 100ms to 50ms between RPC call groups
+      await new Promise((resolve) => setTimeout(resolve, 50))
 
       const validPoolPositions: Array<{
         position: (typeof validPositions)[0]
@@ -490,9 +531,9 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
         data: "0x3850c7bd",
       }))
 
-      const slot0Results = await batchRpcCalls(slot0Calls)
+      const slot0Results = await batchRpcCalls(slot0Calls, rpcUrl)
 
-      await new Promise((resolve) => setTimeout(resolve, 50)) // Reduced delay from 100ms to 50ms between RPC call groups
+      await new Promise((resolve) => setTimeout(resolve, 50))
 
       const uniqueTokens = new Set<string>()
       for (const vpp of validPoolPositions) {
@@ -501,7 +542,10 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
       }
 
       const tokenDataPromises = Array.from(uniqueTokens).map(async (tokenAddress) => {
-        const [metadata, price] = await Promise.all([getTokenMetadata(tokenAddress), getTokenPrice(tokenAddress)])
+        const [metadata, price] = await Promise.all([
+          getTokenMetadata(tokenAddress, chainId, rpcUrl),
+          getTokenPrice(tokenAddress, chainId),
+        ])
         return { tokenAddress, metadata, price }
       })
 
@@ -559,6 +603,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
             position.tickLower,
             position.tickUpper,
             liquidityBigInt,
+            rpcUrl,
           )
 
           // Add tokensOwed (already collected but not withdrawn) to uncollected fees
@@ -599,14 +644,16 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
           const netPnl = feesEarned
           const initialValue = positionValue
 
+          // DEUS pool detection only applies on Base
           const isDeusPool =
-            position.token0.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ||
-            position.token1.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase()
+            chainId === 8453 &&
+            (position.token0.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase() ||
+              position.token1.toLowerCase() === DEUS_TOKEN_ADDRESS.toLowerCase())
 
           const poolShare = 0.001
 
           positions.push({
-            id: `uniswap-v3-${position.tokenId}`,
+            id: `uniswap-v3-${chainId}-${position.tokenId}`,
             tokenId: position.tokenId,
             poolId: `${token0Meta.symbol}/${token1Meta.symbol}-${(position.fee / 10000).toFixed(2)}%`,
             pairAddress: poolAddress,
@@ -624,7 +671,7 @@ export async function fetchV3Positions(address: string): Promise<LPPosition[]> {
               amount: amount1Decimal,
               value: token1Value,
             },
-            dexId: "Uniswap V3",
+            dexId: `Uniswap V3 (${chain.shortName})`,
             poolType: "v3",
             isDeusPool,
             feeTier: `${(position.fee / 10000).toFixed(2)}%`,

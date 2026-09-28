@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { fetchDexscreenerPools, type PoolData } from "@/lib/pool-data"
+import { fetchDexscreenerPools, fetchRobinhoodPools, type PoolData } from "@/lib/pool-data"
 
 export const dynamic = "force-dynamic"
 
@@ -22,8 +22,9 @@ export async function GET(request: Request) {
     const minVolume = Number.parseFloat(searchParams.get("minVolume") || "0")
     const poolType = searchParams.get("poolType")
     const priorityDexOnly = searchParams.get("priorityDexOnly") === "true"
+    const chain = searchParams.get("chain") ?? "base"
 
-    let pools = await fetchDexscreenerPools()
+    let pools = chain === "robinhood" ? await fetchRobinhoodPools() : await fetchDexscreenerPools()
 
     // Apply filters
     if (filterDeusOnly) {

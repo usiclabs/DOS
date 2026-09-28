@@ -4,14 +4,18 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 import { formatEther, type Address } from "viem"
 import { toast } from "sonner"
 import { getPublicClient } from "@/lib/rpc-client"
+import { SUPPORTED_CHAINS, getChainByHexId, type ChainConfig } from "@/lib/constants"
 
 interface WalletContextType {
   address: Address | null
   balance: string
   isConnecting: boolean
   isConnected: boolean
+  chainId: number | null
+  activeChain: ChainConfig
   connectWallet: (type?: "metamask" | "walletconnect") => Promise<void>
   disconnectWallet: () => void
+  switchChain: (chainKey: string) => Promise<void>
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined)
@@ -24,12 +28,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const [balance, setBalance] = useState("0")
   const [isConnecting, setIsConnecting] = useState(false)
   const [isConnected, setIsConnected] = useState(false)
+  const [chainId, setChainId] = useState<number | null>(null)
+  const [activeChain, setActiveChain] = useState<ChainConfig>(SUPPORTED_CHAINS.base)
 
   // Fetch balance using Alchemy (not MetaMask)
   const fetchBalance = useCallback(async (addr: Address) => {
     try {
       console.log("[v0] Fetching balance via Alchemy for:", addr)
-      const balanceWei = await publicClient.getBalance({ address: addr })
+      const balanceWei = await publicClient!.getBalance({ address: addr })
       const balanceEth = formatEther(balanceWei)
       setBalance(balanceEth)
       console.log("[v0] Balance fetched via Alchemy:", balanceEth, "ETH")
@@ -68,7 +74,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window === "undefined" || !window.ethereum) return
 
-    const handleAccountsChanged = (accounts: string[]) => {
+    const handleAccountsChanged = (...args: unknown[]) => {
+      const accounts = args[0] as string[]
       console.log("[v0] WalletProvider: Accounts changed event fired, accounts:", accounts.length)
       if (accounts.length > 0) {
         const addr = accounts[0] as Address
@@ -84,21 +91,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    const handleChainChanged = (chainId: string) => {
-      console.log("[v0] WalletProvider: Chain changed to:", chainId)
-      // Verify we're on Base (0x2105)
-      if (chainId !== "0x2105") {
-        console.warn("[v0] WalletProvider: Not on Base chain, chainId:", chainId)
+    const handleChainChanged = (...args: unknown[]) => {
+      const hexId = args[0] as string
+      console.log("[v0] WalletProvider: Chain changed to:", hexId)
+      const numId = parseInt(hexId, 16)
+      setChainId(numId)
+      const matched = getChainByHexId(hexId)
+      if (matched) {
+        setActiveChain(matched)
+        console.log("[v0] WalletProvider: Switched to supported chain:", matched.name)
       } else {
-        console.log("[v0] WalletProvider: On Base chain (0x2105)")
+        console.warn("[v0] WalletProvider: Unsupported chain:", hexId)
       }
     }
 
     // Add event listeners with proper error handling
     const addListeners = () => {
       try {
-        window.ethereum.on("accountsChanged", handleAccountsChanged)
-        window.ethereum.on("chainChanged", handleChainChanged)
+        window.ethereum!.on?.("accountsChanged", handleAccountsChanged)
+        window.ethereum!.on?.("chainChanged", handleChainChanged)
         console.log("[v0] WalletProvider: Event listeners registered")
       } catch (error) {
         console.error("[v0] WalletProvider: Error registering event listeners:", error)
@@ -107,8 +118,8 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     const removeListeners = () => {
       try {
-        window.ethereum?.removeListener("accountsChanged", handleAccountsChanged)
-        window.ethereum?.removeListener("chainChanged", handleChainChanged)
+        window.ethereum?.removeListener?.("accountsChanged", handleAccountsChanged)
+        window.ethereum?.removeListener?.("chainChanged", handleChainChanged)
         console.log("[v0] WalletProvider: Event listeners removed")
       } catch (error) {
         console.error("[v0] WalletProvider: Error removing event listeners:", error)
@@ -146,42 +157,16 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           // Fetch balance in parallel
           await fetchBalance(addr)
 
-          // Switch to Base chain
+          // Detect current chain
           try {
-            console.log("[v0] WalletProvider: Switching to Base chain (0x2105)...")
-            await window.ethereum.request({
-              method: "wallet_switchEthereumChain",
-              params: [{ chainId: "0x2105" }],
-            })
-            console.log("[v0] WalletProvider: Successfully switched to Base chain")
-            toast.success("Wallet connected successfully!")
-          } catch (switchError: any) {
-            console.log("[v0] WalletProvider: Chain switch error code:", switchError.code)
-            if (switchError.code === 4902) {
-              try {
-                await window.ethereum.request({
-                  method: "wallet_addEthereumChain",
-                  params: [
-                    {
-                      chainId: "0x2105",
-                      chainName: "Base",
-                      nativeCurrency: { name: "Ether", symbol: "ETH", decimals: 18 },
-                      rpcUrls: ["https://mainnet.base.org"],
-                      blockExplorerUrls: ["https://basescan.org"],
-                    },
-                  ],
-                })
-                console.log("[v0] WalletProvider: Base chain added successfully")
-                toast.success("Wallet connected successfully!")
-              } catch (addError) {
-                console.error("[v0] WalletProvider: Error adding Base chain:", addError)
-                toast.warning("Wallet connected but Base chain wasn't added. Please add it manually.")
-              }
-            } else {
-              console.error("[v0] WalletProvider: Error switching chain:", switchError)
-              toast.warning("Wallet connected but couldn't switch to Base chain.")
-            }
-          }
+            const currentChainHex = await window.ethereum.request({ method: "eth_chainId" }) as string
+            const numId = parseInt(currentChainHex, 16)
+            setChainId(numId)
+            const matched = getChainByHexId(currentChainHex)
+            if (matched) setActiveChain(matched)
+          } catch { /* ignore */ }
+
+          toast.success("Wallet connected successfully!")
         } else {
           console.log("[v0] WalletProvider: No accounts returned from request")
           toast.error("No accounts found. Please try again.")
@@ -202,6 +187,57 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     [fetchBalance],
   )
 
+  // Switch chain
+  const switchChain = useCallback(async (chainKey: string) => {
+    const chain = SUPPORTED_CHAINS[chainKey]
+    if (!chain) {
+      toast.error("Unsupported chain")
+      return
+    }
+
+    if (!window.ethereum) {
+      toast.error("No wallet detected")
+      return
+    }
+
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: chain.hexId }],
+      })
+      setActiveChain(chain)
+      setChainId(chain.id)
+      toast.success(`Switched to ${chain.name}`)
+    } catch (switchError: any) {
+      if (switchError.code === 4902) {
+        // Chain not added yet — add it
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: chain.hexId,
+                chainName: chain.name,
+                nativeCurrency: chain.nativeCurrency,
+                rpcUrls: chain.rpcUrls,
+                blockExplorerUrls: [chain.blockExplorerUrl],
+              },
+            ],
+          })
+          setActiveChain(chain)
+          setChainId(chain.id)
+          toast.success(`${chain.name} added and selected`)
+        } catch (addError) {
+          console.error("[v0] WalletProvider: Error adding chain:", addError)
+          toast.error(`Failed to add ${chain.name}`)
+        }
+      } else {
+        console.error("[v0] WalletProvider: Error switching chain:", switchError)
+        toast.error(`Failed to switch to ${chain.name}`)
+      }
+    }
+  }, [])
+
   // Disconnect wallet
   const disconnectWallet = useCallback(() => {
     setAddress(null)
@@ -217,8 +253,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         balance,
         isConnecting,
         isConnected,
+        chainId,
+        activeChain,
         connectWallet,
         disconnectWallet,
+        switchChain,
       }}
     >
       {children}
@@ -237,11 +276,10 @@ export function useWalletContext() {
 export function useWallet() {
   const context = useWalletContext()
 
-  // Return extended interface to match old useWallet hook
   return {
     ...context,
-    network: "Base",
+    network: context.activeChain.name,
     walletType: context.isConnected ? ("metamask" as const) : null,
-    isChecking: false, // No longer needed with centralized provider
+    isChecking: false,
   }
 }

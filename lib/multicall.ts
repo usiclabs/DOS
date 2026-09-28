@@ -1,4 +1,4 @@
-import { RpcManager } from "./rpc-config"
+import { rpcManager } from "./rpc-config"
 
 const MULTICALL3_ADDRESS = "0xcA11bde05977b3631167028862bE2a173976CA11"
 
@@ -47,7 +47,7 @@ export interface Result {
  * This dramatically reduces RPC calls and improves performance
  */
 export async function multicall(calls: Call[]): Promise<Result[]> {
-  const rpcManager = RpcManager.getInstance()
+
 
   // Encode the multicall function call
   const iface = new (await import("ethers")).Interface(MULTICALL3_ABI)
@@ -56,10 +56,10 @@ export async function multicall(calls: Call[]): Promise<Result[]> {
   console.log(`[v0] Multicall: Batching ${calls.length} calls into 1 RPC request`)
 
   try {
-    const result = await rpcManager.call({
-      to: MULTICALL3_ADDRESS,
-      data: calldata,
-    })
+    const result = await rpcManager.call("eth_call", [
+      { to: MULTICALL3_ADDRESS, data: calldata },
+      "latest",
+    ])
 
     // Decode the results
     const decoded = iface.decodeFunctionResult("aggregate3", result)

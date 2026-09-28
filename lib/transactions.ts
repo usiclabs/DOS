@@ -40,12 +40,12 @@ export async function sendTransaction(config: TransactionConfig): Promise<Transa
     const provider = await getWalletProvider()
 
     // Request account access
-    const accounts = await provider.request({ method: "eth_requestAccounts" })
+    const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[]
     if (!accounts || accounts.length === 0) {
       throw new Error("No accounts connected")
     }
 
-    const from = accounts[0]
+    const from = accounts[0] as string
 
     // Estimate gas if not provided
     let gasLimit = config.gasLimit
@@ -62,7 +62,7 @@ export async function sendTransaction(config: TransactionConfig): Promise<Transa
             },
           ],
         })
-        gasLimit = `0x${(Number.parseInt(gasEstimate, 16) * 1.2).toString(16)}` // Add 20% buffer
+        gasLimit = `0x${(Number.parseInt(gasEstimate as string, 16) * 1.2).toString(16)}` // Add 20% buffer
       } catch (error) {
         console.warn("[v0] Gas estimation failed, using default:", error)
         gasLimit = "0x5208" // Default gas limit
@@ -81,12 +81,12 @@ export async function sendTransaction(config: TransactionConfig): Promise<Transa
           gas: gasLimit,
         },
       ],
-    })
+    }) as string
 
     console.log("[v0] Transaction sent:", txHash)
 
     // Wait for confirmation
-    await waitForTransaction(txHash)
+    await waitForTransaction(txHash as string)
 
     return {
       hash: txHash,
@@ -111,7 +111,7 @@ async function waitForTransaction(txHash: string): Promise<void> {
         const receipt = await provider.request({
           method: "eth_getTransactionReceipt",
           params: [txHash],
-        })
+        }) as { status: string } | null
 
         if (receipt) {
           if (receipt.status === "0x1") {
@@ -229,8 +229,8 @@ export async function collectFees(tokenId: number): Promise<TransactionResult> {
     console.log("[v0] Collecting fees from position:", tokenId)
 
     const provider = await getWalletProvider()
-    const accounts = await provider.request({ method: "eth_requestAccounts" })
-    const recipient = accounts[0]
+    const accounts = await provider.request({ method: "eth_requestAccounts" }) as string[]
+    const recipient = accounts[0] as string
 
     // Encode collect function call
     const functionSelector = POSITION_MANAGER_ABI.collect
@@ -405,7 +405,7 @@ export async function getTransactionStatus(txHash: string): Promise<{
     const receipt = await provider.request({
       method: "eth_getTransactionReceipt",
       params: [txHash],
-    })
+    }) as { status: string; blockNumber: string; gasUsed: string } | null
 
     if (!receipt) {
       return { status: "pending" }

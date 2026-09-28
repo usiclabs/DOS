@@ -81,8 +81,8 @@ export function usePortfolioActions() {
           console.log("[v0] Collecting fees from position", position.tokenId)
 
           const collectData = encodeFunctionData({
-            abi: NONFUNGIBLE_POSITION_MANAGER_ABI,
-            functionName: "collect",
+            abi: NONFUNGIBLE_POSITION_MANAGER_ABI as any,
+            functionName: "collect" as any,
             args: [
               {
                 tokenId: BigInt(position.tokenId!),
@@ -93,7 +93,7 @@ export function usePortfolioActions() {
             ],
           })
 
-          const collectTx = await window.ethereum.request({
+          const collectTx = await window.ethereum!.request({
             method: "eth_sendTransaction",
             params: [
               {
@@ -102,19 +102,19 @@ export function usePortfolioActions() {
                 data: collectData,
               },
             ],
-          })
+          }) as string
 
           console.log("[v0] Fee collection tx:", collectTx)
 
           // Wait for confirmation
-          let receipt = null
+          let receipt: { status: string } | null = null
           let attempts = 0
           while (!receipt && attempts < 30) {
             await new Promise((resolve) => setTimeout(resolve, 2000))
-            receipt = await window.ethereum.request({
+            receipt = await window.ethereum!.request({
               method: "eth_getTransactionReceipt",
               params: [collectTx],
-            })
+            }) as { status: string } | null
             attempts++
           }
 

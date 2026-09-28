@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -26,6 +27,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { DeployModal } from "@/components/deploy-modal"
+import { Slider } from "@/components/ui/slider"
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 
 const fetcher = (url: string) => fetch(url).then((res) => res.json())
 
@@ -49,6 +52,10 @@ interface PoolData {
   isDeusPool: boolean
   volatility: number
   lastUpdated: string
+  reserve0?: number
+  reserve1?: number
+  transactions24h?: number
+  feeTierBps?: number
 }
 
 export default function PoolsV2Page() {
@@ -501,6 +508,20 @@ function PoolDetailsDrawer({
   onDeploy: (pool: PoolData) => void
   onClose: () => void
 }) {
+  const [range, setRange] = useState<[number, number]>([70, 130])
+  const [chartWindow, setChartWindow] = useState<"24H" | "7D" | "30D">("24H")
+  const chartData = useMemo(() => {
+    const points = chartWindow === "24H" ? 12 : chartWindow === "7D" ? 14 : 15
+    const drift = pool.priceChange24h / 100
+    return Array.from({ length: points }, (_, index) => ({
+      label: chartWindow === "24H" ? `${index * 2}h` : `${index + 1}`,
+      price: Number((pool.priceUsd * (1 - drift / 2 + (drift * index) / Math.max(points - 1, 1))).toFixed(6)),
+      volume: Math.max(0, pool.volume24h / points * (0.72 + ((index * 17) % 9) / 20)),
+    }))
+  }, [chartWindow, pool.priceChange24h, pool.priceUsd, pool.volume24h])
+  const rangeWidth = range[1] - range[0]
+  const estimatedActiveLiquidity = Math.min(100, Math.max(8, 100 - Math.abs(100 - (range[0] + range[1]) / 2) * 0.7))
+
   const formatCurrency = (value: number) => {
     if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`
     if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`
@@ -556,6 +577,22 @@ function PoolDetailsDrawer({
           <p className="text-sm text-gray-400">Annual percentage yield after fees</p>
         </div>
 
+        {/* Pool identity */}
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-gray-400">Pool address</span>
+            <span className="max-w-[220px] truncate font-mono text-xs text-gray-200">{pool.pairAddress}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-gray-400">Network</span>
+            <Badge variant="outline">{pool.chainId === "4663" ? "Robinhood Chain" : pool.chainId}</Badge>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-gray-400">Pool type / fee</span>
+            <span className="text-sm text-gray-200">{pool.poolType.toUpperCase()} · {pool.feeTier}</span>
+          </div>
+        </div>
+
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
@@ -590,6 +627,73 @@ function PoolDetailsDrawer({
             <div className={`text-2xl font-bold ${pool.priceChange24h >= 0 ? "text-green-400" : "text-red-400"}`}>
               {formatPercent(pool.priceChange24h)}
             </div>
+          </div>
+        </div>
+
+        {/* Price and volume chart */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <h4 className="font-semibold text-white">Price & volume</h4>
+              <p className="text-xs text-gray-500">Indicative pool trend from available metrics</p>
+            </div>
+            <div className="flex rounded-lg border border-white/10 bg-black/20 p-0.5">
+              {(["24H", "7D", "30D"] as const).map((window) => (
+                <button key={window} type="button" onClick={() => setChartWindow(window)} className={`rounded-md px-2 py-1 text-[10px] font-medium transition-colors ${chartWindow === window ? "bg-accent text-accent-foreground" : "text-gray-500 hover:text-white"}`}>
+                  {window}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={chartData} margin={{ top: 8, right: 4, left: -26, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="poolPriceFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.08)" />
+                <XAxis dataKey="label" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${Number(value).toFixed(2)}`} />
+                <Tooltip contentStyle={{ background: "#101014", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontSize: 11 }} formatter={(value: number, name: string) => [name === "price" ? `$${value}` : formatCurrency(value), name === "price" ? "Price" : "Volume"]} />
+                <Area type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#poolPriceFill)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Range simulator */}
+        <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2"><Droplets className="h-4 w-4 text-accent" /><h4 className="font-semibold text-white">Liquidity range</h4></div>
+              <p className="mt-1 text-xs leading-relaxed text-gray-400">Preview where your capital would be active around the current price.</p>
+            </div>
+            <Badge variant="outline">{rangeWidth}% width</Badge>
+          </div>
+          <div className="flex items-center justify-between text-xs"><span className="text-gray-500">Lower bound <strong className="ml-1 text-white">{range[0]}%</strong></span><span className="text-gray-500">Upper bound <strong className="ml-1 text-white">{range[1]}%</strong></span></div>
+          <Slider value={range} onValueChange={(value) => setRange(value as [number, number])} min={25} max={200} step={5} minStepsBetweenThumbs={2} aria-label="Liquidity price range" />
+          <div className="flex gap-2">
+            {([[80, 120], [60, 140], [25, 200]] as [number, number][]).map((preset) => <Button key={preset.join("-")} type="button" size="sm" variant="outline" onClick={() => setRange(preset)} className="flex-1 border-white/10 bg-white/5 text-xs">{preset[0]}–{preset[1]}%</Button>)}
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg border border-white/10 bg-black/20 p-3"><span className="block text-gray-500">Active liquidity estimate</span><strong className="mt-1 block text-white">{estimatedActiveLiquidity.toFixed(0)}%</strong></div><div className="rounded-lg border border-white/10 bg-black/20 p-3"><span className="block text-gray-500">Current price</span><strong className="mt-1 block text-white">${pool.priceUsd.toFixed(6)}</strong></div></div>
+          <p className="text-[11px] leading-relaxed text-amber-200/70">Range values are a planning preview. Final ticks, token amounts, slippage, and transaction simulation are calculated by the live position flow before signing.</p>
+        </div>
+
+        {/* Quote-pair workflow */}
+        <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Droplets className="h-4 w-4 text-accent" />
+              <h4 className="font-semibold text-white">Manage {pool.baseToken.symbol}/{pool.quoteToken.symbol}</h4>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-gray-400">Add liquidity to this exact quote pair, then monitor positions, fees, and range performance from the LP manager.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3"><span className="block text-gray-500">Pair price</span><span className="mt-1 block font-semibold text-white">${pool.priceUsd.toFixed(6)}</span></div>
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3"><span className="block text-gray-500">Last updated</span><span className="mt-1 block font-semibold text-white">{new Date(pool.lastUpdated).toLocaleTimeString()}</span></div>
           </div>
         </div>
 
@@ -629,15 +733,21 @@ function PoolDetailsDrawer({
         </div>
       </div>
 
-      {/* Deploy Button */}
-      <div className="pt-4 border-t border-white/10">
+      {/* Add and manage liquidity */}
+      <div className="grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
         <Button
           size="lg"
           onClick={() => onDeploy(pool)}
-          className="w-full bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-accent-foreground shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 transition-all"
+          className="bg-gradient-to-r from-accent to-accent/80 text-accent-foreground shadow-lg shadow-accent/20"
         >
-          <Zap className="h-5 w-5 mr-2" />
-          Deploy Liquidity
+          <Zap className="mr-2 h-5 w-5" />
+          Add liquidity
+        </Button>
+        <Button asChild size="lg" variant="outline" className="border-white/15 bg-white/5">
+          <Link href={`/lp-manager?chain=${pool.chainId === "4663" ? "robinhood" : "base"}&pool=${encodeURIComponent(pool.pairAddress)}`}>
+            <Droplets className="mr-2 h-5 w-5" />
+            Manage positions
+          </Link>
         </Button>
       </div>
     </div>

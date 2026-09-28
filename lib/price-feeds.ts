@@ -368,7 +368,7 @@ async function fetchDexScreenerPrices(tokens: string[]): Promise<Record<string, 
           price: result.price,
           source: "DexScreener",
           timestamp: Date.now(),
-          confidence: calculateConfidence("dexscreener", responseTime, null, result.liquidity),
+          confidence: calculateConfidence("dexscreener", responseTime, undefined, result.liquidity),
         }
       }
     })

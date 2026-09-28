@@ -30,8 +30,8 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "D.O.S. - DEUS Operating System",
   description:
-    "Advanced Base-chain liquidity dashboard with AI-powered analytics, pool discovery, and automated deployment tools for DeFi traders and liquidity providers.",
-  keywords: ["DeFi", "Base", "DEUS", "Liquidity", "Analytics", "Crypto", "Trading", "Pools"],
+    "D.O.S. is a Robinhood Chain liquidity platform for discovering verified tokenized-stock pools, managing Uniswap V3 positions, and tracking on-chain performance.",
+  keywords: ["DeFi", "Robinhood Chain", "Tokenized Stocks", "Liquidity", "Uniswap V3", "LP"],
   authors: [{ name: "DEUS Team" }],
   creator: "DEUS Operating System",
   publisher: "DEUS",
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://dos.deus.finance"),
   openGraph: {
     title: "D.O.S. - DEUS Operating System",
-    description: "Advanced Base-chain liquidity dashboard with AI-powered analytics",
-    url: "https://dos.deus.finance",
+    description: "Verified tokenized-stock liquidity on Robinhood Chain",
+    url: "https://deusos.app",
     siteName: "D.O.S.",
     images: [
       {
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "D.O.S. - DEUS Operating System",
-    description: "Advanced Base-chain liquidity dashboard with AI-powered analytics",
+    description: "Verified tokenized-stock liquidity and portfolio management on Robinhood Chain",
     images: ["/og-image.png"],
   },
   robots: {
@@ -95,7 +95,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="bg-black">
+    <html lang="en" suppressHydrationWarning className="bg-background">
       <head>
         <meta name="theme-color" content="#000000" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -105,34 +105,32 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       </head>
       <body className={`font-sans ${inter.variable} ${jetbrainsMono.variable} antialiased bg-background min-h-screen overflow-x-hidden`}>
-        <div className="min-h-screen bg-background flex flex-col w-full">
-          <ErrorBoundary>
-            <Providers>
-              <KeyboardShortcuts />
-              <StickyHeader />
-              <main className="flex-1 pt-0 pb-20 md:pb-0 overflow-y-auto w-full">
-                <Suspense
-                  fallback={
-                    <div className="flex items-center justify-center min-h-screen bg-black">
-                      <div className="text-center">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
-                        <p className="text-white text-sm">Loading...</p>
-                      </div>
+        <ErrorBoundary>
+          <Providers>
+            <KeyboardShortcuts />
+            <StickyHeader />
+            <main className="w-full pb-20 md:pb-0">
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center min-h-screen bg-black">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4" />
+                      <p className="text-white text-sm">Loading...</p>
                     </div>
-                  }
-                >
-                  {children}
-                </Suspense>
-              </main>
-              <ToastNotifications />
-              <Toaster />
-              <BuyNotifications />
-              <MobileNavigation />
-              <MaintenanceModal />
-              {/* <BackgroundMusicPlayer /> */}
-            </Providers>
-          </ErrorBoundary>
-        </div>
+                  </div>
+                }
+              >
+                {children}
+              </Suspense>
+            </main>
+            <ToastNotifications />
+            <Toaster />
+            <BuyNotifications />
+            <MobileNavigation />
+            <MaintenanceModal />
+            {/* <BackgroundMusicPlayer /> */}
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   )

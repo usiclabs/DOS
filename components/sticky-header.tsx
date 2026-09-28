@@ -13,10 +13,12 @@ import { useWallet } from "@/hooks/use-wallet"
 import { Menu, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
+import { SUPPORTED_CHAINS } from "@/lib/constants"
 
 const navItems = [
   { href: "/", label: "Dashboard" },
   { href: "/pools", label: "Pools" },
+  { href: "/stocks", label: "Stocks" },
   { href: "/portfolio", label: "Portfolio" },
   { href: "/lp-manager", label: "LP Manager" },
   // { href: "/creators", label: "Creators" }, // Temporarily hidden
@@ -34,8 +36,8 @@ const NavItem = memo(
         <Button
           variant="ghost"
           className={cn(
-            "text-gray-300 hover:text-white hover:bg-accent/20 font-medium transition-all duration-300 px-3 py-2 rounded-xl text-xs",
-            isActive && "text-orange-500 bg-accent/30 shadow-lg border border-accent/30 animate-pulse-glow",
+            "text-gray-400 hover:text-white hover:bg-accent/15 font-medium transition-all duration-300 px-3 py-2 rounded-[0.5rem] text-xs",
+            isActive && "text-emerald-400 bg-accent/20 shadow-md border border-accent/40 neon-glow",
           )}
           aria-current={isActive ? "page" : undefined}
         >
@@ -53,7 +55,7 @@ export function StickyHeader() {
   const [isScrolled, setIsScrolled] = useState(false)
   const pathname = usePathname()
 
-  const { isConnected, address, balance, network, walletType, connectWallet, disconnectWallet } = useWallet()
+  const { isConnected, address, balance, network, walletType, connectWallet, disconnectWallet, switchChain, activeChain } = useWallet()
 
   useEffect(() => {
     let ticking = false
@@ -79,8 +81,8 @@ export function StickyHeader() {
   }, [])
 
   const handleWalletConnect = useCallback(
-    async (walletType: "metamask" | "walletconnect") => {
-      await connectWallet(walletType)
+    async (walletType: string) => {
+      await connectWallet(walletType as "metamask" | "walletconnect")
       setIsWalletModalOpen(false)
     },
     [connectWallet],
@@ -132,7 +134,9 @@ export function StickyHeader() {
                   balance={balance}
                   onConnect={handleWalletConnect}
                   onDisconnect={disconnectWallet}
-                  network="Base"
+                  onSwitchChain={switchChain}
+                  network={activeChain.name}
+                  activeChainKey={Object.keys(SUPPORTED_CHAINS).find(k => SUPPORTED_CHAINS[k].id === activeChain.id) ?? "base"}
                   variant="dropdown"
                   size="md"
                   className="hidden md:flex"
@@ -193,7 +197,9 @@ export function StickyHeader() {
                         balance={balance}
                         onConnect={handleWalletConnect}
                         onDisconnect={disconnectWallet}
-                        network="Base"
+                        onSwitchChain={switchChain}
+                        network={activeChain.name}
+                        activeChainKey={Object.keys(SUPPORTED_CHAINS).find(k => SUPPORTED_CHAINS[k].id === activeChain.id) ?? "base"}
                         variant="dropdown"
                         size="md"
                         className="w-full"

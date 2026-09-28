@@ -123,5 +123,5 @@ export const UNISWAP_V3_POOL_ABI = [
   },
 ] as const
 
-// Uniswap V3 NonfungiblePositionManager address on Base
-export const NONFUNGIBLE_POSITION_MANAGER_ADDRESS = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1" as const
+  // Uniswap V3 NonfungiblePositionManager address on Robinhood Chain
+export const NONFUNGIBLE_POSITION_MANAGER_ADDRESS = "0x73991a25C818Bf1f1128dEAaB1492D45638DE0D3" as const
