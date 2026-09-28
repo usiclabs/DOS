@@ -6,13 +6,13 @@
 import { encodeAbiParameters } from "viem"
 import { rpcCall } from "./rpc-config"
 
-// Uniswap V3 Contract Addresses on Base
+// Uniswap V3 routing contracts on Robinhood Chain (chain ID 4663)
 export const UNISWAP_V3_ADDRESSES = {
-  FACTORY: "0x33128a8fC17869897dcE68Ed026d694621f6FDfD",
-  SWAP_ROUTER: "0x2626664c2603336E57B271c5C0b26F421741e481",
-  UNIVERSAL_ROUTER: "0x3fC91A3afd70395Cd496C647d5a6CC9D4B2b7FAD",
-  QUOTER_V2: "0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a",
-  WETH: "0x4200000000000000000000000000000000000006",
+  FACTORY: "0x1f7d7550B1b028f7571E69A784071F0205FD2EfA",
+  SWAP_ROUTER: "0xcaf681a66d020601342297493863e78c959e5cb2",
+  UNIVERSAL_ROUTER: "0x53bf6b0684ec7ef91e1387da3d1a1769bc5a6f77",
+  QUOTER_V2: "0x33e885ed0ec9bf04ecfb19341582aadcb4c8a9e7",
+  WETH: "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
 } as const
 
 // Common fee tiers in Uniswap V3 (in basis points)
@@ -213,7 +213,7 @@ export async function detectPoolFeeTier(
  */
 export async function findBestSwapPool(
   targetToken: string,
-  baseTokens: string[] = [UNISWAP_V3_ADDRESSES.WETH, "0x73582df1cad3187cD0746b7A473d65c06386837e"], // WETH and DEUS
+  baseTokens: string[] = [UNISWAP_V3_ADDRESSES.WETH, "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168"], // WETH and USDG
   poolHint?: string,
 ): Promise<{ baseToken: string; fee: number; poolAddress: string } | null> {
   console.log("[v0] Finding best swap pool for target token:", targetToken)
