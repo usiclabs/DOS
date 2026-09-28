@@ -15,6 +15,9 @@ import { useWallet } from "@/contexts/wallet-context"
 import { ERC20_ABI } from "@/lib/token-factory-abi"
 import { formatEther, encodeFunctionData } from "viem"
 import { SUPPORTED_CHAINS } from "@/lib/constants"
+import { deployLiquidity } from "@/lib/liquidity-deployment"
+import { ethers } from "ethers"
+import confetti from "canvas-confetti"
 
 interface Stock {
   id?: string
@@ -28,8 +31,17 @@ interface Stock {
   liquidity?: number
   risk?: "low" | "medium" | "high"
   sector?: string
-  tokenAddress?: string
-  poolAddress?: string
+  tokenAddress?: string | null
+  poolAddress?: string | null
+  poolFee?: number | null
+  poolAvailable?: boolean
+  quoteToken?: "ETH" | "USDG" | null
+  availableQuoteTokens?: ("ETH" | "USDG")[]
+  poolFees?: Partial<Record<"ETH" | "USDG", number | null>>
+  eligibility?: {
+    restrictedToEligibleNonUSPersons: boolean
+    restrictedJurisdictions: string[]
+  }
 }
 
 interface StocksDepositModalProps {
@@ -140,10 +152,10 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
       return
     }
 
-    if (!stock?.tokenAddress) {
+    if (!stock?.tokenAddress || !stock.poolAvailable || !stock.availableQuoteTokens?.includes(selectedToken) || !stock.poolFees?.[selectedToken]) {
       toast({
-        title: "Stock pool unavailable",
-        description: "This stock is not connected to a verified Robinhood Chain liquidity pool yet.",
+        title: "Pool unavailable",
+        description: `No verified ${selectedToken}/stock pool with usable liquidity is available for this deposit.`,
         variant: "destructive",
       })
       return
@@ -188,13 +200,53 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
         throw new Error(`Switch your wallet to ${chain.name} before depositing.`)
       }
 
-      if (!stock.tokenAddress || !stock.poolAddress) {
-        throw new Error("This stock does not have a verified liquidity pool configured yet.")
+      if (!stock.tokenAddress || !stock.poolAddress || !stock.poolFee || !stock.poolAvailable) {
+        throw new Error("This stock does not have a verified, liquid pool configured yet.")
       }
 
-      // Never send a transfer directly to a token contract. A real deposit must
-      // call the configured position manager/router with validated pool data.
-      throw new Error("Liquidity deployment is temporarily unavailable until this stock's verified pool is enabled.")
+      if (stock.eligibility?.restrictedToEligibleNonUSPersons) {
+        const acknowledged = window.confirm(
+          "Robinhood Stock Tokens are restricted securities. Confirm that you are an eligible non-U.S. person and are not located in a restricted jurisdiction before continuing.",
+        )
+        if (!acknowledged) throw new Error("Eligibility confirmation was not provided")
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const signer = await provider.getSigner()
+      const quoteAddress = selectedToken === "ETH" ? chain.wethAddress : chain.knownTokens.USDG
+      const amountInQuote = depositAmount
+
+      // ETH is wrapped first because Uniswap V3 pools and the position manager
+      // accept ERC-20 WETH, not native ETH.
+      if (selectedToken === "ETH") {
+        const weth = new ethers.Contract(
+          chain.wethAddress,
+          ["function deposit() payable"],
+          signer,
+        )
+        const wrapTx = await weth.deposit({ value: ethers.parseUnits(amountInQuote, 18) })
+        await wrapTx.wait()
+      }
+
+      const result = await deployLiquidity(signer, {
+        token0Address: stock.tokenAddress,
+        token1Address: quoteAddress,
+        amount0: "0",
+        amount1: amountInQuote,
+        feeTier: stock.poolFees?.[selectedToken] ?? stock.poolFee,
+        slippage: 0.5,
+        userAddress: address,
+      })
+
+      if (!result.success || !result.txHash) {
+        throw new Error(result.error || "Liquidity deployment failed")
+      }
+
+      setTxHash(result.txHash)
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } })
+      toast({ title: "Liquidity deployed", description: `Your ${stock.symbol} position was created on Robinhood Chain.` })
+      setStep("success")
+      setTimeout(onClose, 5000)
     } catch (error) {
       console.error("[v0] Deposit error:", error)
       toast({
@@ -336,6 +388,14 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
                   </p>
                 </div>
 
+                {!stock.poolAvailable && (
+                  <Card className="border-amber-500/30 bg-amber-500/10">
+                    <CardContent className="pt-4 text-sm text-amber-200">
+                      Pool unavailable. Deposits are disabled until Robinhood Chain reports a supported fee tier, matching token pair, and usable pool liquidity.
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Info Box */}
                 <Card className="bg-accent/10 border-accent/30">
                   <CardContent className="pt-4 flex gap-3">
@@ -351,8 +411,9 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
                   onClick={isConnected ? handlePreview : () => connectWallet()}
                   className="w-full bg-accent hover:bg-accent/90 text-white"
                   size="lg"
+                  disabled={isConnected && !stock.poolAvailable}
                 >
-                  {isConnected ? "Review Deposit" : "Connect Wallet"}
+                  {isConnected && !stock.poolAvailable ? "Pool unavailable" : isConnected ? "Review Deposit" : "Connect Wallet"}
                 </Button>
               </div>
             )}

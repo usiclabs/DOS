@@ -1,6 +1,97 @@
 import { NextRequest, NextResponse } from "next/server"
+import { encodeFunctionData, getAddress, type Hex } from "viem"
+import { SUPPORTED_CHAINS } from "@/lib/constants"
 
-// Mock tokenized stocks data from Robinhood
+const RH_ASSETS_URL = "https://api.robinhood.com/rhj/assets"
+const STOCK_DECIMALS = 18
+const FACTORY_ABI = [
+  {
+    type: "function",
+    name: "getPool",
+    stateMutability: "view",
+    inputs: [
+      { name: "tokenA", type: "address" },
+      { name: "tokenB", type: "address" },
+      { name: "fee", type: "uint24" },
+    ],
+    outputs: [{ name: "pool", type: "address" }],
+  },
+] as const
+const POOL_ABI = [
+  { type: "function", name: "token0", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { type: "function", name: "token1", stateMutability: "view", inputs: [], outputs: [{ type: "address" }] },
+  { type: "function", name: "fee", stateMutability: "view", inputs: [], outputs: [{ type: "uint24" }] },
+  { type: "function", name: "liquidity", stateMutability: "view", inputs: [], outputs: [{ type: "uint128" }] },
+] as const
+const FEE_TIERS = [100, 500, 3000, 10000] as const
+
+type RegistryAsset = Record<string, unknown>
+type PoolStatus = { address: string; fee: number; liquidity: string } | null
+
+function findDeployment(asset: RegistryAsset) {
+  const candidates = [asset.deployments, asset.contracts, asset.chains, asset.networks]
+  for (const value of candidates) {
+    if (!Array.isArray(value)) continue
+    const deployment = value.find((item) => {
+      if (!item || typeof item !== "object") return false
+      const record = item as RegistryAsset
+      return Number(record.chainId ?? record.chain_id ?? record.chainID) === 4663
+    }) as RegistryAsset | undefined
+    if (deployment) return String(deployment.address ?? deployment.contractAddress ?? deployment.tokenAddress ?? "")
+  }
+  if (Number(asset.chainId ?? asset.chain_id) === 4663) {
+    return String(asset.address ?? asset.contractAddress ?? asset.tokenAddress ?? "")
+  }
+  return ""
+}
+
+function registrySymbol(asset: RegistryAsset) {
+  return String(asset.symbol ?? asset.tokenSymbol ?? asset.ticker ?? asset.code ?? "").toUpperCase()
+}
+
+async function rpcCall(to: string, data: Hex) {
+  const response = await fetch(SUPPORTED_CHAINS.robinhood.rpcUrls[0], {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
+    cache: "no-store",
+  })
+  const payload = await response.json()
+  if (payload.error || typeof payload.result !== "string") throw new Error("Robinhood Chain RPC call failed")
+  return payload.result as Hex
+}
+
+async function discoverPool(tokenAddress: string, quoteAddress: string): Promise<PoolStatus> {
+  for (const fee of FEE_TIERS) {
+    try {
+      const poolHex = await rpcCall(
+        SUPPORTED_CHAINS.robinhood.uniswapV3Factory,
+        encodeFunctionData({ abi: FACTORY_ABI, functionName: "getPool", args: [tokenAddress as `0x${string}`, quoteAddress as `0x${string}`, fee] }),
+      )
+      const pool = getAddress(`0x${poolHex.slice(-40)}`)
+      if (pool === "0x0000000000000000000000000000000000000000") continue
+      const [token0, token1, poolFee, liquidity] = await Promise.all(
+        ["token0", "token1", "fee", "liquidity"].map((functionName) =>
+          rpcCall(pool, encodeFunctionData({ abi: POOL_ABI, functionName: functionName as never, args: [] })),
+        ),
+      )
+      const decodedToken0 = getAddress(`0x${token0.slice(-40)}`)
+      const decodedToken1 = getAddress(`0x${token1.slice(-40)}`)
+      const decodedFee = Number(BigInt(poolFee))
+      const decodedLiquidity = BigInt(liquidity)
+      const matches = [decodedToken0, decodedToken1].some((value) => value.toLowerCase() === tokenAddress.toLowerCase()) &&
+        [decodedToken0, decodedToken1].some((value) => value.toLowerCase() === quoteAddress.toLowerCase())
+      if (matches && decodedFee === fee && decodedLiquidity > 0n) {
+        return { address: pool, fee, liquidity: decodedLiquidity.toString() }
+      }
+    } catch {
+      continue
+    }
+  }
+  return null
+}
+
+// Tokenized stocks are sourced from Robinhood's registry; display metadata is local until a market-data feed is connected.
 const TOKENIZED_STOCKS = [
   {
     id: "rhstock-aapl",
@@ -218,26 +309,69 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50")
     const page = parseInt(searchParams.get("page") || "1")
 
-    // Paginate
-    const startIdx = (page - 1) * limit
-    const endIdx = startIdx + limit
-    const paginatedStocks = TOKENIZED_STOCKS.slice(startIdx, endIdx)
+    const registryResponse = await fetch(RH_ASSETS_URL, { next: { revalidate: 60 } })
+    if (!registryResponse.ok) throw new Error(`Robinhood registry returned ${registryResponse.status}`)
+    const registryPayload = await registryResponse.json()
+    const registryAssets = Array.isArray(registryPayload) ? registryPayload : registryPayload.results ?? registryPayload.assets ?? []
+    const assetsBySymbol = new Map<string, RegistryAsset>()
 
-    // Calculate aggregate stats
-    const totalLiquidity = TOKENIZED_STOCKS.reduce((sum, stock) => sum + stock.liquidity, 0)
-    const totalVolume24h = TOKENIZED_STOCKS.reduce((sum, stock) => sum + stock.volume24h, 0)
-    const totalTVL = TOKENIZED_STOCKS.reduce((sum, stock) => sum + stock.tvl, 0)
-    const avgYield = (TOKENIZED_STOCKS.reduce((sum, stock) => sum + stock.apy, 0) / TOKENIZED_STOCKS.length)
+    for (const asset of registryAssets as RegistryAsset[]) {
+      const symbol = registrySymbol(asset)
+      const address = findDeployment(asset)
+      if (symbol && address && /^0x[a-fA-F0-9]{40}$/.test(address)) assetsBySymbol.set(symbol, asset)
+    }
+
+    const quoteTokens = [
+      { symbol: "ETH", address: SUPPORTED_CHAINS.robinhood.wethAddress },
+      { symbol: "USDG", address: SUPPORTED_CHAINS.robinhood.knownTokens.USDG },
+    ]
+    const registryStocks = await Promise.all(TOKENIZED_STOCKS.map(async (stock) => {
+      const asset = assetsBySymbol.get(stock.symbol)
+      const tokenAddress = asset ? findDeployment(asset) : ""
+      const normalizedToken = tokenAddress ? getAddress(tokenAddress) : ""
+      const pools = normalizedToken
+        ? await Promise.all(quoteTokens.map(async (quote) => ({ quote: quote.symbol, pool: await discoverPool(normalizedToken, quote.address) })))
+        : []
+      const availablePools = pools.filter((entry) => entry.pool)
+      const bestPool = availablePools[0]?.pool ?? null
+      return {
+        ...stock,
+        tokenAddress: normalizedToken || null,
+        decimals: STOCK_DECIMALS,
+        poolAddress: bestPool?.address ?? null,
+        poolFee: bestPool?.fee ?? null,
+        poolLiquidity: bestPool?.liquidity ?? null,
+        quoteToken: availablePools[0]?.quote ?? null,
+        availableQuoteTokens: availablePools.map((entry) => entry.quote),
+        poolFees: Object.fromEntries(availablePools.map((entry) => [entry.quote, entry.pool?.fee ?? null])),
+        poolAvailable: Boolean(bestPool),
+        eligibility: {
+          restrictedToEligibleNonUSPersons: true,
+          restrictedJurisdictions: ["United States", "Canada", "United Kingdom", "Switzerland"],
+          requiresWalletOnRobinhoodChain: true,
+          requiresVerifiedPool: true,
+        },
+      }
+    }))
+
+    const startIdx = (page - 1) * limit
+    const paginatedStocks = registryStocks.slice(startIdx, startIdx + limit)
+    const totalLiquidity = registryStocks.reduce((sum, stock) => sum + stock.liquidity, 0)
+    const totalVolume24h = registryStocks.reduce((sum, stock) => sum + stock.volume24h, 0)
+    const totalTVL = registryStocks.reduce((sum, stock) => sum + stock.tvl, 0)
+    const avgYield = registryStocks.length ? registryStocks.reduce((sum, stock) => sum + stock.apy, 0) / registryStocks.length : 0
 
     return NextResponse.json({
       stocks: paginatedStocks,
-      totalCount: TOKENIZED_STOCKS.length,
+      totalCount: registryStocks.length,
       page,
       limit,
       totalLiquidity,
       volume24h: totalVolume24h,
       totalTVL,
       avgYield,
+      source: RH_ASSETS_URL,
+      chainId: SUPPORTED_CHAINS.robinhood.id,
     })
   } catch (error) {
     console.error("Error fetching stocks:", error)

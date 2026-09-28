@@ -5,6 +5,7 @@ import {
   UNISWAP_V3_POOL_ABI,
   NONFUNGIBLE_POSITION_MANAGER_ADDRESS,
 } from "./uniswap-abis"
+import { SUPPORTED_CHAINS } from "./constants"
 
 export interface DeploymentParams {
   token0Address: string
@@ -59,7 +60,7 @@ export async function getPoolAddress(
   token1: string,
   feeTier: number,
 ): Promise<string> {
-  const FACTORY_ADDRESS = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" // Uniswap V3 Factory on Base
+  const FACTORY_ADDRESS = SUPPORTED_CHAINS.robinhood.uniswapV3Factory
   const FACTORY_ABI = [
     {
       inputs: [
@@ -208,13 +209,15 @@ export async function deployLiquidity(signer: ethers.Signer, params: DeploymentP
       deadline: deadlineTimestamp,
     }
 
-    // Execute mint transaction
+    // Simulate the exact mint call before asking the user to broadcast it.
     const positionManager = new ethers.Contract(
       NONFUNGIBLE_POSITION_MANAGER_ADDRESS,
       NONFUNGIBLE_POSITION_MANAGER_ABI,
       signer,
     )
+    await positionManager.mint.staticCall(mintParams)
 
+    // Broadcast only after the exact transaction succeeds in simulation.
     const tx = await positionManager.mint(mintParams)
     const receipt = await tx.wait()
 
@@ -325,7 +328,7 @@ export async function createPoolIfNeeded(
     throw new Error("Provider not found")
   }
 
-  const FACTORY_ADDRESS = "0x33128a8fC17869897dcE68Ed026d694621f6FDfD" // Uniswap V3 Factory on Base
+  const FACTORY_ADDRESS = SUPPORTED_CHAINS.robinhood.uniswapV3Factory
   const FACTORY_ABI = [
     {
       inputs: [

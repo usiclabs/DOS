@@ -25,6 +25,18 @@ interface Stock {
   tvl: number
   sector?: string
   risk?: "low" | "medium" | "high"
+  tokenAddress?: string | null
+  poolAddress?: string | null
+  poolFee?: number | null
+  poolLiquidity?: string | null
+  quoteToken?: "ETH" | "USDG" | null
+  availableQuoteTokens?: ("ETH" | "USDG")[]
+  poolFees?: Partial<Record<"ETH" | "USDG", number | null>>
+  poolAvailable?: boolean
+  eligibility?: {
+    restrictedToEligibleNonUSPersons: boolean
+    restrictedJurisdictions: string[]
+  }
 }
 
 interface StocksGridProps {
