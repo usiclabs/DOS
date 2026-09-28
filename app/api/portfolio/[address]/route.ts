@@ -151,8 +151,8 @@ async function discoverTokensFromTransfers(address: string): Promise<string[]> {
 
     const currentBlock = await rpcCall<string>("eth_blockNumber", [])
     const currentBlockNum = Number.parseInt(currentBlock, 16)
-    const BLOCK_CHUNK_SIZE = 10 // Alchemy free tier limit
-    const TOTAL_BLOCKS_TO_SCAN = 1000 // Reduced from 10000 to avoid too many requests
+    const BLOCK_CHUNK_SIZE = 1000
+    const TOTAL_BLOCKS_TO_SCAN = 10000
     const fromBlock = Math.max(0, currentBlockNum - TOTAL_BLOCKS_TO_SCAN)
 
     console.log("[v0] Scanning blocks from", fromBlock, "to", currentBlockNum, "in chunks of", BLOCK_CHUNK_SIZE)
@@ -230,6 +230,51 @@ async function discoverTokensFromTransfers(address: string): Promise<string[]> {
   }
 }
 
+async function readErc20String(tokenAddress: string, selector: string): Promise<string> {
+  const result = await rpcCall<string>("eth_call", [{ to: tokenAddress, data: selector }, "latest"])
+  if (!result || result === "0x") return ""
+  const hex = result.slice(2)
+  if (hex.length >= 128) {
+    const offset = Number.parseInt(hex.slice(0, 64), 16) * 2
+    const length = Number.parseInt(hex.slice(offset, offset + 64), 16) * 2
+    return Buffer.from(hex.slice(offset + 64, offset + 64 + length), "hex").toString("utf8").replaceAll("\\u0000", "")
+  }
+  return Buffer.from(hex, "hex").toString("utf8").replaceAll("\\u0000", "")
+}
+
+async function discoverTokenMetadata(tokenAddress: string): Promise<TokenMetadata> {
+  const known = KNOWN_TOKENS[tokenAddress.toLowerCase()]
+  if (known) return known
+  try {
+    const [symbol, name, decimalsHex] = await Promise.all([
+      readErc20String(tokenAddress, "0x95d89b41"),
+      readErc20String(tokenAddress, "0x06fdde03"),
+      rpcCall<string>("eth_call", [{ to: tokenAddress, data: "0x313ce567" }, "latest"]),
+    ])
+    return {
+      address: tokenAddress,
+      symbol: symbol || "TOKEN",
+      name: name || symbol || "Robinhood token",
+      decimals: decimalsHex ? Number.parseInt(decimalsHex, 16) : 18,
+    }
+  } catch {
+    return { address: tokenAddress, symbol: "TOKEN", name: "Robinhood token", decimals: 18 }
+  }
+}
+
+async function fetchTokenUsdPrice(tokenAddress: string, symbol: string): Promise<number> {
+  const fallback = (await getTokenPrices())[symbol] || 0
+  try {
+    const response = await fetch(`https://api.dexscreener.com/token-pairs/v1/robinhood/${tokenAddress}`, { signal: AbortSignal.timeout(2500) })
+    const data = await response.json()
+    const pairs = Array.isArray(data) ? data : data.pairs || []
+    const liquidPair = pairs.sort((a: any, b: any) => (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0))[0]
+    return Number(liquidPair?.priceUsd) || fallback
+  } catch {
+    return fallback
+  }
+}
+
 async function fetchAllTokenBalances(address: string): Promise<{ eth: number; tokens: TokenBalance[] }> {
   try {
     console.log("[v0] Fetching token balances for:", address)
@@ -260,15 +305,9 @@ async function fetchAllTokenBalances(address: string): Promise<{ eth: number; to
           return null
         }
 
-        const tokenMeta = KNOWN_TOKENS[tokenAddress] || {
-          address: tokenAddress,
-          symbol: "UNKNOWN",
-          name: "Unknown Token",
-          decimals: 18,
-        }
-
+        const tokenMeta = await discoverTokenMetadata(tokenAddress)
         const balanceFormatted = balance / Math.pow(10, tokenMeta.decimals)
-        const price = prices[tokenMeta.symbol] || 0
+        const price = prices[tokenMeta.symbol] || await fetchTokenUsdPrice(tokenAddress, tokenMeta.symbol)
         const value = balanceFormatted * price
 
         console.log(`[v0] Token ${tokenMeta.symbol}: balance=${balanceFormatted}, price=${price}, value=${value}`)
