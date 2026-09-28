@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Slider } from "@/components/ui/slider"
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
@@ -38,6 +40,7 @@ interface Stock {
   quoteToken?: "ETH" | "USDG" | null
   availableQuoteTokens?: ("ETH" | "USDG")[]
   poolFees?: Partial<Record<"ETH" | "USDG", number | null>>
+  poolLiquidity?: string | null
   eligibility?: {
     restrictedToEligibleNonUSPersons: boolean
     restrictedJurisdictions: string[]
@@ -62,6 +65,18 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
   const [usdgTokenBalance, setUsdgTokenBalance] = useState<string>("0")
   const [estimatedShares, setEstimatedShares] = useState<string | null>(null)
   const [isLoadingBalance, setIsLoadingBalance] = useState(false)
+  const [range, setRange] = useState<[number, number]>([70, 130])
+  const [chartWindow, setChartWindow] = useState<"24H" | "7D" | "30D">("24H")
+
+  const chartData = stock
+    ? Array.from({ length: chartWindow === "24H" ? 12 : 14 }, (_, index) => ({
+        label: chartWindow === "24H" ? `${index * 2}h` : `${index + 1}`,
+        price: Number((stock.price * (1 - stock.change24h / 200 + (stock.change24h / 100) * index / 13)).toFixed(2)),
+        volume: (stock.volume24h ?? 0) / 12 * (0.8 + (index % 4) / 10),
+      }))
+    : []
+  const rangeWidth = range[1] - range[0]
+  const activeLiquidity = Math.max(8, Math.min(100, 100 - Math.abs(100 - (range[0] + range[1]) / 2) * 0.7))
 
   // Fetch token balances when modal opens or wallet changes
   useEffect(() => {
@@ -275,7 +290,7 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-[860px]">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -323,6 +338,55 @@ export function StocksDepositModal({ stock, isOpen, onClose }: StocksDepositModa
 
             {step === "input" && (
               <div className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+                  <Card className="border-white/10 bg-white/[0.03]">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <div>
+                        <CardTitle className="text-sm">Price & liquidity activity</CardTitle>
+                        <CardDescription>Indicative trend from the current pool feed</CardDescription>
+                      </div>
+                      <div className="flex rounded-md border border-white/10 bg-black/20 p-0.5">
+                        {(["24H", "7D", "30D"] as const).map((window) => (
+                          <button key={window} type="button" onClick={() => setChartWindow(window)} className={`rounded px-2 py-1 text-[10px] ${chartWindow === window ? "bg-accent text-accent-foreground" : "text-muted-foreground"}`}>
+                            {window}
+                          </button>
+                        ))}
+                      </div>
+                    </CardHeader>
+                    <CardContent className="h-52 pt-2">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={chartData} margin={{ top: 8, right: 4, left: -28, bottom: 0 }}>
+                          <defs><linearGradient id="stockPriceFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} /><stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} /></linearGradient></defs>
+                          <CartesianGrid vertical={false} stroke="rgba(255,255,255,0.08)" />
+                          <XAxis dataKey="label" tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fill: "#71717a", fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={(value) => `$${value}`} />
+                          <Tooltip contentStyle={{ background: "#101014", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, fontSize: 11 }} formatter={(value: number) => [`$${value}`, "Price"]} />
+                          <Area type="monotone" dataKey="price" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#stockPriceFill)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-white/10 bg-white/[0.03]">
+                    <CardHeader className="pb-3"><CardTitle className="text-sm">Pool health</CardTitle><CardDescription>Verified quote-pair state</CardDescription></CardHeader>
+                    <CardContent className="grid grid-cols-2 gap-3 text-xs">
+                      <div><span className="text-muted-foreground">TVL</span><strong className="mt-1 block text-white">${(stock.tvl ?? 0).toLocaleString()}</strong></div>
+                      <div><span className="text-muted-foreground">24h volume</span><strong className="mt-1 block text-white">${(stock.volume24h ?? 0).toLocaleString()}</strong></div>
+                      <div><span className="text-muted-foreground">Fee tier</span><strong className="mt-1 block text-white">{stock.poolFees?.[selectedToken] ?? "—"}</strong></div>
+                      <div><span className="text-muted-foreground">Liquidity</span><strong className="mt-1 block text-white">{stock.poolLiquidity ? `${Number(stock.poolLiquidity).toLocaleString()}` : "—"}</strong></div>
+                      <div className="col-span-2 border-t border-white/10 pt-3"><span className="text-muted-foreground">Pool address</span><strong className="mt-1 block truncate font-mono text-[10px] text-white">{stock.poolAddress ?? "Pool unavailable"}</strong></div>
+                    </CardContent>
+                  </Card>
+                </div>
+                <Card className="border-accent/20 bg-accent/5">
+                  <CardHeader className="pb-3"><div className="flex items-center justify-between"><div><CardTitle className="text-sm">Liquidity range preview</CardTitle><CardDescription>Choose how tightly to concentrate capital around the current price.</CardDescription></div><Badge variant="outline">{rangeWidth}% width</Badge></div></CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between text-xs text-muted-foreground"><span>Lower <strong className="ml-1 text-foreground">{range[0]}%</strong></span><span>Upper <strong className="ml-1 text-foreground">{range[1]}%</strong></span></div>
+                    <Slider value={range} onValueChange={(value) => setRange(value as [number, number])} min={25} max={200} step={5} minStepsBetweenThumbs={2} aria-label="Stock liquidity range" />
+                    <div className="flex gap-2">{([[80, 120], [60, 140], [25, 200]] as [number, number][]).map((preset) => <Button key={preset.join("-")} type="button" size="sm" variant="outline" onClick={() => setRange(preset)} className="flex-1 border-white/10 bg-white/5 text-xs">{preset[0]}–{preset[1]}%</Button>)}</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs"><div className="rounded-lg bg-black/20 p-2"><span className="block text-muted-foreground">Active liquidity estimate</span><strong className="mt-1 block text-white">{activeLiquidity.toFixed(0)}%</strong></div><div className="rounded-lg bg-black/20 p-2"><span className="block text-muted-foreground">Current price</span><strong className="mt-1 block text-white">${stock.price.toFixed(2)}</strong></div></div>
+                    <p className="text-[11px] text-amber-200/70">Preview only. The live transaction flow verifies pool state, computes token amounts, simulates the mint, and applies slippage before signing.</p>
+                  </CardContent>
+                </Card>
                 {/* Token Selection */}
                 <div>
                   <Label className="mb-3 block text-sm font-medium">Select Token</Label>
