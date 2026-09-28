@@ -14,25 +14,25 @@
 
 :root {
   /* Premium agentic design tokens: sophisticated emerald accents with refined grays */
-  --background: oklch(0.05 0 0);
-  --foreground: oklch(0.95 0 0);
-  --card: oklch(0.08 0 0);
-  --card-foreground: oklch(0.95 0 0);
-  --popover: oklch(0.09 0 0);
+  --background: oklch(0.075 0.012 250);
+  --foreground: oklch(0.96 0.008 250);
+  --card: oklch(0.105 0.014 250);
+  --card-foreground: oklch(0.96 0.008 250);
+  --popover: oklch(0.12 0.016 250);
   --popover-foreground: oklch(0.95 0 0);
   --primary: oklch(0.50 0.15 150);
   --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.12 0 0);
-  --secondary-foreground: oklch(0.95 0 0);
-  --muted: oklch(0.13 0 0);
-  --muted-foreground: oklch(0.60 0 0);
-  --accent: oklch(0.50 0.15 150);
+  --secondary: oklch(0.15 0.016 250);
+  --secondary-foreground: oklch(0.96 0.008 250);
+  --muted: oklch(0.16 0.016 250);
+  --muted-foreground: oklch(0.68 0.018 250);
+  --accent: oklch(0.58 0.14 162);
   --accent-foreground: oklch(0.98 0 0);
   --destructive: oklch(0.628 0.258 29.234);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.15 0 0);
-  --input: oklch(0.12 0 0);
-  --ring: oklch(0.50 0.15 150);
+  --border: oklch(0.22 0.018 250);
+  --input: oklch(0.14 0.016 250);
+  --ring: oklch(0.58 0.14 162);
   --chart-1: oklch(0.50 0.15 150);
   --chart-2: oklch(0.62 0.15 35);
   --chart-3: oklch(0.55 0.14 120);
@@ -163,11 +163,11 @@
   }
 
   .glass-card {
-    @apply bg-white/2 dark:bg-white/2;
-    backdrop-filter: blur(16px);
-    @apply border border-white/6 dark:border-white/6;
-    @apply shadow-md dark:shadow-[0_4px_24px_rgba(0,0,0,0.3)];
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    @apply bg-white/[0.035] dark:bg-white/[0.035];
+    backdrop-filter: blur(18px);
+    @apply border border-white/[0.09] dark:border-white/[0.09];
+    @apply shadow-md dark:shadow-[0_12px_36px_rgba(0,0,0,0.22)];
+    transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
   }
 
   .light .glass-card {
@@ -175,11 +175,10 @@
   }
 
   .glass-card:hover {
-    @apply bg-white/4 dark:bg-white/4;
-    border-color: rgba(80, 200, 150, 0.25);
-    @apply shadow-lg dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)];
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 16px rgba(80, 200, 150, 0.15);
-    transform: translateY(-2px);
+    @apply bg-white/[0.06] dark:bg-white/[0.06];
+    border-color: color-mix(in oklab, var(--primary) 35%, transparent);
+    @apply shadow-lg dark:shadow-[0_16px_42px_rgba(0,0,0,0.3)];
+    transform: translateY(-1px);
   }
 
   .light .glass-card:hover {
