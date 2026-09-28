@@ -1,219 +1,105 @@
 "use client"
 
+import useSWR from "swr"
 import { motion } from "framer-motion"
+import { ArrowUpRight, BarChart3, ChevronRight, CircleDollarSign, ExternalLink, Search, ShieldCheck, TrendingUp, WalletCards, Zap } from "lucide-react"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
 import { ErrorBoundary } from "@/components/error-boundary"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight, TrendingUp, Zap, Lock, BarChart3, DollarSign } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring", stiffness: 80, damping: 20, mass: 0.5 },
-  },
+const fetcher = (url: string) => fetch(url).then((response) => response.json())
+
+const fadeIn = {
+  hidden: { opacity: 0, y: 14 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.45 } },
 }
 
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-  },
+type Stock = {
+  id: string
+  symbol: string
+  name: string
+  price: number
+  change24h: number
+  volume24h: number
+  apy: number
+  poolAvailable?: boolean
+  availableQuoteTokens?: ("ETH" | "USDG")[]
+}
+
+type StocksResponse = {
+  stocks?: Stock[]
+  dataQuality?: { checkedAt?: string; marketMetrics?: string }
+}
+
+function formatCompact(value: number) {
+  return new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 2 }).format(value)
 }
 
 export default function HomePage() {
+  const { data, isLoading } = useSWR<StocksResponse>("/api/stocks?limit=16", fetcher, { refreshInterval: 60_000 })
+  const stocks = data?.stocks ?? []
+  const trending = [...stocks].sort((a, b) => b.change24h - a.change24h).slice(0, 5)
+  const established = [...stocks].sort((a, b) => b.volume24h - a.volume24h).slice(0, 5)
+  const availablePools = stocks.filter((stock) => stock.poolAvailable).length
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <StickyHeader />
-      <ErrorBoundary>
-        <DeusTicker />
-      </ErrorBoundary>
+      <ErrorBoundary><DeusTicker /></ErrorBoundary>
 
-      <main className="container mx-auto px-4 md:px-6 lg:px-8 pb-24 md:pb-32">
-        {/* Hero Section */}
-        <motion.section
-          initial="hidden"
-          animate="visible"
-          variants={fadeInUp}
-          className="text-center py-16 md:py-28 lg:py-32"
-        >
-          <div className="max-w-5xl mx-auto space-y-10">
-            <motion.div variants={fadeInUp} className="flex justify-center">
-              <Badge className="mb-2 backdrop-blur-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 transition-all px-4 py-2 text-sm font-medium">
-                <Zap className="h-4 w-4 mr-2.5" />
-                Tokenized Stocks On Robinhood Chain
-              </Badge>
-            </motion.div>
-
-            <motion.h1
-              variants={fadeInUp}
-              className="text-5xl md:text-7xl lg:text-8xl font-bold text-white leading-tight tracking-tight"
-            >
-              Earn Yield on{" "}
-              <span className="bg-gradient-to-r from-accent via-emerald-300 to-accent bg-clip-text text-transparent">
-                Real Stocks
-              </span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeInUp}
-              className="text-xl md:text-2xl text-gray-300 max-w-3xl mx-auto leading-relaxed font-light"
-            >
-              Provide one-sided liquidity to tokenized stocks using only ETH or USDG. Earn 15-20% APY on Robinhood Chain with zero complexity.
-            </motion.p>
-
-            <motion.div
-              variants={fadeInUp}
-              className="flex flex-col sm:flex-row gap-4 justify-center pt-6"
-            >
-              <Button
-                size="lg"
-                className="bg-accent hover:bg-accent/90 text-white px-10 py-7 text-lg font-semibold shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all"
-                onClick={() => (window.location.href = "/stocks")}
-              >
-                Start Earning
-                <ArrowRight className="h-5 w-5 ml-2.5" />
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-gray-400/30 text-gray-300 hover:bg-white/5 hover:border-accent/50 px-10 py-7 text-lg font-semibold transition-all"
-                onClick={() => (window.location.href = "/analytics")}
-              >
-                View Analytics
-              </Button>
-            </motion.div>
-          </div>
-        </motion.section>
-
-        {/* Stats Section */}
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={staggerContainer}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 py-12 md:py-24 mb-16 md:mb-32"
-        >
-          {[
-            { icon: DollarSign, label: "Total Liquidity", value: "$5.4B" },
-            { icon: TrendingUp, label: "Average APY", value: "17.1%" },
-            { icon: BarChart3, label: "Listed Stocks", value: "16" },
-          ].map((stat, index) => (
-            <motion.div key={index} variants={fadeInUp} whileHover={{ y: -4 }}>
-              <Card className="glass-card p-8 md:p-10 text-center border border-white/8 hover:border-accent/40 transition-all hover:shadow-lg hover:shadow-accent/10 backdrop-blur-xl">
-                <CardContent className="space-y-5">
-                  <div className="flex justify-center">
-                    <div className="p-4 rounded-xl bg-gradient-to-br from-accent/20 to-accent/10 border border-accent/20">
-                      <stat.icon className="h-7 w-7 text-accent" />
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-3xl md:text-4xl font-bold text-white">{stat.value}</p>
-                    <p className="text-sm text-gray-400 mt-2">{stat.label}</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.section>
-
-        {/* Features Section */}
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={staggerContainer}
-          className="py-12 md:py-24"
-        >
-          <div className="text-center mb-16 md:mb-20">
-            <motion.h2
-              variants={fadeInUp}
-              className="text-4xl md:text-5xl font-bold text-white mb-4"
-            >
-              Why Choose D.O.S.
-            </motion.h2>
-            <motion.p variants={fadeInUp} className="text-xl text-gray-400 font-light">
-              Simple, efficient, and designed for maximum returns
-            </motion.p>
-          </div>
-
-          <motion.div variants={staggerContainer} className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 max-w-4xl mx-auto">
-            {[
-              {
-                icon: Zap,
-                title: "One-Sided Deposits",
-                description: "Deposit only ETH or USDG. No need to manage multiple tokens or complex positions.",
-              },
-              {
-                icon: TrendingUp,
-                title: "High Yields",
-                description: "Earn competitive 15-20% APY across diverse tokenized stock positions.",
-              },
-              {
-                icon: Lock,
-                title: "Non-Custodial",
-                description: "Your keys, your assets. All transactions execute transparently on-chain.",
-              },
-              {
-                icon: BarChart3,
-                title: "Real-Time Quotes",
-                description: "Live stock prices and performance metrics updated continuously for informed decisions.",
-              },
-            ].map((feature, index) => (
-              <motion.div key={index} variants={fadeInUp} whileHover={{ y: -2 }}>
-                <Card className="glass-card p-7 md:p-8 border border-white/8 hover:border-accent/40 transition-all hover:shadow-lg hover:shadow-accent/10 backdrop-blur-xl h-full">
-                  <CardContent className="space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-lg bg-gradient-to-br from-accent/20 to-accent/10 border border-accent/20 flex-shrink-0">
-                        <feature.icon className="h-5 w-5 text-accent" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{feature.title}</h3>
-                        <p className="text-sm text-gray-400 mt-2 leading-relaxed">{feature.description}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </motion.section>
-
-        {/* CTA Section */}
-        <motion.section
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={fadeInUp}
-          className="py-20 md:py-32 text-center"
-        >
-          <div className="max-w-3xl mx-auto space-y-10">
-            <div>
-              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Ready to earn yield?
-              </h2>
-              <p className="text-xl text-gray-400 font-light">
-                Browse our collection of tokenized stocks and start providing liquidity today. It takes less than a minute to get started.
-              </p>
+      <main className="mx-auto max-w-[1480px] px-4 pb-20 pt-6 md:px-8">
+        <motion.section initial="hidden" animate="visible" variants={fadeIn} className="mb-5 flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <div className="mb-3 flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-accent">
+              <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_12px_hsl(var(--accent))]" /> Robinhood Chain liquidity terminal
             </div>
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-              <Button
-                size="lg"
-                className="bg-accent hover:bg-accent/90 text-white px-10 py-7 text-lg font-semibold shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all"
-                onClick={() => (window.location.href = "/stocks")}
-              >
-                Explore Stocks
-                <ArrowRight className="h-5 w-5 ml-2.5" />
-              </Button>
-            </motion.div>
+            <h1 className="max-w-3xl text-3xl font-semibold tracking-tight text-foreground md:text-5xl">Deploy capital into tokenized stocks.</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">Discover verified Uniswap V3 pools, compare liquidity conditions, and manage non-custodial positions from one focused workspace.</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => (window.location.href = "/stocks")}>Explore pools <ArrowUpRight className="h-4 w-4" /></Button>
+            <Button variant="outline" className="gap-2" onClick={() => (window.location.href = "/portfolio")}><WalletCards className="h-4 w-4" /> My positions</Button>
           </div>
         </motion.section>
+
+        <section className="mb-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            { label: "Verified pools", value: isLoading ? "—" : `${availablePools}`, icon: ShieldCheck, detail: "Live Robinhood RPC checks" },
+            { label: "Tracked assets", value: isLoading ? "—" : `${stocks.length}`, icon: BarChart3, detail: "Robinhood registry" },
+            { label: "Quote assets", value: "ETH · USDG", icon: CircleDollarSign, detail: "One-sided deposits" },
+            { label: "Network", value: "RH · 4663", icon: Zap, detail: "Mainnet only" },
+          ].map((stat) => (
+            <div key={stat.label} className="border border-border/70 bg-card/60 p-4 backdrop-blur-sm">
+              <div className="flex items-center justify-between"><span className="text-xs uppercase tracking-widest text-muted-foreground">{stat.label}</span><stat.icon className="h-4 w-4 text-accent" /></div>
+              <div className="mt-3 text-xl font-semibold">{stat.value}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{stat.detail}</div>
+            </div>
+          ))}
+        </section>
+
+        <section className="mb-5 grid gap-5 xl:grid-cols-[1.3fr_1fr]">
+          <div className="border border-border/70 bg-card/50 p-5">
+            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div><div className="flex items-center gap-2"><TrendingUp className="h-4 w-4 text-accent" /><h2 className="text-sm font-semibold uppercase tracking-[0.16em]">Trending pools</h2></div><p className="mt-1 text-xs text-muted-foreground">Sorted by 24h change · live pool eligibility</p></div>
+              <div className="flex items-center gap-2"><div className="relative hidden sm:block"><Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" /><Input className="h-8 w-40 pl-8 text-xs" placeholder="Search assets" /></div><Button variant="ghost" size="sm" className="h-8 gap-1 text-xs" onClick={() => (window.location.href = "/stocks")}>View all <ChevronRight className="h-3.5 w-3.5" /></Button></div>
+            </div>
+            <div className="overflow-x-auto"><table className="w-full min-w-[560px] text-left text-sm"><thead className="border-y border-border/60 text-[10px] uppercase tracking-widest text-muted-foreground"><tr><th className="py-3 font-medium">Asset</th><th className="py-3 font-medium">Price</th><th className="py-3 font-medium">24h</th><th className="py-3 font-medium">APY</th><th className="py-3 font-medium">Pool</th><th /></tr></thead><tbody>{trending.map((stock) => <tr key={stock.id} className="border-b border-border/40 transition-colors hover:bg-accent/5"><td className="py-3"><div className="font-semibold">{stock.symbol}</div><div className="max-w-32 truncate text-xs text-muted-foreground">{stock.name}</div></td><td className="py-3 text-muted-foreground">${stock.price.toFixed(2)}</td><td className={`py-3 font-medium ${stock.change24h >= 0 ? "text-accent" : "text-destructive"}`}>{stock.change24h >= 0 ? "+" : ""}{stock.change24h.toFixed(2)}%</td><td className="py-3 font-medium text-accent">{stock.apy.toFixed(1)}%</td><td className="py-3">{stock.poolAvailable ? <Badge variant="emerald" className="text-[10px]">Verified</Badge> : <Badge variant="outline" className="text-[10px]">Unavailable</Badge>}</td><td className="py-3 text-right"><Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => (window.location.href = `/stocks?asset=${stock.symbol}`)} aria-label={`Open ${stock.symbol}`}><ExternalLink className="h-3.5 w-3.5" /></Button></td></tr>)}</tbody></table>{!isLoading && trending.length === 0 && <div className="py-12 text-center text-sm text-muted-foreground">No registry assets available.</div>}</div>
+          </div>
+
+          <div className="border border-border/70 bg-card/50 p-5">
+            <div className="mb-5 flex items-center justify-between"><div><div className="flex items-center gap-2"><BarChart3 className="h-4 w-4 text-accent" /><h2 className="text-sm font-semibold uppercase tracking-[0.16em]">Established liquidity</h2></div><p className="mt-1 text-xs text-muted-foreground">Highest presentation volume metrics</p></div><Badge variant="outline">ETH · USDG</Badge></div>
+            <div className="space-y-2">{established.map((stock, index) => <button key={stock.id} className="flex w-full items-center gap-3 border-b border-border/40 px-2 py-3 text-left transition-colors hover:bg-accent/5" onClick={() => (window.location.href = `/stocks?asset=${stock.symbol}`)}><span className="w-5 text-xs text-muted-foreground">0{index + 1}</span><span className="flex-1"><span className="block font-semibold">{stock.symbol}</span><span className="block text-xs text-muted-foreground">{formatCompact(stock.volume24h)} 24h volume</span></span><span className="text-right"><span className="block font-medium text-accent">{stock.apy.toFixed(1)}% APY</span><span className="block text-xs text-muted-foreground">{stock.availableQuoteTokens?.join(" · ") || "No pool"}</span></span></button>)}{isLoading && <div className="space-y-3">{[1, 2, 3, 4].map((item) => <div key={item} className="h-12 animate-pulse bg-muted/40" />)}</div>}</div>
+          </div>
+        </section>
+
+        <section className="grid gap-4 border border-border/70 bg-card/40 p-5 md:grid-cols-3">
+          {[{ title: "Verify before you deposit", text: "Every enabled pool is checked against Robinhood's registry, factory, token pair, fee tier, and usable liquidity." }, { title: "Stay non-custodial", text: "Approvals, wrapping, simulation, minting, and receipts happen through your connected wallet." }, { title: "Know what is live", text: "Pool data is verified on-chain. Market price, APY, TVL, and volume metrics are clearly labeled when estimated." }].map((item) => <div key={item.title} className="flex gap-3"><ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" /><div><h3 className="text-sm font-semibold">{item.title}</h3><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.text}</p></div></div>)}
+        </section>
+
+        <p className="mt-4 text-[11px] leading-5 text-muted-foreground">Data quality: token addresses and pool eligibility are verified from Robinhood Chain. Price, APY, TVL, and volume may be presentation estimates until a production market-data feed is connected.</p>
       </main>
     </div>
   )
