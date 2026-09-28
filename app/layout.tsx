@@ -30,8 +30,8 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "D.O.S. - DEUS Operating System",
   description:
-    "Advanced Base-chain liquidity dashboard with AI-powered analytics, pool discovery, and automated deployment tools for DeFi traders and liquidity providers.",
-  keywords: ["DeFi", "Base", "DEUS", "Liquidity", "Analytics", "Crypto", "Trading", "Pools"],
+    "D.O.S. is a Robinhood Chain liquidity platform for discovering verified tokenized-stock pools, managing Uniswap V3 positions, and tracking on-chain performance.",
+  keywords: ["DeFi", "Robinhood Chain", "Tokenized Stocks", "Liquidity", "Uniswap V3", "LP"],
   authors: [{ name: "DEUS Team" }],
   creator: "DEUS Operating System",
   publisher: "DEUS",
@@ -43,8 +43,8 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://dos.deus.finance"),
   openGraph: {
     title: "D.O.S. - DEUS Operating System",
-    description: "Advanced Base-chain liquidity dashboard with AI-powered analytics",
-    url: "https://dos.deus.finance",
+    description: "Verified tokenized-stock liquidity on Robinhood Chain",
+    url: "https://deusos.app",
     siteName: "D.O.S.",
     images: [
       {

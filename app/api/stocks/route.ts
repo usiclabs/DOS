@@ -55,9 +55,13 @@ async function rpcCall(to: string, data: Hex) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to, data }, "latest"] }),
     cache: "no-store",
+    signal: AbortSignal.timeout(8000),
   })
+  if (!response.ok) throw new Error(`Robinhood Chain RPC returned ${response.status}`)
   const payload = await response.json()
-  if (payload.error || typeof payload.result !== "string") throw new Error("Robinhood Chain RPC call failed")
+  if (payload.error || typeof payload.result !== "string" || !/^0x[0-9a-f]+$/i.test(payload.result)) {
+    throw new Error("Robinhood Chain RPC call failed")
+  }
   return payload.result as Hex
 }
 
@@ -363,6 +367,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       stocks: paginatedStocks,
+      dataQuality: {
+        tokenAddresses: "robinhood-registry",
+        pools: "robinhood-chain-rpc",
+        marketMetrics: "presentation-only",
+        checkedAt: new Date().toISOString(),
+      },
       totalCount: registryStocks.length,
       page,
       limit,

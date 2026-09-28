@@ -63,6 +63,10 @@ export default function StocksPage() {
               </div>
             </motion.div>
 
+            <motion.div variants={fadeInUp} className="mb-8 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              Token addresses and pool liquidity are verified from Robinhood Chain. Price, APY, TVL, and volume metrics are currently presentation estimates and should not be used as investment advice.
+            </motion.div>
+
             {/* Stats Cards */}
             <motion.div
               variants={fadeInUp}
@@ -77,7 +81,7 @@ export default function StocksPage() {
                   <div className="text-2xl font-bold text-gradient-text-premium">
                     ${stocksData?.totalLiquidity?.toLocaleString() || "0"}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Across all stocks</p>
+                  <p className="text-xs text-muted-foreground mt-1">Presentation estimate</p>
                 </CardContent>
               </Card>
 
@@ -90,7 +94,7 @@ export default function StocksPage() {
                   <div className="text-2xl font-bold">
                     ${stocksData?.volume24h?.toLocaleString() || "0"}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Trading activity</p>
+                  <p className="text-xs text-muted-foreground mt-1">Presentation estimate</p>
                 </CardContent>
               </Card>
 
@@ -103,7 +107,7 @@ export default function StocksPage() {
                   <div className="text-2xl font-bold text-accent">
                     {stocksData?.avgYield?.toFixed(1) || "0"}%
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">Annual return</p>
+                  <p className="text-xs text-muted-foreground mt-1">Presentation estimate</p>
                 </CardContent>
               </Card>
 
