@@ -39,45 +39,19 @@ interface PortfolioResponse {
 }
 
 const KNOWN_TOKENS: Record<string, TokenMetadata> = {
-  "0x4200000000000000000000000000000000000006": {
-    address: "0x4200000000000000000000000000000000000006",
+  "0x0bd7d308f8e1639fab988df18a8011f41eacad73": {
+    address: "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
     symbol: "WETH",
     name: "Wrapped Ether",
     decimals: 18,
-    logoURI: "https://tokens.1inch.io/0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2.png",
   },
-  "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": {
-    address: "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913",
-    symbol: "USDC",
-    name: "USD Coin",
-    decimals: 6,
-    logoURI: "https://tokens.1inch.io/0xa0b86a33e6441b8c0b8b8c0b8b8b8c0b8b8b8c.png",
-  },
-  "0x73582df1cad3187cd0746b7a473d65c06386837e": {
-    address: "0x73582df1cad3187cd0746b7a473d65c06386837e",
-    symbol: "DEUS",
-    name: "DEUS Finance",
-    decimals: 18,
-    logoURI: "https://assets.coingecko.com/coins/images/13915/small/deus_finance.png",
-  },
-  "0x50c5725949a6f0c72e6c4a641f24049a917db0cb": {
-    address: "0x50c5725949a6f0c72e6c4a641f24049a917db0cb",
-    symbol: "DAI",
-    name: "Dai Stablecoin",
-    decimals: 18,
-  },
-  "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca": {
-    address: "0xd9aaec86b65d86f6a7b5b1b0c42ffa531710b6ca",
-    symbol: "USDbC",
-    name: "USD Base Coin",
+  "0x5fc5360d0400a0fd4f2af552add042d716f1d168": {
+    address: "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+    symbol: "USDG",
+    name: "USDG",
     decimals: 6,
   },
-  "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22": {
-    address: "0x2ae3f1ec7f1f5012cfeab0185bfc7aa3cf0dec22",
-    symbol: "cbETH",
-    name: "Coinbase Wrapped Staked ETH",
-    decimals: 18,
-  },
+
 }
 
 const UNISWAP_V3_POSITION_MANAGER = "0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1"
@@ -116,6 +90,7 @@ async function getTokenPrices(): Promise<Record<string, number>> {
   const fallbackPrices = {
     ETH: 3200,
     WETH: 3200,
+    USDG: 1,
     USDC: 1,
     USDT: 1,
     DEUS: 0.00007765,

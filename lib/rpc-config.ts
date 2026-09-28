@@ -21,7 +21,7 @@ class RpcManager {
       ...(isServer && process.env.ALCHEMY_API_KEY
         ? [
             {
-              url: `https://base-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_API_KEY}`,
+              url: `https://rpc.mainnet.chain.robinhood.com`,
               priority: 0,
               consecutiveFailures: 0,
             },
@@ -29,12 +29,12 @@ class RpcManager {
         : []),
       // Public endpoints (client and server fallback)
       {
-        url: "https://mainnet.base.org",
+        url: "https://rpc.mainnet.chain.robinhood.com",
         priority: 1,
         consecutiveFailures: 0,
       },
       {
-        url: "https://base.llamarpc.com",
+        url: "https://robinhoodchain-rpc.publicnode.com",
         priority: 2,
         consecutiveFailures: 0,
       },
