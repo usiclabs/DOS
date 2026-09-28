@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useMemo } from "react"
+import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
 import { StickyHeader } from "@/components/sticky-header"
 import { DeusTicker } from "@/components/deus-ticker"
@@ -556,6 +557,22 @@ function PoolDetailsDrawer({
           <p className="text-sm text-gray-400">Annual percentage yield after fees</p>
         </div>
 
+        {/* Pool identity */}
+        <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-gray-400">Pool address</span>
+            <span className="max-w-[220px] truncate font-mono text-xs text-gray-200">{pool.pairAddress}</span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-gray-400">Network</span>
+            <Badge variant="outline">{pool.chainId === "4663" ? "Robinhood Chain" : pool.chainId}</Badge>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-xs text-gray-400">Pool type / fee</span>
+            <span className="text-sm text-gray-200">{pool.poolType.toUpperCase()} · {pool.feeTier}</span>
+          </div>
+        </div>
+
         {/* Metrics Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
@@ -590,6 +607,21 @@ function PoolDetailsDrawer({
             <div className={`text-2xl font-bold ${pool.priceChange24h >= 0 ? "text-green-400" : "text-red-400"}`}>
               {formatPercent(pool.priceChange24h)}
             </div>
+          </div>
+        </div>
+
+        {/* Quote-pair workflow */}
+        <div className="rounded-xl border border-accent/20 bg-accent/5 p-4 space-y-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <Droplets className="h-4 w-4 text-accent" />
+              <h4 className="font-semibold text-white">Manage {pool.baseToken.symbol}/{pool.quoteToken.symbol}</h4>
+            </div>
+            <p className="mt-1 text-xs leading-relaxed text-gray-400">Add liquidity to this exact quote pair, then monitor positions, fees, and range performance from the LP manager.</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3"><span className="block text-gray-500">Pair price</span><span className="mt-1 block font-semibold text-white">${pool.priceUsd.toFixed(6)}</span></div>
+            <div className="rounded-lg border border-white/10 bg-black/20 p-3"><span className="block text-gray-500">Last updated</span><span className="mt-1 block font-semibold text-white">{new Date(pool.lastUpdated).toLocaleTimeString()}</span></div>
           </div>
         </div>
 
@@ -629,15 +661,21 @@ function PoolDetailsDrawer({
         </div>
       </div>
 
-      {/* Deploy Button */}
-      <div className="pt-4 border-t border-white/10">
+      {/* Add and manage liquidity */}
+      <div className="grid grid-cols-2 gap-2 border-t border-white/10 pt-4">
         <Button
           size="lg"
           onClick={() => onDeploy(pool)}
-          className="w-full bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 text-accent-foreground shadow-lg shadow-accent/30 hover:shadow-xl hover:shadow-accent/40 transition-all"
+          className="bg-gradient-to-r from-accent to-accent/80 text-accent-foreground shadow-lg shadow-accent/20"
         >
-          <Zap className="h-5 w-5 mr-2" />
-          Deploy Liquidity
+          <Zap className="mr-2 h-5 w-5" />
+          Add liquidity
+        </Button>
+        <Button asChild size="lg" variant="outline" className="border-white/15 bg-white/5">
+          <Link href={`/lp-manager?chain=${pool.chainId === "4663" ? "robinhood" : "base"}&pool=${encodeURIComponent(pool.pairAddress)}`}>
+            <Droplets className="mr-2 h-5 w-5" />
+            Manage positions
+          </Link>
         </Button>
       </div>
     </div>
