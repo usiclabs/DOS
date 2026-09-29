@@ -3,7 +3,7 @@ import { base } from "viem/chains"
 import { BASE_RPC_URL } from "@/lib/rpc-config"
 
 export const ZORA_TOKEN_ADDRESS = "0x73582df1cad3187cD0746b7A473d65c06386837f" as Address
-export const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address
+export const USDG_ADDRESS = "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168" as Address
 export const UNISWAP_V4_POOL_MANAGER = "0x7Da1D65F8B249183667cdE74C5CBD46dD38AA829" as Address
 export const UNIVERSAL_ROUTER = "0x6ff5693b99212da76ad316178a184ab56d299b43" as Address
 
@@ -30,12 +30,12 @@ export type TradeQuote = {
   priceImpact: number
   fee: number
   estimatedGas: bigint
-  poolPairing: "ETH" | "ZORA" | "USDC"
+  poolPairing: "ETH" | "USDG"
 }
 
 export async function getZoraTradeQuote(
   params: TradeParameters,
-  poolPairing: "ETH" | "ZORA" | "USDC" = "ETH",
+  poolPairing: "ETH" | "USDG" = "ETH",
 ): Promise<TradeQuote | null> {
   try {
     const publicClient = createPublicClient({
@@ -57,15 +57,15 @@ export async function getZoraTradeQuote(
       estimatedAmountOut = (params.amountIn * BigInt(4000)) / BigInt(1) // Estimate based on typical prices
       priceImpact = 1.5
       fee = 0.3
-    } else if (poolPairing === "ZORA") {
+    } else if (poolPairing === "USDG") {
       // Multi-hop: ETH → ZORA → Creator Token
       route = "ETH → ZORA → Creator Token (Multi-Hop V4)"
       estimatedAmountOut = (params.amountIn * BigInt(3800)) / BigInt(1) // Slightly lower due to multi-hop
       priceImpact = 2.5
       fee = 0.6 // Two swaps = two fees
     } else {
-      // Multi-hop: ETH → USDC → Creator Token
-      route = "ETH → USDC → Creator Token (Multi-Hop V4)"
+      // Multi-hop: ETH → USDG → Creator Token
+      route = "ETH → USDG → Creator Token (Multi-Hop V4)"
       estimatedAmountOut = (params.amountIn * BigInt(3900)) / BigInt(1)
       priceImpact = 2.0
       fee = 0.6 // Two swaps = two fees
@@ -88,7 +88,7 @@ export async function getZoraTradeQuote(
 export function prepareZoraTradeTransaction(
   params: TradeParameters,
   deadline: number,
-  poolPairing: "ETH" | "ZORA" | "USDC" = "ETH",
+  poolPairing: "ETH" | "USDG" = "ETH",
 ) {
   console.log("[v0] Preparing Zora trade transaction with pairing:", poolPairing)
 
@@ -99,12 +99,12 @@ export function prepareZoraTradeTransaction(
   if (poolPairing === "ETH") {
     // Direct swap: WETH → Creator Token
     path = [WETH, params.buy.type === "erc20" ? params.buy.address : WETH]
-  } else if (poolPairing === "ZORA") {
+  } else if (poolPairing === "USDG") {
     // Multi-hop: WETH → ZORA → Creator Token
     path = [WETH, ZORA_TOKEN_ADDRESS, params.buy.type === "erc20" ? params.buy.address : WETH]
   } else {
-    // Multi-hop: WETH → USDC → Creator Token
-    path = [WETH, USDC_ADDRESS, params.buy.type === "erc20" ? params.buy.address : WETH]
+    // Multi-hop: WETH → USDG → Creator Token
+    path = [WETH, USDG_ADDRESS, params.buy.type === "erc20" ? params.buy.address : WETH]
   }
 
   console.log("[v0] Swap path:", path)

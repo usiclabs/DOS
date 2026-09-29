@@ -32,17 +32,16 @@ export async function POST(request: NextRequest) {
       console.log("[v0] Using Zora SDK for creator coin trade:", uniswapV4PoolKey)
 
       // Detect pool pairing from the pool key or hint
-      let poolPairing: "ETH" | "ZORA" | "USDC" = "ETH"
+      let poolPairing: "ETH" | "USDG" = "ETH"
 
       if (poolHint) {
-        // Check if the pool uses ZORA or USDC as the quote token
+        // Check if the pool uses USDG as the quote token
         const poolData = await fetch(`https://api.dexscreener.com/latest/dex/pairs/robinhood/${poolHint}`).then((r) =>
           r.json(),
         )
         if (poolData?.pair) {
           const quoteToken = poolData.pair.quoteToken?.symbol?.toUpperCase()
-          if (quoteToken === "ZORA") poolPairing = "ZORA"
-          else if (quoteToken === "USDC") poolPairing = "USDC"
+          if (quoteToken === "USDG") poolPairing = "USDG"
         }
       }
 
@@ -346,13 +345,13 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.log("[v0] No DEUS route found, checking for multi-hop route through USDC...")
+    console.log("[v0] No direct route found, checking for multi-hop route through USDG...")
 
     const wethToUsdcPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, USDG_TOKEN_ADDRESS)
     if (wethToUsdcPool) {
       const usdcToTokenPool = await detectPoolFeeTier(USDG_TOKEN_ADDRESS, toToken)
       if (usdcToTokenPool) {
-        console.log("[v0] Found multi-hop route through USDC:", {
+        console.log("[v0] Found multi-hop route through USDG:", {
           wethToUsdc: { fee: wethToUsdcPool.fee, pool: wethToUsdcPool.poolAddress },
           usdcToToken: { fee: usdcToTokenPool.fee, pool: usdcToTokenPool.poolAddress },
         })
@@ -388,7 +387,7 @@ export async function POST(request: NextRequest) {
             rate,
             priceImpact: 2,
             fee: (wethToUsdcPool.fee + usdcToTokenPool.fee) / 10000,
-            route: `ETH → USDC → TOKEN (Multi-Hop)`,
+            route: `ETH → USDG → TOKEN (Multi-Hop)`,
             estimatedGas: Number(multiHopQuote.gasEstimate) * 0.000000001,
             validUntil: Date.now() + 120000,
             dexes: ["Uniswap V3"],
@@ -407,13 +406,13 @@ export async function POST(request: NextRequest) {
             },
           }
 
-          console.log("[v0] Multi-hop swap quote through USDC generated:", quoteResponse)
+          console.log("[v0] Multi-hop swap quote through USDG generated:", quoteResponse)
           return NextResponse.json(quoteResponse)
         }
       }
     }
 
-    console.log("[v0] No USDC route found, checking for multi-hop route through ZORA...")
+    console.log("[v0] No USDG route found, checking for multi-hop route through ZORA...")
 
     const wethToZoraPool = await detectPoolFeeTier(UNISWAP_V3_ADDRESSES.WETH, ZORA_TOKEN_ADDRESS)
     if (!wethToZoraPool) {
@@ -421,7 +420,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "NO_LIQUIDITY",
-          message: "No liquidity pool found for this token pair. Cannot route through DEUS, USDC, or ZORA.",
+          message: "No liquidity pool found for this token pair. Cannot route through DEUS, USDG, or ZORA.",
           suggestion: "Please deploy liquidity for this token first.",
         },
         { status: 404 },
@@ -542,7 +541,7 @@ export async function POST(request: NextRequest) {
 function getTokenSymbol(address: string): string {
   const tokenMap: { [key: string]: string } = {
     "0x0000000000000000000000000000000000000000": "ETH",
-    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "USDC",
+    "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913": "USDG",
     "0x4200000000000000000000000000000000000006": "WETH",
     "0x73582df1cad3187cD0746b7A473d65c06386837e": "DEUS",
     "0x1111111111166b7fe7bd91427724b487980afc69": "ZORA",

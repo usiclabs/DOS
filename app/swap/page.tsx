@@ -642,7 +642,7 @@ export default function SwapPage() {
                   transition={{ delay: 0.2 }}
                   className="text-gray-300 text-lg mb-6 max-w-md mx-auto leading-relaxed"
                 >
-                  Connect your wallet to swap tokens instantly with the best rates across the DEUS ecosystem
+                  Connect your wallet to swap ETH, WETH, and USDG with Robinhood Chain liquidity
                 </motion.p>
 
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>

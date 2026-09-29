@@ -18,18 +18,10 @@ interface Notification {
 
 const mockNotifications: Notification[] = [
   {
-    id: "1",
-    type: "success",
-    title: "Welcome to DEUS!",
-    message: "Get started by creating your first account to participate in governance and earn rewards.",
-    timestamp: new Date(),
-    read: false,
-  },
-  {
-    id: "2",
+    id: "robinhood-pools",
     type: "info",
-    title: "New Pool Available",
-    message: "A high-yield DEUS/ETH pool is now available with 127% APR.",
+    title: "Robinhood pools are live",
+    message: "Review high-net-APY ETH and USDG liquidity opportunities on Robinhood Chain.",
     timestamp: new Date(Date.now() - 3600000),
     read: true,
   },
@@ -38,6 +30,7 @@ const mockNotifications: Notification[] = [
 export function ActivityCenter() {
   const [notifications, setNotifications] = useState<Notification[]>(mockNotifications)
   const unreadCount = notifications.filter((n) => !n.read).length
+  const visibleNotifications = notifications.slice(0, 8)
 
   const markAsRead = (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
@@ -54,7 +47,7 @@ export function ActivityCenter() {
   const getIcon = (type: Notification["type"]) => {
     switch (type) {
       case "success":
-        return <CheckCircle className="h-5 w-5 text-green-300" />
+        return <CheckCircle className="h-5 w-5 text-primary" />
       case "info":
         return <Sparkles className="h-5 w-5 text-blue-300" />
       case "warning":
@@ -76,10 +69,10 @@ export function ActivityCenter() {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-full sm:max-w-md glass-card border-l border-white/10">
+      <SheetContent className="w-full border-l border-border/80 bg-background/95 backdrop-blur-2xl sm:max-w-md">
         <SheetHeader className="mb-6">
           <div className="flex items-center justify-between">
-            <SheetTitle className="text-2xl text-white">Activity Center</SheetTitle>
+            <SheetTitle className="text-2xl font-semibold tracking-tight text-foreground">Activity Center</SheetTitle>
             {unreadCount > 0 && (
               <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-accent-foreground">
                 Mark all read
@@ -101,7 +94,7 @@ export function ActivityCenter() {
                 <p className="text-gray-400">No notifications</p>
               </motion.div>
             ) : (
-              notifications.map((notification) => (
+              visibleNotifications.map((notification) => (
                 <motion.div
                   key={notification.id}
                   initial={{ opacity: 0, x: 20 }}

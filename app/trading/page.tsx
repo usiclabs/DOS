@@ -233,7 +233,7 @@ export default function TradingPage() {
                           <SelectContent className="bg-gray-800 border-gray-700">
                             <SelectItem value="DEUS">DEUS</SelectItem>
                             <SelectItem value="WETH">WETH</SelectItem>
-                            <SelectItem value="USDC">USDC</SelectItem>
+                            <SelectItem value="USDG">USDG</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
